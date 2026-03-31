@@ -42,18 +42,4 @@ class SchemaVersionValidatorTest {
         // Then: No exceptions thrown, version matches application version
         assertDoesNotThrow(() -> SchemaVersionValidator.validateSchemaVersion());
     }
-    
-    /**
-     * Tests that schema validation prints success message.
-     * 
-     * <p>This test verifies the validation completes without errors when database
-     * schema matches application version.
-     */
-    @Test
-    @EnabledIfEnvironmentVariable(named = "DB_TEST_ENABLED", matches = "true")
-    void testSchemaVersionValidationOutput() {
-        // This test primarily verifies no exception is thrown
-        // Console output verification would require additional test infrastructure
-        assertDoesNotThrow(() -> SchemaVersionValidator.validateSchemaVersion());
-    }
 }

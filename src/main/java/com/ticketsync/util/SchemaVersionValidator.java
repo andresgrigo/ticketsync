@@ -44,15 +44,23 @@ public class SchemaVersionValidator {
      * @throws RuntimeException if validation fails or database connection errors occur
      */
     public static void validateSchemaVersion() {
-        String query = "SELECT version FROM schema_version LIMIT 1";
+        String query = "SELECT version FROM schema_version ORDER BY applied_at DESC LIMIT 1";
         
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
-            
+
             if (rs.next()) {
                 String dbVersion = rs.getString("version");
                 
+                if (dbVersion == null) {
+                    throw new RuntimeException("schema_version table contains NULL version! " +
+                                               "Database schema is corrupted.");
+                }
+                
+                // Trim whitespace to handle formatting differences
+                dbVersion = dbVersion.trim();
+
                 if (!EXPECTED_VERSION.equals(dbVersion)) {
                     throw new RuntimeException(
                         String.format("Schema version mismatch! Expected: %s, Found: %s. " +
@@ -68,7 +76,27 @@ public class SchemaVersionValidator {
             }
             
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to validate schema version: " + e.getMessage(), e);
+            String errorMsg = e.getMessage();
+            if (errorMsg == null) {
+                errorMsg = "Unknown SQL error (" + e.getClass().getSimpleName() + ")";
+            }
+            
+            // Provide specific guidance based on error type
+            if (errorMsg.contains("Connection") || errorMsg.contains("connection")) {
+                throw new RuntimeException(
+                    "Failed to connect to database. Ensure PostgreSQL is running on localhost:5432.\n" +
+                    "Start database: docker-compose up -d\nError: " + errorMsg, e);
+            } else if (errorMsg.contains("does not exist")) {
+                throw new RuntimeException(
+                    "schema_version table not found. Run migrations first: mvn flyway:migrate\n" +
+                    "Error: " + errorMsg, e);
+            } else if (errorMsg.contains("authentication") || errorMsg.contains("password")) {
+                throw new RuntimeException(
+                    "Database authentication failed. Check credentials in SchemaVersionValidator.\n" +
+                    "Error: " + errorMsg, e);
+            } else {
+                throw new RuntimeException("Failed to validate schema version: " + errorMsg, e);
+            }
         }
     }
 }
