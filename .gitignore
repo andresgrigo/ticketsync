@@ -4,3 +4,8 @@ target
 .idea
 !.idea/runConfigurations/
 !.idea/runConfigurations/*.xml
+
+# Log files
+logs/*.log
+logs/*.log.gz
+logs/*.log.*

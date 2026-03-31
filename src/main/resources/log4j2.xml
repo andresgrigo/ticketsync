@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <!-- Rolling File Appender for Production Audit Trail -->
+        <RollingFile name="AppLog" fileName="logs/ticketsync.log"
+                     filePattern="logs/ticketsync-%d{yyyy-MM-dd}-%i.log.gz"
+                     createOnDemand="true">
+            <PatternLayout charset="UTF-8">
+                <!-- Uses JVM default timezone; configure JVM with -Duser.timezone=UTC if needed -->
+                <Pattern>%d{ISO8601} [%t] %-5level %logger{36} - %msg%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="7"/>
+        </RollingFile>
+        
+        <!-- Console Appender for Development Environment -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout charset="UTF-8" pattern="%d{HH:mm:ss.SSS} %-5level %logger{1} - %msg%n"/>
+        </Console>
+    </Appenders>
+    
+    <Loggers>
+        <!-- Root Logger: INFO level to both file and console -->
+        <Root level="INFO">
+            <AppenderRef ref="AppLog"/>
+            <AppenderRef ref="Console"/>
+        </Root>
+        
+        <!-- Package-Specific Loggers -->
+        <!-- DEBUG level for DAO layer (SQL query debugging) -->
+        <Logger name="com.ticketsync.dao" level="DEBUG"/>
+        
+        <!-- TRACE level for Service layer in development (commented by default) -->
+        <!-- Uncomment for detailed transaction debugging -->
+        <!-- <Logger name="com.ticketsync.service" level="TRACE" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger> -->
+    </Loggers>
+</Configuration>

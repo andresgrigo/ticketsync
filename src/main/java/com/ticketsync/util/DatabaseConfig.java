@@ -2,10 +2,10 @@ package com.ticketsync.util;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * DatabaseConfig provides a singleton connection pool using HikariCP.
@@ -48,7 +48,7 @@ import java.util.logging.Logger;
  */
 public final class DatabaseConfig {
     
-    private static final Logger logger = Logger.getLogger(DatabaseConfig.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(DatabaseConfig.class);
     private static final HikariDataSource dataSource;
     
     // Static initializer - runs once when class loads
@@ -84,11 +84,11 @@ public final class DatabaseConfig {
             
             // Validate connectivity immediately to fail-fast if database is unreachable
             try (Connection testConn = dataSource.getConnection()) {
-                logger.log(Level.INFO, "HikariCP connection pool initialized successfully: {0} max connections", 
+                LOGGER.info("HikariCP connection pool initialized successfully: {} max connections", 
                           config.getMaximumPoolSize());
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Failed to initialize HikariCP connection pool", e);
+            LOGGER.error("Failed to initialize HikariCP connection pool", e);
             throw new ExceptionInInitializerError(e);
         }
     }
@@ -140,14 +140,14 @@ public final class DatabaseConfig {
              var rs = stmt.executeQuery("SELECT 1")) {
             
             if (rs.next() && rs.getInt(1) == 1) {
-                logger.log(Level.INFO, "Database health check passed");
+                LOGGER.info("Database health check passed");
                 return true;
             } else {
-                logger.log(Level.WARNING, "Database health check failed: unexpected query result");
+                LOGGER.warn("Database health check failed: unexpected query result");
                 return false;
             }
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Database health check failed", e);
+            LOGGER.error("Database health check failed", e);
             return false;
         }
     }
@@ -163,11 +163,11 @@ public final class DatabaseConfig {
      */
 public static synchronized void shutdown() {
         if (dataSource != null && !dataSource.isClosed()) {
-            logger.log(Level.INFO, "Shutting down HikariCP connection pool");
+            LOGGER.info("Shutting down HikariCP connection pool");
             try {
                 dataSource.close();
             } catch (Exception e) {
-                logger.log(Level.WARNING, "Error during connection pool shutdown", e);
+                LOGGER.warn("Error during connection pool shutdown", e);
             }
         }
     }

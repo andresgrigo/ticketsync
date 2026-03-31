@@ -3,6 +3,8 @@ module com.ticketsync {
     requires javafx.fxml;
     requires transitive java.sql;
     requires com.zaxxer.hikari;
+    requires org.apache.logging.log4j;
+    requires org.apache.logging.log4j.core;
 
     opens com.ticketsync to javafx.fxml;
     exports com.ticketsync;
