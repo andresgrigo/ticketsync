@@ -104,6 +104,51 @@ The application connects to PostgreSQL using:
 
 **Note:** These credentials are for development only. Production credentials will be encrypted using Jasypt.
 
+## Connection Pooling
+
+TicketSync uses **HikariCP 5.1.0** for efficient database connection management. HikariCP is the industry-standard JDBC connection pool with superior performance and reliability.
+
+### Pool Configuration
+
+Each application instance (booth or admin client) maintains its own connection pool with the following configuration:
+
+- **Maximum Pool Size:** 5 connections (per application instance)
+- **Minimum Idle:** 2 connections (maintained warm for instant checkout)
+- **Connection Timeout:** 10 seconds
+- **Idle Timeout:** 5 minutes
+- **Max Lifetime:** 30 minutes
+
+**Why Connection Pooling?** Unlike typical single-user desktop apps, TicketSync requires concurrent database operations:
+- **1 persistent connection** for PostgreSQL LISTEN/NOTIFY (real-time seat updates)
+- **1-2 connections** for transaction processing
+- **1-2 connections** for concurrent queries and health checks
+
+With 10 booths running, the total PostgreSQL connection count is approximately 20-50 connections (well within PostgreSQL's default limit).
+
+### Performance
+
+- Connection checkout completes in **< 50ms** under normal load
+- Pool automatically manages connection lifecycle and health checks
+- Connections are validated using `SELECT 1` query before checkout
+
+### Usage Pattern
+
+```java
+Connection conn = null;
+try {
+    conn = DatabaseConfig.getConnection();
+    // Use connection for database operations
+} catch (SQLException e) {
+    // Handle error
+} finally {
+    if (conn != null) {
+        conn.close(); // Returns connection to pool
+    }
+}
+```
+
+**Important:** Calling `Connection.close()` returns the connection to the pool rather than closing the underlying PostgreSQL connection.
+
 ## Build & Run
 
 ### Development Mode
@@ -151,6 +196,7 @@ ticketsync/
 - **Java:** 21 LTS
 - **UI Framework:** JavaFX 21.0.2
 - **Database:** PostgreSQL 15+ with JDBC 42.7.2
+- **Connection Pool:** HikariCP 5.1.0
 - **Migrations:** Flyway 10.8.1
 - **Build Tool:** Maven 3.9.14
 - **Testing:** JUnit 5.10.0
