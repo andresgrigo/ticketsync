@@ -22,4 +22,4 @@ CREATE TABLE users (
 -- BCrypt cost factor 12. See README for default credentials (dev only).
 -- IMPORTANT: Change this password immediately after first login.
 INSERT INTO users (username, password_hash, role)
-VALUES ('admin', '$2a$12$d7XsBoZJO/EFjEFY3QDJOeN0PUqiUqn9iOrJjFB5.b3RFsM9H3Ghy', 'ADMIN');
+VALUES ('admin', '$2a$12$bPjnKcxOg4MA0yr0NraJ5uKNIbDFRcohMdIK/VCYANK3HzkFEwDUW', 'ADMIN');
