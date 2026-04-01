@@ -9,4 +9,6 @@ module com.ticketsync {
     opens com.ticketsync to javafx.fxml;
     exports com.ticketsync;
     exports com.ticketsync.util;
+    exports com.ticketsync.model;
+    exports com.ticketsync.dao;
 }

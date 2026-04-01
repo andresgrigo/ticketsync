@@ -1,6 +1,6 @@
 package com.ticketsync;
 
-import com.ticketsync.util.SchemaVersionValidator;
+import com.ticketsync.util.DatabaseConfig;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -24,15 +24,12 @@ public class App extends Application {
     public void start(Stage stage) throws IOException {
         logStartupInformation();
         
-        // Validate database schema version on startup
-        try {
-            SchemaVersionValidator.validateSchemaVersion();
-        } catch (RuntimeException e) {
-            // Show error dialog instead of crashing silently
+        // Validate database connectivity and authentication on startup
+        if (!DatabaseConfig.testConnection()) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Database Connection Error");
-            alert.setHeaderText("Failed to validate database schema");
-            alert.setContentText(e.getMessage());
+            alert.setHeaderText("Cannot connect to the database");
+            alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
             alert.showAndWait();
             Platform.exit();
             return;
