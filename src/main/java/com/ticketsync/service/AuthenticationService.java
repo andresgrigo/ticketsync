@@ -81,15 +81,15 @@ public class AuthenticationService {
      * @return a non-empty {@link Optional} containing the authenticated {@link User}
      *         on success, or {@link Optional#empty()} on any failure
      * @throws IllegalArgumentException if {@code username} is null/blank or
-     *                                  {@code password} is null
+     *                                  {@code password} is null or blank
      * @throws SQLException if a database access error occurs
      */
     public Optional<User> login(String username, String password) throws SQLException {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("username must not be null or blank");
         }
-        if (password == null) {
-            throw new IllegalArgumentException("password must not be null");
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("password must not be null or blank");
         }
 
         LOGGER.info("Authentication attempt for username: {}", username);
@@ -99,6 +99,9 @@ public class AuthenticationService {
             if (userOpt.isPresent()
                     && PasswordHasher.verifyPassword(password, userOpt.get().getPasswordHash())) {
                 User user = userOpt.get();
+                SessionContext.getCurrentUser()
+                        .ifPresent(prev -> LOGGER.info("Replacing existing session for '{}' on new login.", prev.getUsername()));
+                SessionContext.clearCurrentUser();
                 SessionContext.setCurrentUser(user);
                 LOGGER.info("Authentication successful for username: {}", username);
                 return Optional.of(user);

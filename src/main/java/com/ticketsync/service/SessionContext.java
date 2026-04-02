@@ -81,13 +81,17 @@ public final class SessionContext {
      * Returns {@code true} if the currently authenticated user has the specified role.
      *
      * <p>Role comparison is case-insensitive (e.g., {@code "admin"} matches {@code "ADMIN"}).
-     * Returns {@code false} when no user is logged in.
+     * Returns {@code false} when no user is logged in or when {@code role} is {@code null}.
      *
-     * @param role the role name to check (e.g., {@code "ADMIN"}, {@code "VENDOR"})
+     * @param role the role name to check (e.g., {@code "ADMIN"}, {@code "VENDOR"});
+     *             if {@code null}, returns {@code false} without throwing
      * @return {@code true} if the current user's role matches {@code role}
      *         (case-insensitive); {@code false} otherwise
      */
     public static boolean hasRole(String role) {
+        if (role == null) {
+            return false;
+        }
         return getCurrentUser()
                 .map(User::getRole)
                 .map(r -> r.equalsIgnoreCase(role))

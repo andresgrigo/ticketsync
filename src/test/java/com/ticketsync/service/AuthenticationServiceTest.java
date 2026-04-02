@@ -124,14 +124,6 @@ class AuthenticationServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC6 is symmetric — already covered by AC5 tests above with ADMIN/VENDOR
-    // AC7: hasRole returns false when no user is logged in
+    // AC6 (VENDOR positive case) and AC7 (no-DB tests) — see SessionContextTest
     // -----------------------------------------------------------------------
-
-    @Test
-    void hasRole_whenNoUserLoggedIn_returnsFalse() {
-        // Context is already cleared in setUp()
-        assertFalse(SessionContext.hasRole("ADMIN"),
-                "hasRole('ADMIN') must be false when no user is logged in");
-    }
 }
