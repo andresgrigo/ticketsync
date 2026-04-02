@@ -97,9 +97,9 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>10.8.1</version>
                 <configuration>
-                    <url>jdbc:postgresql://localhost:5432/ticketsync</url>
-                    <user>postgres</user>
-                    <password>postgres</password>
+                    <url>${flyway.url}</url>
+                    <user>${flyway.user}</user>
+                    <password>${flyway.password}</password>
                     <locations>
                         <location>classpath:db/migration</location>
                     </locations>

@@ -96,13 +96,13 @@ mvn flyway:validate
 
 ### Database Connection Settings
 
-The application connects to PostgreSQL using:
+The application connects to PostgreSQL using credentials stored in `src/main/resources/jdbc.properties`, encrypted with Jasypt. The decryption key is supplied at runtime via the `TICKETSYNC_MASTER_KEY` environment variable (see below).
+
+Flyway migrations use separate credentials supplied via `~/.m2/settings.xml` (see [Maven Settings](#maven-settings) below). Default development values:
 - **URL:** `jdbc:postgresql://localhost:5432/ticketsync`
 - **User:** `postgres`
 - **Password:** `postgres`
 - **Port:** `5432` (default)
-
-**Note:** These credentials are for development only. Production credentials will be encrypted using Jasypt.
 
 ## Connection Pooling
 
@@ -148,6 +148,53 @@ try {
 ```
 
 **Important:** Calling `Connection.close()` returns the connection to the pool rather than closing the underlying PostgreSQL connection.
+
+## Environment Variables
+
+### `TICKETSYNC_MASTER_KEY`
+
+Required to start the application. This key is used by Jasypt to decrypt the database credentials in `jdbc.properties`.
+
+**Windows (PowerShell — session only):**
+```powershell
+$env:TICKETSYNC_MASTER_KEY="your-secret-key"
+```
+
+**Windows (permanent — system environment):**
+```powershell
+[System.Environment]::SetEnvironmentVariable("TICKETSYNC_MASTER_KEY", "your-secret-key", "User")
+```
+
+**Linux / macOS:**
+```bash
+export TICKETSYNC_MASTER_KEY="your-secret-key"
+```
+
+The application will show an error dialog and refuse to start if this variable is not set.
+
+## Maven Settings
+
+Flyway credentials are **not** stored in `pom.xml`. Instead, supply them in `~/.m2/settings.xml` so they are never committed to source control:
+
+```xml
+<settings>
+    <profiles>
+        <profile>
+            <id>ticketsync-local</id>
+            <properties>
+                <flyway.url>jdbc:postgresql://localhost:5432/ticketsync</flyway.url>
+                <flyway.user>postgres</flyway.user>
+                <flyway.password>your-db-password</flyway.password>
+            </properties>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>ticketsync-local</activeProfile>
+    </activeProfiles>
+</settings>
+```
+
+This file is created at `C:\Users\<you>\.m2\settings.xml` on Windows or `~/.m2/settings.xml` on Linux/macOS and is **never committed to git**.
 
 ## Build & Run
 
