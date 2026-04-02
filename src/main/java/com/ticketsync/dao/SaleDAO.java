@@ -51,7 +51,7 @@ public interface SaleDAO {
     
     /**
      * Retrieves all sales for a specific event.
-     * Used in admin sales reporting (future story).
+     * Used in admin sales reporting.
      * 
      * @param conn Active database connection
      * @param eventId Event ID to retrieve sales for
@@ -62,7 +62,7 @@ public interface SaleDAO {
     
     /**
      * Retrieves all sales by a specific vendor on a specific date.
-     * Used in vendor daily sales report (future story).
+     * Used in vendor daily sales report.
      * 
      * @param conn Active database connection
      * @param vendorId Vendor user ID

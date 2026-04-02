@@ -1,5 +1,6 @@
 package com.ticketsync;
 
+import atlantafx.base.theme.PrimerLight;
 import com.ticketsync.util.DatabaseConfig;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -9,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.net.URL;
 
 import java.io.IOException;
 import javafx.scene.control.Alert;
@@ -35,7 +37,9 @@ public class App extends Application {
             return;
         }
         
-        scene = new Scene(loadFXML("primary"), 640, 480);
+        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+        scene = new Scene(loadFXML("LoginView"), 640, 480);
+        stage.setTitle("TicketSync");
         stage.setScene(scene);
         stage.show();
     }
@@ -62,12 +66,16 @@ public class App extends Application {
         }
     }
 
-    static void setRoot(String fxml) throws IOException {
+    public static void setRoot(String fxml) throws IOException {
         scene.setRoot(loadFXML(fxml));
     }
 
     private static Parent loadFXML(String fxml) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
+        URL resource = App.class.getResource(fxml + ".fxml");
+        if (resource == null) {
+            throw new IOException("FXML resource not found: " + fxml + ".fxml");
+        }
+        FXMLLoader fxmlLoader = new FXMLLoader(resource);
         return fxmlLoader.load();
     }
 
