@@ -4,6 +4,8 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jasypt.properties.EncryptableProperties;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -54,37 +56,60 @@ public final class DatabaseConfig {
     // Static initializer - runs once when class loads
     static {
         try {
+            // Step 1 — Read and validate master key
+            String masterKey = System.getenv("TICKETSYNC_MASTER_KEY");
+            if (masterKey == null || masterKey.isBlank()) {
+                LOGGER.error("TICKETSYNC_MASTER_KEY environment variable is not set — cannot start application");
+                throw new IllegalStateException("TICKETSYNC_MASTER_KEY environment variable is not set");
+            }
+
+            // Step 2 — Create encryptor and load EncryptableProperties
+            EncryptableProperties props = new EncryptableProperties(EncryptionUtil.createEncryptor(masterKey));
+            try (InputStream in = DatabaseConfig.class.getClassLoader()
+                    .getResourceAsStream("jdbc.properties")) {
+                if (in == null) {
+                    throw new IllegalStateException("jdbc.properties not found on classpath");
+                }
+                props.load(in);
+            }
+
+            // Step 3 — Configure HikariCP from decrypted properties
+            String jdbcUrl = props.getProperty("jdbc.url");
+            String jdbcUsername = props.getProperty("jdbc.username");
+            String jdbcPassword = props.getProperty("jdbc.password");
+            if (jdbcUrl == null || jdbcUsername == null || jdbcPassword == null) {
+                throw new IllegalStateException(
+                        "jdbc.properties is missing required key(s): jdbc.url, jdbc.username, or jdbc.password");
+            }
             HikariConfig config = new HikariConfig();
-            
-            // Database connection settings
-            config.setJdbcUrl("jdbc:postgresql://localhost:5432/ticketsync");
-            config.setUsername("postgres");
-            config.setPassword("postgres");
+            config.setJdbcUrl(jdbcUrl);
+            config.setUsername(jdbcUsername);
+            config.setPassword(jdbcPassword); // decrypted transparently by EncryptableProperties
             config.setDriverClassName("org.postgresql.Driver");
-            
+
             // Pool sizing for desktop app with concurrent operations:
             // - 1 persistent connection for PostgreSQL LISTEN/NOTIFY
             // - 1-2 connections for transaction processing
             // - 1-2 connections for concurrent queries/health checks
             config.setMaximumPoolSize(5);
             config.setMinimumIdle(2);
-            
+
             // Timeout configuration
             config.setConnectionTimeout(10000);  // 10 seconds max wait
             config.setIdleTimeout(300000);       // 5 minutes idle before release
             config.setMaxLifetime(1800000);      // 30 minutes max connection age
-            
+
             // Health check configuration
             config.setConnectionTestQuery("SELECT 1");
-            
+
             // Pool name for logging
             config.setPoolName("TicketSync-Pool");
-            
+
             dataSource = new HikariDataSource(config);
-            
+
             // Validate connectivity immediately to fail-fast if database is unreachable
             try (Connection testConn = dataSource.getConnection()) {
-                LOGGER.info("HikariCP connection pool initialized successfully: {} max connections", 
+                LOGGER.info("HikariCP connection pool initialized successfully: {} max connections",
                           config.getMaximumPoolSize());
             }
         } catch (Exception e) {

@@ -7,6 +7,7 @@ module com.ticketsync {
     requires org.apache.logging.log4j.core;
     requires jbcrypt;
     requires atlantafx.base;
+    requires jasypt;
 
     opens com.ticketsync to javafx.fxml;
     opens com.ticketsync.util;

@@ -14,6 +14,7 @@ import java.net.URL;
 
 import java.io.IOException;
 import javafx.scene.control.Alert;
+
 /**
  * JavaFX App
  */
@@ -25,25 +26,44 @@ public class App extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         logStartupInformation();
-        
-        // Validate database connectivity and authentication on startup
-        if (!DatabaseConfig.testConnection()) {
+
+        // Check for missing TICKETSYNC_MASTER_KEY before class initialization fires
+        try {
+            if (!DatabaseConfig.testConnection()) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Database Connection Error");
+                alert.setHeaderText("Cannot connect to the database");
+                alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
+                alert.showAndWait();
+                Platform.exit();
+                return;
+            }
+        } catch (ExceptionInInitializerError e) {
+            Throwable cause = e.getCause();
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Database Connection Error");
-            alert.setHeaderText("Cannot connect to the database");
-            alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
+            if (cause instanceof IllegalStateException && cause.getMessage() != null
+                    && cause.getMessage().contains("TICKETSYNC_MASTER_KEY")) {
+                alert.setTitle("Missing Environment Variable");
+                alert.setHeaderText("Missing required environment variable: TICKETSYNC_MASTER_KEY");
+                alert.setContentText(
+                        "Missing required environment variable: TICKETSYNC_MASTER_KEY. Set this variable before starting the application.");
+            } else {
+                alert.setTitle("Database Connection Error");
+                alert.setHeaderText("Cannot connect to the database");
+                alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
+            }
             alert.showAndWait();
             Platform.exit();
             return;
         }
-        
+
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         scene = new Scene(loadFXML("LoginView"), 640, 480);
         stage.setTitle("TicketSync");
         stage.setScene(scene);
         stage.show();
     }
-    
+
     private void logStartupInformation() {
         LOGGER.info("=================================================");
         LOGGER.info("TicketSync Application Starting");
@@ -56,7 +76,7 @@ public class App extends Application {
         LOGGER.info("User Directory: {}", System.getProperty("user.dir", "unknown"));
         LOGGER.info("=================================================");
     }
-    
+
     @Override
     public void stop() throws Exception {
         try {
