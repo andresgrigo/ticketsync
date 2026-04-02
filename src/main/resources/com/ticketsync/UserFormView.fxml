@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+
+<GridPane hgap="10" vgap="12" prefWidth="380"
+          xmlns="http://javafx.com/javafx/21"
+          xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="com.ticketsync.controller.UserFormController">
+    <padding>
+        <javafx.geometry.Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <columnConstraints>
+        <ColumnConstraints minWidth="120" halignment="RIGHT"/>
+        <ColumnConstraints hgrow="ALWAYS"/>
+    </columnConstraints>
+
+    <!-- Row 0: Username -->
+    <Label text="Username:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+    <TextField fx:id="usernameField" promptText="Enter username"
+               GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+    <!-- Row 1: Password -->
+    <Label fx:id="passwordLabel" text="Password:"
+           GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+    <PasswordField fx:id="passwordField" promptText="Min. 8 characters"
+                   GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+    <!-- Row 2: Confirm Password -->
+    <Label fx:id="confirmPasswordLabel" text="Confirm Password:"
+           GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+    <PasswordField fx:id="confirmPasswordField"
+                   GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+    <!-- Row 3: Role -->
+    <Label text="Role:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+    <ComboBox fx:id="roleComboBox" prefWidth="200"
+              GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+    <!-- Row 4: Validation error — opacity-based toggle keeps row height constant -->
+    <Label fx:id="errorLabel" text="" opacity="0"
+           style="-fx-text-fill: #D32F2F; -fx-font-size: 12px;"
+           GridPane.rowIndex="4" GridPane.columnIndex="0"
+           GridPane.columnSpan="2"/>
+</GridPane>

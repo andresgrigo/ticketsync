@@ -3,6 +3,7 @@ package com.ticketsync.controller;
 import com.ticketsync.App;
 import com.ticketsync.model.User;
 import com.ticketsync.service.AuthenticationService;
+import com.ticketsync.service.SessionContext;
 import com.ticketsync.viewmodel.LoginViewModel;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -138,6 +139,13 @@ public class LoginController {
     /**
      * Navigates to the appropriate view for the authenticated user's role.
      *
+     * <p>This method runs on the FX application thread (invoked from
+     * {@code Task.setOnSucceeded}). It sets the current user in
+     * {@link SessionContext} on the FX thread before loading the target
+     * FXML so that controllers such as {@code AdminDashboardController}
+     * can read the session via {@code SessionContext.getCurrentUser()}
+     * during their {@code initialize()} lifecycle method.
+     *
      * @param user the authenticated {@link User}; must not be {@code null}
      */
     private void navigateToRoleView(User user) {
@@ -148,6 +156,18 @@ public class LoginController {
             return;
         }
         try {
+            // Populate the FX thread's ThreadLocal so AdminDashboardController.initialize()
+            // can read the session. AuthenticationService.login() runs on a background Task
+            // thread and sets the user there, but this method runs on the FX thread.
+            try {
+                SessionContext.setCurrentUser(user);
+            } catch (IllegalArgumentException ex) {
+                // user is guaranteed non-null here; this branch is unreachable in practice
+                LOGGER.error("Unexpected null user passed to navigateToRoleView", ex);
+                viewModel.errorMessageProperty().set("A system error occurred. Please try again.");
+                return;
+            }
+
             if ("ADMIN".equalsIgnoreCase(role)) {
                 App.setRoot("AdminDashboardView");
             } else if ("VENDOR".equalsIgnoreCase(role)) {
