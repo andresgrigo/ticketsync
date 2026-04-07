@@ -12,6 +12,7 @@ module com.ticketsync {
     opens com.ticketsync to javafx.fxml;
     opens com.ticketsync.util;
     opens com.ticketsync.controller to javafx.fxml;
+    opens com.ticketsync.viewmodel;
     exports com.ticketsync;
     exports com.ticketsync.util;
     exports com.ticketsync.model;
