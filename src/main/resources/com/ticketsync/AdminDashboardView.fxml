@@ -71,12 +71,40 @@
                 </content>
             </Tab>
 
-            <!-- Events Tab (stub) -->
+            <!-- Events Tab -->
             <Tab text="Events">
                 <content>
-                    <VBox alignment="CENTER">
-                        <Label text="Event Management — Coming"/>
-                    </VBox>
+                    <BorderPane>
+                        <top>
+                            <ToolBar fx:id="eventsToolbar">
+                                <Button fx:id="createEventButton" text="+ Create Event"
+                                        onAction="#handleCreateEvent"/>
+                                <Button fx:id="editEventButton" text="Edit Event"
+                                        onAction="#handleEditEvent" disable="true"/>
+                                <Button fx:id="deleteEventButton" text="Delete Event"
+                                        onAction="#handleDeleteEvent" disable="true"/>
+                                <Button fx:id="toggleActivateButton" text="Activate"
+                                        onAction="#handleToggleActivate" disable="true"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="eventsStatusLabel"
+                                       style="-fx-text-fill: #666;"/>
+                            </ToolBar>
+                        </top>
+                        <center>
+                            <TableView fx:id="eventsTable">
+                                <placeholder>
+                                    <Label text="No events found"/>
+                                </placeholder>
+                                <columns>
+                                    <TableColumn fx:id="eventNameColumn" text="Name" prefWidth="180"/>
+                                    <TableColumn fx:id="eventDateColumn" text="Date" prefWidth="135"/>
+                                    <TableColumn fx:id="eventVenueColumn" text="Venue" prefWidth="150"/>
+                                    <TableColumn fx:id="eventDescColumn" text="Description" prefWidth="160"/>
+                                    <TableColumn fx:id="eventStatusColumn" text="Status" prefWidth="90"/>
+                                </columns>
+                            </TableView>
+                        </center>
+                    </BorderPane>
                 </content>
             </Tab>
 

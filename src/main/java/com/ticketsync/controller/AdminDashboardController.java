@@ -1,10 +1,13 @@
 package com.ticketsync.controller;
 
 import com.ticketsync.App;
+import com.ticketsync.model.Event;
 import com.ticketsync.model.User;
 import com.ticketsync.service.AuthenticationService;
+import com.ticketsync.service.EventService;
 import com.ticketsync.service.SessionContext;
 import com.ticketsync.service.UserManagementService;
+import com.ticketsync.viewmodel.EventManagementViewModel;
 import com.ticketsync.viewmodel.UserManagementViewModel;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -19,6 +22,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +53,9 @@ public class AdminDashboardController {
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final UserManagementService userService = new UserManagementService();
+    private final EventService eventService = new EventService();
     private UserManagementViewModel viewModel;
+    private EventManagementViewModel eventsViewModel;
     private User currentAdminUser;
 
     @FXML private Label loggedInUserLabel;
@@ -62,6 +68,18 @@ public class AdminDashboardController {
     @FXML private Button editUserButton;
     @FXML private Button deleteUserButton;
     @FXML private Label statusLabel;
+
+    @FXML private TableView<Event> eventsTable;
+    @FXML private TableColumn<Event, String> eventNameColumn;
+    @FXML private TableColumn<Event, String> eventDateColumn;
+    @FXML private TableColumn<Event, String> eventVenueColumn;
+    @FXML private TableColumn<Event, String> eventDescColumn;
+    @FXML private TableColumn<Event, String> eventStatusColumn;
+    @FXML private Button createEventButton;
+    @FXML private Button editEventButton;
+    @FXML private Button deleteEventButton;
+    @FXML private Button toggleActivateButton;
+    @FXML private Label eventsStatusLabel;
 
     /**
      * Initialises the controller after FXML injection.
@@ -123,6 +141,68 @@ public class AdminDashboardController {
         deleteUserButton.disableProperty().bind(noSelectionOrSelf);
 
         loadUsersAsync();
+
+        // ---- Event Management setup ----
+        eventsViewModel = new EventManagementViewModel();
+
+        eventNameColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().getName() != null ? data.getValue().getName() : ""));
+
+        eventDateColumn.setCellValueFactory(data -> {
+            LocalDateTime dt = data.getValue().getEventDate();
+            return new SimpleStringProperty(dt != null ? dt.format(DT_FMT) : "\u2014");
+        });
+
+        eventVenueColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().getVenue() != null
+                        ? data.getValue().getVenue() : "\u2014"));
+
+        eventDescColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().getDescription() != null
+                        ? data.getValue().getDescription() : ""));
+
+        eventStatusColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().isActive() ? "Active" : "Inactive"));
+        eventStatusColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String val, boolean empty) {
+                super.updateItem(val, empty);
+                if (empty || val == null) {
+                    setText(null);
+                    setStyle("");
+                } else if ("Active".equals(val)) {
+                    setText("Active");
+                    setStyle("-fx-text-fill: #2E7D32; -fx-font-weight: bold;");
+                } else {
+                    setText("Inactive");
+                    setStyle("-fx-text-fill: #757575;");
+                }
+            }
+        });
+
+        eventsTable.setItems(eventsViewModel.eventsProperty());
+
+        eventsViewModel.selectedEventProperty().bind(
+                eventsTable.getSelectionModel().selectedItemProperty());
+
+        BooleanBinding noEventSelection =
+                eventsTable.getSelectionModel().selectedItemProperty().isNull();
+        editEventButton.disableProperty().bind(noEventSelection);
+        deleteEventButton.disableProperty().bind(noEventSelection);
+        toggleActivateButton.disableProperty().bind(noEventSelection);
+
+        toggleActivateButton.textProperty().bind(
+                Bindings.createStringBinding(
+                        () -> {
+                            Event sel = eventsTable.getSelectionModel().getSelectedItem();
+                            if (sel == null) return "Activate";
+                            return sel.isActive() ? "Deactivate" : "Activate";
+                        },
+                        eventsTable.getSelectionModel().selectedItemProperty()
+                )
+        );
+
+        loadEventsAsync();
     }
 
     /**
@@ -307,6 +387,251 @@ public class AdminDashboardController {
     }
 
     // -------------------------------------------------------------------------
+    // Event Management handlers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Loads all events from the database on a background daemon thread and
+     * populates the {@link EventManagementViewModel} on the FX thread when
+     * complete (AC: 1, 12).
+     *
+     * <p>Sets the status label to "Loading…" during the operation and clears
+     * it on success. On failure an error message is displayed.
+     */
+    private void loadEventsAsync() {
+        eventsStatusLabel.setText("Loading...");
+        User capturedAdmin = currentAdminUser;
+        Task<List<Event>> task = new Task<>() {
+            @Override
+            protected List<Event> call() throws Exception {
+                SessionContext.setCurrentUser(capturedAdmin);
+                try {
+                    return eventService.findAllEvents();
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+            }
+        };
+        task.setOnSucceeded(e -> {
+            eventsViewModel.setEvents(task.getValue());
+            eventsStatusLabel.setText("");
+        });
+        task.setOnFailed(e -> {
+            LOGGER.error("Failed to load events", task.getException());
+            eventsStatusLabel.setText("Error loading events");
+        });
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /**
+     * Handles the "Create Event" button action (AC: 3, 4, 5).
+     *
+     * <p>Opens {@code EventFormView.fxml} in a dialog. An event filter on
+     * the OK button calls {@link EventFormController#validate()} before
+     * allowing the dialog to close. On confirmation the event is created via
+     * {@link EventService#createEvent(Event)} on a background thread.
+     */
+    @FXML
+    private void handleCreateEvent() {
+        FXMLLoader loader = createEventFXMLLoader();
+        if (loader == null) return;
+
+        EventFormController formController = loader.getController();
+        formController.setMode(EventFormController.Mode.CREATE);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Create Event");
+        dialog.getDialogPane().setContent((Parent) loader.getRoot());
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(ActionEvent.ACTION, event -> {
+            if (!formController.validate()) event.consume();
+        });
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            Event newEvent = formController.getEventFromForm();
+            User capturedAdmin = currentAdminUser;
+            Task<Integer> task = new Task<>() {
+                @Override
+                protected Integer call() throws Exception {
+                    SessionContext.setCurrentUser(capturedAdmin);
+                    try {
+                        return eventService.createEvent(newEvent);
+                    } finally {
+                        SessionContext.clearCurrentUser();
+                    }
+                }
+            };
+            task.setOnSucceeded(e -> loadEventsAsync());
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+                LOGGER.error("Create event failed", ex);
+                String title = (ex instanceof SecurityException) ? "Access Denied" : "Create Event Failed";
+                String msg   = (ex instanceof SecurityException) ? "ADMIN role is required." : "Operation failed. Please try again.";
+                showErrorAlert(title, msg);
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        }
+    }
+
+    /**
+     * Handles the "Edit Event" button action (AC: 6, 7).
+     *
+     * <p>Pre-populates the event form with the selected event's data.
+     * On confirmation the event is updated via
+     * {@link EventService#updateEvent(Event)}, preserving identity fields.
+     */
+    @FXML
+    private void handleEditEvent() {
+        Event selectedEvent = eventsViewModel.selectedEventProperty().get();
+        if (selectedEvent == null) return;
+
+        FXMLLoader loader = createEventFXMLLoader();
+        if (loader == null) return;
+
+        EventFormController formController = loader.getController();
+        formController.setMode(EventFormController.Mode.EDIT);
+        formController.setEvent(selectedEvent);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Edit Event");
+        dialog.getDialogPane().setContent((Parent) loader.getRoot());
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(ActionEvent.ACTION, event -> {
+            if (!formController.validate()) event.consume();
+        });
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            Event updatedEvent = formController.getEventFromForm();
+            User capturedAdmin = currentAdminUser;
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    SessionContext.setCurrentUser(capturedAdmin);
+                    try {
+                        eventService.updateEvent(updatedEvent);
+                    } finally {
+                        SessionContext.clearCurrentUser();
+                    }
+                    return null;
+                }
+            };
+            task.setOnSucceeded(e -> loadEventsAsync());
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+                LOGGER.error("Edit event failed", ex);
+                String title = (ex instanceof SecurityException) ? "Access Denied" : "Edit Event Failed";
+                String msg   = (ex instanceof SecurityException) ? "ADMIN role is required." : "Operation failed. Please try again.";
+                showErrorAlert(title, msg);
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        }
+    }
+
+    /**
+     * Handles the "Delete Event" button action (AC: 8).
+     *
+     * <p>Shows a confirmation alert before permanently deleting the selected
+     * event and all associated seating data.
+     */
+    @FXML
+    private void handleDeleteEvent() {
+        Event selectedEvent = eventsViewModel.selectedEventProperty().get();
+        if (selectedEvent == null) return;
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Event");
+        confirm.setHeaderText(null);
+        String eventName = selectedEvent.getName() != null ? selectedEvent.getName() : "(unnamed)";
+        confirm.setContentText("Delete event '" + eventName
+                + "'? This will remove all associated seating.");
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            User capturedAdmin = currentAdminUser;
+            int eventId = selectedEvent.getEventId();
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    SessionContext.setCurrentUser(capturedAdmin);
+                    try {
+                        eventService.deleteEvent(eventId);
+                    } finally {
+                        SessionContext.clearCurrentUser();
+                    }
+                    return null;
+                }
+            };
+            task.setOnSucceeded(e -> loadEventsAsync());
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+                LOGGER.error("Delete event failed", ex);
+                String title = (ex instanceof SecurityException) ? "Access Denied" : "Delete Event Failed";
+                String msg   = (ex instanceof SecurityException) ? "ADMIN role is required." : "Operation failed. Please try again.";
+                showErrorAlert(title, msg);
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        }
+    }
+
+    /**
+     * Handles the "Activate" / "Deactivate" toggle button action (AC: 9, 11).
+     *
+     * <p>Calls {@link EventService#activateEvent(int)} or
+     * {@link EventService#deactivateEvent(int)} depending on the selected
+     * event's current active state, then refreshes the table.
+     */
+    @FXML
+    private void handleToggleActivate() {
+        Event selectedEvent = eventsViewModel.selectedEventProperty().get();
+        if (selectedEvent == null) return;
+
+        boolean currentlyActive = selectedEvent.isActive();
+        int eventId = selectedEvent.getEventId();
+        User capturedAdmin = currentAdminUser;
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                SessionContext.setCurrentUser(capturedAdmin);
+                try {
+                    if (currentlyActive) {
+                        eventService.deactivateEvent(eventId);
+                    } else {
+                        eventService.activateEvent(eventId);
+                    }
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+                return null;
+            }
+        };
+        task.setOnSucceeded(e -> loadEventsAsync());
+        task.setOnFailed(e -> {
+            Throwable ex = task.getException();
+            LOGGER.error("Toggle activate event failed", ex);
+            String title = (ex instanceof SecurityException) ? "Access Denied" : "Operation Failed";
+            String msg   = (ex instanceof SecurityException) ? "ADMIN role is required." : "Operation failed. Please try again.";
+            showErrorAlert(title, msg);
+        });
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
 
@@ -325,6 +650,25 @@ public class AdminDashboardController {
         } catch (IOException ex) {
             LOGGER.error("Failed to load UserFormView.fxml", ex);
             showErrorAlert("Internal Error", "Could not open the user form. Please try again.");
+            return null;
+        }
+    }
+
+    /**
+     * Loads {@code EventFormView.fxml} and returns the initialised
+     * {@link FXMLLoader} so callers can retrieve both the root node and
+     * the {@link EventFormController}.
+     *
+     * @return the loaded {@link FXMLLoader}, or {@code null} on I/O error
+     */
+    private FXMLLoader createEventFXMLLoader() {
+        try {
+            FXMLLoader loader = new FXMLLoader(App.class.getResource("EventFormView.fxml"));
+            loader.load(); // return value is already accessible via loader.getRoot()
+            return loader;
+        } catch (IOException ex) {
+            LOGGER.error("Failed to load EventFormView.fxml", ex);
+            showErrorAlert("Internal Error", "Could not open the event form. Please try again.");
             return null;
         }
     }
