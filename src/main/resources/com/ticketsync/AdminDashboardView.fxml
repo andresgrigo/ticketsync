@@ -8,8 +8,12 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -128,16 +132,60 @@
                             </ToolBar>
                         </top>
                         <center>
-                            <TableView fx:id="zonesTable">
-                                <placeholder>
-                                    <Label text="Select an event in the Events tab to manage zones"/>
-                                </placeholder>
-                                <columns>
-                                    <TableColumn fx:id="zonesNameColumn" text="Zone Name" prefWidth="200"/>
-                                    <TableColumn fx:id="zonesPriceColumn" text="Price (€)" prefWidth="120"/>
-                                    <TableColumn fx:id="zonesSeatCountColumn" text="Seat Count" prefWidth="100"/>
-                                </columns>
-                            </TableView>
+                            <SplitPane orientation="VERTICAL" dividerPositions="0.4">
+                                <!-- Top pane: existing zones TableView -->
+                                <TableView fx:id="zonesTable">
+                                    <placeholder>
+                                        <Label text="Select an event in the Events tab to manage zones"/>
+                                    </placeholder>
+                                    <columns>
+                                        <TableColumn fx:id="zonesNameColumn" text="Zone Name" prefWidth="200"/>
+                                        <TableColumn fx:id="zonesPriceColumn" text="Price (€)" prefWidth="120"/>
+                                        <TableColumn fx:id="zonesSeatCountColumn" text="Seat Count" prefWidth="100"/>
+                                    </columns>
+                                </TableView>
+                                <!-- Bottom pane: seat layout editor -->
+                                <BorderPane>
+                                    <top>
+                                        <ToolBar fx:id="seatsToolbar">
+                                            <ComboBox fx:id="seatsZoneSelector" prefWidth="200" promptText="Select zone…"/>
+                                            <Label text="Row:"/>
+                                            <TextField fx:id="seatsRowField" prefWidth="100" promptText="Row (e.g. A)"/>
+                                            <Label text="From:"/>
+                                            <TextField fx:id="seatsFromField" prefWidth="70" promptText="1"/>
+                                            <Label text="To:"/>
+                                            <TextField fx:id="seatsToField" prefWidth="70" promptText="10"/>
+                                            <Button fx:id="seatsGenerateButton" text="Generate Seats"
+                                                    disable="true" onAction="#handleGenerateSeats"/>
+                                            <Region HBox.hgrow="ALWAYS"/>
+                                            <Button fx:id="seatsDeleteButton" text="Delete Selected"
+                                                    disable="true" onAction="#handleDeleteSeats"/>
+                                        </ToolBar>
+                                    </top>
+                                    <center>
+                                        <SplitPane dividerPositions="0.45">
+                                            <TableView fx:id="seatsTable">
+                                                <placeholder>
+                                                    <Label text="Select a zone to manage its seats"/>
+                                                </placeholder>
+                                                <columns>
+                                                    <TableColumn fx:id="seatsRowColumn" text="Row" prefWidth="80"/>
+                                                    <TableColumn fx:id="seatsSeatColumn" text="Seat" prefWidth="80"/>
+                                                    <TableColumn fx:id="seatsStatusColumn" text="Status" prefWidth="100"/>
+                                                </columns>
+                                            </TableView>
+                                            <VBox>
+                                                <ScrollPane fx:id="seatMapScrollPane" VBox.vgrow="ALWAYS"
+                                                            fitToHeight="false" fitToWidth="false"
+                                                            hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
+                                                    <Canvas fx:id="seatMapCanvas" width="600" height="400"/>
+                                                </ScrollPane>
+                                                <Label fx:id="seatMapHoverLabel" style="-fx-padding: 4;"/>
+                                            </VBox>
+                                        </SplitPane>
+                                    </center>
+                                </BorderPane>
+                            </SplitPane>
                         </center>
                     </BorderPane>
                 </content>
