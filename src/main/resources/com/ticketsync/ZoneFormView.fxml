@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+
+<GridPane hgap="10" vgap="12" prefWidth="380"
+          xmlns="http://javafx.com/javafx/21"
+          xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="com.ticketsync.controller.ZoneFormController">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <columnConstraints>
+        <ColumnConstraints minWidth="130" halignment="RIGHT"/>
+        <ColumnConstraints hgrow="ALWAYS"/>
+    </columnConstraints>
+
+    <!-- Row 0: Name -->
+    <Label text="Zone Name:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+    <TextField fx:id="nameField" promptText="Enter zone name"
+               GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+    <!-- Row 1: Price -->
+    <Label text="Price (€):" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+    <TextField fx:id="priceField" promptText="0.00"
+               GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+    <!-- Row 2: Validation error — opacity-based toggle keeps row height constant -->
+    <Label fx:id="errorLabel" text="" opacity="0"
+           style="-fx-text-fill: #D32F2F; -fx-font-size: 12px;"
+           GridPane.rowIndex="2" GridPane.columnIndex="0"
+           GridPane.columnSpan="2"/>
+</GridPane>

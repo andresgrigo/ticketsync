@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
@@ -108,12 +109,37 @@
                 </content>
             </Tab>
 
-            <!-- Seating Tab (stub) -->
+            <!-- Seating Tab -->
             <Tab text="Seating">
                 <content>
-                    <VBox alignment="CENTER">
-                        <Label text="Seating Configuration — Coming"/>
-                    </VBox>
+                    <BorderPane>
+                        <top>
+                            <ToolBar fx:id="zonesToolbar">
+                                <ComboBox fx:id="zonesEventSelector" promptText="Select event…" prefWidth="220"/>
+                                <Button fx:id="zonesAddButton" text="+ Add Zone"
+                                        onAction="#handleAddZone" disable="true"/>
+                                <Button fx:id="zonesEditButton" text="Edit Zone"
+                                        onAction="#handleEditZone" disable="true"/>
+                                <Button fx:id="zonesDeleteButton" text="Delete Zone"
+                                        onAction="#handleDeleteZone" disable="true"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="zonesStatusLabel"
+                                       style="-fx-text-fill: #666;"/>
+                            </ToolBar>
+                        </top>
+                        <center>
+                            <TableView fx:id="zonesTable">
+                                <placeholder>
+                                    <Label text="Select an event in the Events tab to manage zones"/>
+                                </placeholder>
+                                <columns>
+                                    <TableColumn fx:id="zonesNameColumn" text="Zone Name" prefWidth="200"/>
+                                    <TableColumn fx:id="zonesPriceColumn" text="Price (€)" prefWidth="120"/>
+                                    <TableColumn fx:id="zonesSeatCountColumn" text="Seat Count" prefWidth="100"/>
+                                </columns>
+                            </TableView>
+                        </center>
+                    </BorderPane>
                 </content>
             </Tab>
 

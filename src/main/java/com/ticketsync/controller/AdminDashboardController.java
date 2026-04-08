@@ -3,12 +3,15 @@ package com.ticketsync.controller;
 import com.ticketsync.App;
 import com.ticketsync.model.Event;
 import com.ticketsync.model.User;
+import com.ticketsync.model.Zone;
 import com.ticketsync.service.AuthenticationService;
 import com.ticketsync.service.EventService;
 import com.ticketsync.service.SessionContext;
 import com.ticketsync.service.UserManagementService;
+import com.ticketsync.service.ZoneService;
 import com.ticketsync.viewmodel.EventManagementViewModel;
 import com.ticketsync.viewmodel.UserManagementViewModel;
+import com.ticketsync.viewmodel.ZoneManagementViewModel;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleStringProperty;
@@ -20,8 +23,10 @@ import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -29,11 +34,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import javafx.util.Pair;
 
 /**
  * FXML controller for the admin dashboard view ({@code AdminDashboardView.fxml}).
@@ -80,6 +90,20 @@ public class AdminDashboardController {
     @FXML private Button deleteEventButton;
     @FXML private Button toggleActivateButton;
     @FXML private Label eventsStatusLabel;
+
+    @FXML private TableView<Zone> zonesTable;
+    @FXML private TableColumn<Zone, String> zonesNameColumn;
+    @FXML private TableColumn<Zone, String> zonesPriceColumn;
+    @FXML private TableColumn<Zone, String> zonesSeatCountColumn;
+    @FXML private ComboBox<Event> zonesEventSelector;
+    @FXML private Button zonesAddButton;
+    @FXML private Button zonesEditButton;
+    @FXML private Button zonesDeleteButton;
+    @FXML private Label zonesStatusLabel;
+
+    private ZoneManagementViewModel zonesViewModel;
+    private final ZoneService zoneService = new ZoneService();
+    private Map<Integer, Integer> zoneSeatCounts = new HashMap<>();
 
     /**
      * Initialises the controller after FXML injection.
@@ -203,6 +227,58 @@ public class AdminDashboardController {
         );
 
         loadEventsAsync();
+
+        // ---- Zone Management setup ----
+        zonesViewModel = new ZoneManagementViewModel();
+
+        zonesTable.setItems(zonesViewModel.zonesProperty());
+
+        zonesNameColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().getName() != null
+                        ? data.getValue().getName() : ""));
+        zonesPriceColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().getPrice() != null
+                        ? String.format("%.2f", data.getValue().getPrice()) : "\u2014"));
+        zonesSeatCountColumn.setCellValueFactory(data -> {
+            int count = zoneSeatCounts.getOrDefault(data.getValue().getZoneId(), 0);
+            return new SimpleStringProperty(String.valueOf(count));
+        });
+
+        zonesViewModel.selectedZoneProperty().bind(
+                zonesTable.getSelectionModel().selectedItemProperty());
+
+        zonesEditButton.disableProperty().bind(
+                zonesTable.getSelectionModel().selectedItemProperty().isNull());
+        zonesDeleteButton.disableProperty().bind(
+                zonesTable.getSelectionModel().selectedItemProperty().isNull());
+
+        // ---- Zone event selector ----
+        zonesEventSelector.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(Event item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getName());
+            }
+        });
+        zonesEventSelector.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Event item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "Select event…" : item.getName());
+            }
+        });
+        zonesEventSelector.getSelectionModel().selectedItemProperty().addListener((obs, oldEvent, newEvent) -> {
+            if (newEvent != null) {
+                zonesAddButton.setDisable(false);
+                loadZonesAsync(newEvent.getEventId());
+            } else {
+                zonesAddButton.setDisable(true);
+                zoneSeatCounts.clear();
+                zonesViewModel.setZones(Collections.emptyList());
+                zonesStatusLabel.setText("");
+            }
+        });
+        loadZonesEventSelectorAsync();
     }
 
     /**
@@ -726,6 +802,252 @@ public class AdminDashboardController {
             App.setRoot("LoginView");
         } catch (IOException ex) {
             LOGGER.error("Failed to navigate to LoginView", ex);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Zone Management handlers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Loads all events into the Seating tab event selector on a background thread.
+     */
+    private void loadZonesEventSelectorAsync() {
+        User capturedAdmin = currentAdminUser;
+        Task<List<Event>> task = new Task<>() {
+            @Override
+            protected List<Event> call() throws Exception {
+                SessionContext.setCurrentUser(capturedAdmin);
+                try {
+                    return eventService.findAllEvents();
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+            }
+        };
+        task.setOnSucceeded(e -> {
+            Event previousSelection = zonesEventSelector.getSelectionModel().getSelectedItem();
+            zonesEventSelector.getItems().setAll(task.getValue());
+            // Restore previous selection if it still exists
+            if (previousSelection != null) {
+                task.getValue().stream()
+                        .filter(ev -> ev.getEventId() == previousSelection.getEventId())
+                        .findFirst()
+                        .ifPresent(ev -> zonesEventSelector.getSelectionModel().select(ev));
+            }
+        });
+        task.setOnFailed(e -> LOGGER.error("Failed to load events for zone selector", task.getException()));
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /**
+     * Loads zones and seat counts for the specified event on a background daemon
+     * thread and populates the {@link ZoneManagementViewModel} on the FX thread.
+     *
+     * @param eventId the event whose zones should be loaded
+     */
+    private void loadZonesAsync(int eventId) {
+        zonesStatusLabel.setText("Loading...");
+        Task<Pair<List<Zone>, Map<Integer, Integer>>> task = new Task<>() {
+            @Override
+            protected Pair<List<Zone>, Map<Integer, Integer>> call() throws Exception {
+                List<Zone> zones = zoneService.getZonesByEvent(eventId);
+                Map<Integer, Integer> counts = new HashMap<>();
+                for (Zone z : zones) {
+                    counts.put(z.getZoneId(), zoneService.countSeatsForZone(z.getZoneId()));
+                }
+                return new Pair<>(zones, counts);
+            }
+        };
+        task.setOnSucceeded(e -> {
+            Pair<List<Zone>, Map<Integer, Integer>> result = task.getValue();
+            zoneSeatCounts = result.getValue();
+            zonesViewModel.setZones(result.getKey());
+            zonesStatusLabel.setText("");
+        });
+        task.setOnFailed(e -> {
+            LOGGER.error("Failed to load zones", task.getException());
+            zonesStatusLabel.setText("Error loading zones");
+        });
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /**
+     * Handles the "+ Add Zone" button action (AC: 2, 7).
+     */
+    @FXML
+    private void handleAddZone() {
+        Event selectedEvent = zonesEventSelector.getSelectionModel().getSelectedItem();
+        if (selectedEvent == null) return;
+
+        FXMLLoader loader = createZoneFXMLLoader();
+        if (loader == null) return;
+
+        ZoneFormController formController = loader.getController();
+        formController.setMode(ZoneFormController.Mode.CREATE);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Add Zone");
+        dialog.getDialogPane().setContent((Parent) loader.getRoot());
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(ActionEvent.ACTION, event -> {
+            if (!formController.validate()) event.consume();
+        });
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            String name = formController.getName();
+            BigDecimal price = formController.getPrice();
+            int eventId = selectedEvent.getEventId();
+            User capturedAdmin = currentAdminUser;
+            Task<Integer> task = new Task<>() {
+                @Override
+                protected Integer call() throws Exception {
+                    SessionContext.setCurrentUser(capturedAdmin);
+                    try {
+                        return zoneService.createZone(eventId, name, price);
+                    } finally {
+                        SessionContext.clearCurrentUser();
+                    }
+                }
+            };
+            task.setOnSucceeded(e -> loadZonesAsync(eventId));
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+                LOGGER.error("Add zone failed", ex);
+                String title = (ex instanceof SecurityException) ? "Access Denied" : "Add Zone Failed";
+                String msg = (ex instanceof SecurityException) ? "ADMIN role is required." : "Operation failed. Please try again.";
+                showErrorAlert(title, msg);
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        }
+    }
+
+    /**
+     * Handles the "Edit Zone" button action (AC: 3).
+     */
+    @FXML
+    private void handleEditZone() {
+        Zone selectedZone = zonesViewModel.selectedZoneProperty().get();
+        if (selectedZone == null) return;
+
+        FXMLLoader loader = createZoneFXMLLoader();
+        if (loader == null) return;
+
+        ZoneFormController formController = loader.getController();
+        formController.setMode(ZoneFormController.Mode.EDIT);
+        formController.setZone(selectedZone);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Edit Zone");
+        dialog.getDialogPane().setContent((Parent) loader.getRoot());
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(ActionEvent.ACTION, event -> {
+            if (!formController.validate()) event.consume();
+        });
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            Zone updatedZone = formController.getZoneFromForm();
+            int eventId = selectedZone.getEventId();
+            User capturedAdmin = currentAdminUser;
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    SessionContext.setCurrentUser(capturedAdmin);
+                    try {
+                        zoneService.updateZone(updatedZone);
+                    } finally {
+                        SessionContext.clearCurrentUser();
+                    }
+                    return null;
+                }
+            };
+            task.setOnSucceeded(e -> loadZonesAsync(eventId));
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+                LOGGER.error("Edit zone failed", ex);
+                String title = (ex instanceof SecurityException) ? "Access Denied" : "Edit Zone Failed";
+                String msg = (ex instanceof SecurityException) ? "ADMIN role is required." : "Operation failed. Please try again.";
+                showErrorAlert(title, msg);
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        }
+    }
+
+    /**
+     * Handles the "Delete Zone" button action (AC: 4).
+     */
+    @FXML
+    private void handleDeleteZone() {
+        Zone selectedZone = zonesViewModel.selectedZoneProperty().get();
+        if (selectedZone == null) return;
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Zone");
+        confirm.setHeaderText(null);
+        String zoneName = selectedZone.getName() != null ? selectedZone.getName() : "(unnamed)";
+        confirm.setContentText("Delete zone '" + zoneName + "'? All seats in this zone will be removed.");
+
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            int zoneId = selectedZone.getZoneId();
+            int eventId = selectedZone.getEventId();
+            User capturedAdmin = currentAdminUser;
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    SessionContext.setCurrentUser(capturedAdmin);
+                    try {
+                        zoneService.deleteZone(zoneId);
+                    } finally {
+                        SessionContext.clearCurrentUser();
+                    }
+                    return null;
+                }
+            };
+            task.setOnSucceeded(e -> loadZonesAsync(eventId));
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+                LOGGER.error("Delete zone failed", ex);
+                String title = (ex instanceof SecurityException) ? "Access Denied" : "Delete Zone Failed";
+                String msg = (ex instanceof SecurityException) ? "ADMIN role is required." : "Operation failed. Please try again.";
+                showErrorAlert(title, msg);
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        }
+    }
+
+    /**
+     * Loads {@code ZoneFormView.fxml} and returns the initialised
+     * {@link FXMLLoader} so callers can retrieve both the root node and
+     * the {@link ZoneFormController}.
+     *
+     * @return the loaded {@link FXMLLoader}, or {@code null} on I/O error
+     */
+    private FXMLLoader createZoneFXMLLoader() {
+        try {
+            FXMLLoader loader = new FXMLLoader(App.class.getResource("ZoneFormView.fxml"));
+            loader.load();
+            return loader;
+        } catch (IOException ex) {
+            LOGGER.error("Failed to load ZoneFormView.fxml", ex);
+            showErrorAlert("Internal Error", "Could not open the zone form. Please try again.");
+            return null;
         }
     }
 }
