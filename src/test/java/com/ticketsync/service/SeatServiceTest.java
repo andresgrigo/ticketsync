@@ -264,6 +264,98 @@ class SeatServiceTest {
     }
 
     // -----------------------------------------------------------------------
+    // updateSeatStatus — role checks
+    // -----------------------------------------------------------------------
+
+    @Test
+    void updateSeatStatus_noAdminRole_throwsSecurityException() {
+        SessionContext.clearCurrentUser();
+        assertThrows(SecurityException.class,
+                () -> service.updateSeatStatus(List.of(1, 2), SeatStatus.DISABLED));
+        assertFalse(stubDao.updateStatusCalled, "updateStatus() must NOT be called on security failure");
+    }
+
+    @Test
+    void updateSeatStatus_vendorRole_throwsSecurityException() {
+        SessionContext.setCurrentUser(VENDOR_USER);
+        assertThrows(SecurityException.class,
+                () -> service.updateSeatStatus(List.of(1), SeatStatus.DISABLED));
+        assertFalse(stubDao.updateStatusCalled);
+    }
+
+    // -----------------------------------------------------------------------
+    // updateSeatStatus — validation
+    // -----------------------------------------------------------------------
+
+    @Test
+    void updateSeatStatus_nullSeatIds_doesNothing() throws SQLException {
+        service.updateSeatStatus(null, SeatStatus.DISABLED);
+        assertFalse(stubDao.updateStatusCalled);
+    }
+
+    @Test
+    void updateSeatStatus_emptySeatIds_doesNothing() throws SQLException {
+        service.updateSeatStatus(Collections.emptyList(), SeatStatus.DISABLED);
+        assertFalse(stubDao.updateStatusCalled);
+    }
+
+    @Test
+    void updateSeatStatus_nullStatus_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updateSeatStatus(List.of(1), null));
+        assertFalse(stubDao.updateStatusCalled);
+    }
+
+    @Test
+    void updateSeatStatus_soldStatus_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updateSeatStatus(List.of(1), SeatStatus.SOLD));
+        assertFalse(stubDao.updateStatusCalled);
+    }
+
+    @Test
+    void updateSeatStatus_reservedStatus_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updateSeatStatus(List.of(1), SeatStatus.RESERVED));
+        assertFalse(stubDao.updateStatusCalled);
+    }
+
+    // -----------------------------------------------------------------------
+    // updateSeatStatus — happy path
+    // -----------------------------------------------------------------------
+
+    @Test
+    void updateSeatStatus_available_callsUpdateStatusWithCorrectArgs() throws SQLException {
+        service.updateSeatStatus(List.of(1, 2, 3), SeatStatus.AVAILABLE);
+
+        assertTrue(stubDao.updateStatusCalled);
+        assertEquals(List.of(1, 2, 3), stubDao.lastUpdateStatusIds);
+        assertEquals(SeatStatus.AVAILABLE, stubDao.lastUpdateStatusStatus);
+    }
+
+    @Test
+    void updateSeatStatus_disabled_callsUpdateStatusWithCorrectArgs() throws SQLException {
+        service.updateSeatStatus(List.of(10, 20), SeatStatus.DISABLED);
+
+        assertTrue(stubDao.updateStatusCalled);
+        assertEquals(List.of(10, 20), stubDao.lastUpdateStatusIds);
+        assertEquals(SeatStatus.DISABLED, stubDao.lastUpdateStatusStatus);
+    }
+
+    // -----------------------------------------------------------------------
+    // updateSeatStatus — rollback on failure
+    // -----------------------------------------------------------------------
+
+    @Test
+    void updateSeatStatus_daoThrowsSqlException_rollsBackAndRethrows() {
+        stubDao.throwOnUpdateStatus = true;
+
+        assertThrows(SQLException.class,
+                () -> service.updateSeatStatus(List.of(1), SeatStatus.DISABLED));
+        assertTrue(stubDao.rollbackCalled, "rollback() must be called on SQLException");
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 
@@ -299,6 +391,7 @@ class SeatServiceTest {
         // --- configuration ---
         boolean      throwOnInsert = false;
         boolean      throwOnDelete = false;
+        boolean      throwOnUpdateStatus = false;
         List<Seat>   seatsToReturn = Collections.emptyList();
 
         // --- invocation tracking ---
@@ -306,9 +399,12 @@ class SeatServiceTest {
         boolean      deleteCalled        = false;
         boolean      rollbackCalled      = false;
         boolean      findByZoneIdCalled  = false;
+        boolean      updateStatusCalled  = false;
         int          lastFindByZoneIdArg = -1;
         List<Seat>   insertedSeats       = new ArrayList<>();
         List<Integer> deletedIds         = new ArrayList<>();
+        List<Integer> lastUpdateStatusIds   = new ArrayList<>();
+        SeatStatus   lastUpdateStatusStatus = null;
 
         @Override
         public Optional<Seat> findById(Connection conn, int seatId) throws SQLException {
@@ -350,6 +446,10 @@ class SeatServiceTest {
         @Override
         public void updateStatus(Connection conn, List<Integer> seatIds, SeatStatus status, Integer saleId)
                 throws SQLException {
+            if (throwOnUpdateStatus) throw new SQLException("update failed");
+            updateStatusCalled = true;
+            lastUpdateStatusIds = new ArrayList<>(seatIds);
+            lastUpdateStatusStatus = status;
         }
     }
 }

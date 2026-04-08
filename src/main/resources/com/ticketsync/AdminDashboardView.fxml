@@ -160,6 +160,11 @@
                                             <Region HBox.hgrow="ALWAYS"/>
                                             <Button fx:id="seatsDeleteButton" text="Delete Selected"
                                                     disable="true" onAction="#handleDeleteSeats"/>
+                                            <Button fx:id="seatsMarkUnavailableButton" text="Mark Unavailable"
+                                                    disable="true" onAction="#handleMarkUnavailable"/>
+                                            <Button fx:id="seatsMarkAvailableButton" text="Mark Available"
+                                                    disable="true" onAction="#handleMarkAvailable"/>
+                                            <Label fx:id="seatsStatusLabel" style="-fx-text-fill: #666; -fx-padding: 0 0 0 8;"/>
                                         </ToolBar>
                                     </top>
                                     <center>

@@ -182,9 +182,19 @@ public class AdminDashboardController {
     private ScrollPane seatMapScrollPane;
     @FXML
     private Label seatMapHoverLabel;
+    @FXML
+    private Button seatsMarkUnavailableButton;
+    @FXML
+    private Button seatsMarkAvailableButton;
+    @FXML
+    private Label seatsStatusLabel;
 
     private SeatManagementViewModel seatsViewModel;
     private final SeatService seatService = new SeatService();
+    /** Pending note to append to the count summary when the next loadSeatsAsync completes. */
+    private String pendingToggleNote;
+    /** Re-entrancy guard for the seat toggle handlers. */
+    private boolean toggleInProgress;
 
     private static final int CELL_SIZE = 32;
     private static final int CELL_GAP = 4;
@@ -420,6 +430,18 @@ public class AdminDashboardController {
         seatsDeleteButton.disableProperty().bind(
                 seatsTable.getSelectionModel().selectedItemProperty().isNull());
 
+        // AC1/AC2/AC5: each toggle button disabled unless the selection contains an eligible seat
+        seatsMarkUnavailableButton.disableProperty().bind(
+                Bindings.createBooleanBinding(
+                        () -> seatsTable.getSelectionModel().getSelectedItems().stream()
+                                .noneMatch(s -> s.getStatus() == SeatStatus.AVAILABLE),
+                        seatsTable.getSelectionModel().getSelectedItems()));
+        seatsMarkAvailableButton.disableProperty().bind(
+                Bindings.createBooleanBinding(
+                        () -> seatsTable.getSelectionModel().getSelectedItems().stream()
+                                .noneMatch(s -> s.getStatus() == SeatStatus.DISABLED),
+                        seatsTable.getSelectionModel().getSelectedItems()));
+
         // Wire input listeners for generate button enablement
         seatsRowField.textProperty().addListener((obs, o, n) -> updateGenerateButtonState());
         seatsFromField.textProperty().addListener((obs, o, n) -> updateGenerateButtonState());
@@ -440,6 +462,7 @@ public class AdminDashboardController {
                         loadSeatsAsync(newZone.getZoneId());
                     } else {
                         seatsViewModel.setSeats(Collections.emptyList());
+                        seatsStatusLabel.setText("");
                         renderSeatMap();
                     }
                 });
@@ -1298,6 +1321,17 @@ public class AdminDashboardController {
             // Calling renderSeatMap() again in the same pulse while the Prism RTTexture
             // is invalidated causes an NPE in NGCanvas.validate().
             Platform.runLater(this::renderSeatMap);
+            // AC4: count summary, with optional pending note from toggle handlers
+            long avail    = seats.stream().filter(s -> s.getStatus() == SeatStatus.AVAILABLE).count();
+            long disabled = seats.stream().filter(s -> s.getStatus() == SeatStatus.DISABLED).count();
+            long sold     = seats.stream().filter(s -> s.getStatus() == SeatStatus.SOLD).count();
+            String countSummary = avail + " available, " + disabled + " disabled, " + sold + " sold";
+            if (pendingToggleNote != null) {
+                seatsStatusLabel.setText(countSummary + " \u2014 " + pendingToggleNote);
+                pendingToggleNote = null;
+            } else {
+                seatsStatusLabel.setText(countSummary);
+            }
         });
         task.setOnFailed(e -> {
             LOGGER.error("Failed to load seats for zone {}", zoneId, task.getException());
@@ -1522,6 +1556,154 @@ public class AdminDashboardController {
             Zone z = seatsZoneSelector.getSelectionModel().getSelectedItem();
             if (z != null)
                 loadSeatsAsync(z.getZoneId());
+        });
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    @FXML
+    private void handleMarkUnavailable() {
+        // Patch 5: re-entrancy guard
+        if (toggleInProgress) return;
+
+        List<Seat> selected = new ArrayList<>(seatsTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) return;
+
+        List<Seat> eligible = selected.stream()
+                .filter(s -> s.getStatus() == SeatStatus.AVAILABLE)
+                .toList();
+        long soldCount = selected.stream().filter(s -> s.getStatus() == SeatStatus.SOLD).count();
+
+        // Patch 2: accurate empty-eligible message
+        if (eligible.isEmpty()) {
+            seatsStatusLabel.setText(soldCount > 0
+                    ? "SOLD seats skipped \u2014 no changes made"
+                    : "No eligible seats in selection.");
+            return;
+        }
+
+        List<Integer> seatIds = eligible.stream().map(Seat::getSeatId).toList();
+        Zone selectedZone = seatsZoneSelector.getSelectionModel().getSelectedItem();
+        if (selectedZone == null) {
+            seatsStatusLabel.setText("No zone selected.");
+            return;
+        }
+        int zoneId = selectedZone.getZoneId();
+        // Patch 7: null guard on capturedAdmin
+        User capturedAdmin = currentAdminUser;
+        if (capturedAdmin == null) {
+            seatsStatusLabel.setText("Error: no active admin session.");
+            return;
+        }
+
+        toggleInProgress = true;
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                SessionContext.setCurrentUser(capturedAdmin);
+                try {
+                    seatService.updateSeatStatus(seatIds, SeatStatus.DISABLED);
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+                return null;
+            }
+        };
+        task.setOnSucceeded(e -> {
+            toggleInProgress = false;
+            // Patch 6: stale zone guard
+            Zone currentZone = seatsZoneSelector.getSelectionModel().getSelectedItem();
+            if (currentZone == null || currentZone.getZoneId() != zoneId) return;
+            // Patches 3+4: set pending note; loadSeatsAsync will compose it with count summary
+            pendingToggleNote = soldCount > 0
+                    ? "Updated " + seatIds.size() + " seat(s). " + soldCount + " SOLD seat(s) skipped."
+                    : "Updated " + seatIds.size() + " seat(s).";
+            loadSeatsAsync(zoneId);
+        });
+        task.setOnFailed(e -> {
+            toggleInProgress = false;
+            LOGGER.error("Mark unavailable failed", task.getException());
+            // Patch 6: stale zone guard
+            Zone currentZone = seatsZoneSelector.getSelectionModel().getSelectedItem();
+            if (currentZone == null || currentZone.getZoneId() != zoneId) return;
+            // Patches 3+4: error note persists via pending note mechanism
+            pendingToggleNote = "Error updating seats. Please try again.";
+            loadSeatsAsync(zoneId);
+        });
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    @FXML
+    private void handleMarkAvailable() {
+        // Patch 5: re-entrancy guard
+        if (toggleInProgress) return;
+
+        List<Seat> selected = new ArrayList<>(seatsTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) return;
+
+        List<Seat> eligible = selected.stream()
+                .filter(s -> s.getStatus() == SeatStatus.DISABLED)
+                .toList();
+        long soldCount = selected.stream().filter(s -> s.getStatus() == SeatStatus.SOLD).count();
+
+        // Patch 2: accurate empty-eligible message
+        if (eligible.isEmpty()) {
+            seatsStatusLabel.setText(soldCount > 0
+                    ? "SOLD seats skipped \u2014 no changes made"
+                    : "No eligible seats in selection.");
+            return;
+        }
+
+        List<Integer> seatIds = eligible.stream().map(Seat::getSeatId).toList();
+        Zone selectedZone = seatsZoneSelector.getSelectionModel().getSelectedItem();
+        if (selectedZone == null) {
+            seatsStatusLabel.setText("No zone selected.");
+            return;
+        }
+        int zoneId = selectedZone.getZoneId();
+        // Patch 7: null guard on capturedAdmin
+        User capturedAdmin = currentAdminUser;
+        if (capturedAdmin == null) {
+            seatsStatusLabel.setText("Error: no active admin session.");
+            return;
+        }
+
+        toggleInProgress = true;
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                SessionContext.setCurrentUser(capturedAdmin);
+                try {
+                    seatService.updateSeatStatus(seatIds, SeatStatus.AVAILABLE);
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+                return null;
+            }
+        };
+        task.setOnSucceeded(e -> {
+            toggleInProgress = false;
+            // Patch 6: stale zone guard
+            Zone currentZone = seatsZoneSelector.getSelectionModel().getSelectedItem();
+            if (currentZone == null || currentZone.getZoneId() != zoneId) return;
+            // Patches 3+4: set pending note; loadSeatsAsync will compose it with count summary
+            pendingToggleNote = soldCount > 0
+                    ? "Updated " + seatIds.size() + " seat(s). " + soldCount + " SOLD seat(s) skipped."
+                    : "Updated " + seatIds.size() + " seat(s).";
+            loadSeatsAsync(zoneId);
+        });
+        task.setOnFailed(e -> {
+            toggleInProgress = false;
+            LOGGER.error("Mark available failed", task.getException());
+            // Patch 6: stale zone guard
+            Zone currentZone = seatsZoneSelector.getSelectionModel().getSelectedItem();
+            if (currentZone == null || currentZone.getZoneId() != zoneId) return;
+            // Patches 3+4: error note persists via pending note mechanism
+            pendingToggleNote = "Error updating seats. Please try again.";
+            loadSeatsAsync(zoneId);
         });
         Thread t = new Thread(task);
         t.setDaemon(true);

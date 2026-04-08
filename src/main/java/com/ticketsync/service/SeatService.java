@@ -168,4 +168,41 @@ public class SeatService {
             return seatDAO.findByZoneId(conn, zoneId);
         }
     }
+
+    /**
+     * Updates the status of the specified seats in a single database transaction.
+     * Only AVAILABLE and DISABLED are valid target statuses for admin operations.
+     * On any failure the transaction is rolled back.
+     *
+     * @param seatIds      list of seat IDs to update; null or empty list is a no-op
+     * @param targetStatus the desired new status; must not be null, SOLD, or RESERVED
+     * @throws IllegalArgumentException if targetStatus is null, SOLD, or RESERVED
+     * @throws SecurityException        if the caller is not ADMIN
+     * @throws SQLException             if a database error occurs (transaction rolled back)
+     */
+    public void updateSeatStatus(List<Integer> seatIds, SeatStatus targetStatus) throws SQLException {
+        requireAdminRole();
+        if (seatIds == null || seatIds.isEmpty()) return;
+        if (targetStatus == null)
+            throw new IllegalArgumentException("targetStatus must not be null");
+        if (targetStatus == SeatStatus.SOLD)
+            throw new IllegalArgumentException("Cannot set seat status to SOLD via admin — use TransactionService");
+        if (targetStatus == SeatStatus.RESERVED)
+            throw new IllegalArgumentException("RESERVED status is not used in admin workflows");
+
+        String adminUsername = SessionContext.getCurrentUser().map(User::getUsername).orElse("unknown");
+
+        try (Connection conn = connFactory.get()) {
+            conn.setAutoCommit(false);
+            try {
+                seatDAO.updateStatus(conn, seatIds, targetStatus, null);
+                conn.commit();
+                LOGGER.info("Admin '{}' updated {} seats to status {}", adminUsername, seatIds.size(), targetStatus);
+            } catch (SQLException e) {
+                conn.rollback();
+                LOGGER.error("Failed to update seat status to {} — rolled back", targetStatus, e);
+                throw e;
+            }
+        }
+    }
 }
