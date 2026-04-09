@@ -8,6 +8,7 @@ module com.ticketsync {
     requires jbcrypt;
     requires atlantafx.base;
     requires jasypt;
+    requires org.apache.pdfbox;
 
     opens com.ticketsync to javafx.fxml;
     opens com.ticketsync.util;

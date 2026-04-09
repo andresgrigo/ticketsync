@@ -42,9 +42,13 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -177,6 +181,8 @@ public class AdminDashboardController {
     @FXML
     private Button seatsDeleteButton;
     @FXML
+    private Tab seatingTab;
+    @FXML
     private Canvas seatMapCanvas;
     @FXML
     private ScrollPane seatMapScrollPane;
@@ -205,6 +211,54 @@ public class AdminDashboardController {
     }
 
     private List<SeatCell> seatCells = new ArrayList<>();
+
+    // ── Layout View tab ──────────────────────────────────────────────
+    @FXML
+    private TabPane mainTabPane;
+    @FXML
+    private Tab layoutViewTab;
+    @FXML
+    private ComboBox<Event> layoutEventSelector;
+    @FXML
+    private Button layoutExportButton;
+    @FXML
+    private Label layoutEventNameLabel;
+    @FXML
+    private Label layoutTotalLabel;
+    @FXML
+    private Label layoutAvailableLabel;
+    @FXML
+    private Label layoutSoldLabel;
+    @FXML
+    private Label layoutDisabledLabel;
+    @FXML
+    private Canvas layoutCanvas;
+    @FXML
+    private ScrollPane layoutScrollPane;
+    @FXML
+    private Label layoutHoverLabel;
+
+    // Layout view state
+    private double layoutZoom = 1.0;
+    private double layoutPanX = 0;
+    private double layoutPanY = 0;
+    private double layoutDragStartX;
+    private double layoutDragStartY;
+    private double layoutDragStartPanX;
+    private double layoutDragStartPanY;
+    private List<LayoutSeatCell> layoutSeatCells = new ArrayList<>();
+    private List<Seat> layoutCurrentSeats = new ArrayList<>();
+    private Map<Integer, Zone> layoutCurrentZoneMap = new HashMap<>();
+
+    private record LayoutSeatCell(Seat seat, Zone zone, double worldX, double worldY) {}
+
+    private static final int LAYOUT_CELL_SIZE       = 48;  // UX-DR13: 48×48px minimum
+    private static final int LAYOUT_CELL_GAP        = 6;
+    private static final int LAYOUT_ROW_GAP         = 8;
+    private static final int LAYOUT_ZONE_GAP        = 30;  // vertical gap between zone sections
+    private static final int LAYOUT_PADDING         = 16;
+    private static final int LAYOUT_ROW_LABEL_WIDTH = 64;  // px reserved for row name column
+    private static final int LAYOUT_MAX_SEATS_ROW   = 18;  // max seats shown per row
 
     /**
      * Initialises the controller after FXML injection.
@@ -455,6 +509,10 @@ public class AdminDashboardController {
         seatsToField.setTextFormatter(new TextFormatter<>(
                 change -> change.getControlNewText().matches("\\d*") ? change : null));
 
+        // TextFormatter: max 10 characters for Row field (matches DB varchar(10))
+        seatsRowField.setTextFormatter(new TextFormatter<>(
+                change -> change.getControlNewText().length() <= 10 ? change : null));
+
         // Load seats when zone is selected in seatsZoneSelector
         seatsZoneSelector.getSelectionModel().selectedItemProperty()
                 .addListener((obs, oldZone, newZone) -> {
@@ -463,7 +521,7 @@ public class AdminDashboardController {
                     } else {
                         seatsViewModel.setSeats(Collections.emptyList());
                         seatsStatusLabel.setText("");
-                        renderSeatMap();
+                        Platform.runLater(this::renderSeatMap);
                     }
                 });
 
@@ -481,7 +539,56 @@ public class AdminDashboardController {
         seatMapCanvas.setOnMousePressed(this::handleCanvasMousePressed);
         seatMapCanvas.setOnMouseDragged(this::handleCanvasMouseDragged);
         seatsTable.getSelectionModel().getSelectedItems()
-                .addListener((javafx.collections.ListChangeListener<Seat>) change -> renderSeatMap());
+                .addListener((javafx.collections.ListChangeListener<Seat>) change -> Platform.runLater(this::renderSeatMap));
+
+        // ── Layout View tab setup ────────────────────────────────────────
+        layoutEventSelector.setConverter(new javafx.util.StringConverter<Event>() {
+            @Override
+            public String toString(Event e) {
+                return (e == null) ? "" : e.getName();
+            }
+            @Override
+            public Event fromString(String s) { return null; }
+        });
+        layoutEventSelector.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Event item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "Select event\u2026" : item.getName());
+            }
+        });
+        layoutEventSelector.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldEvent, newEvent) -> {
+                    if (newEvent != null) {
+                        layoutExportButton.setDisable(false);
+                        loadLayoutViewAsync(newEvent);
+                    } else {
+                        layoutExportButton.setDisable(true);
+                        clearLayoutView();
+                    }
+                });
+
+        layoutCanvas.setOnScroll(this::handleLayoutScroll);
+        layoutCanvas.setOnMousePressed(this::handleLayoutMousePressed);
+        layoutCanvas.setOnMouseDragged(this::handleLayoutMouseDragged);
+        layoutCanvas.setOnMouseMoved(this::handleLayoutMouseMoved);
+
+        // Load events into layout selector (same source as zonesEventSelector)
+        loadLayoutEventsAsync();
+
+        // Refresh layout when the tab is selected so zone/seat changes are visible
+        mainTabPane.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldTab, newTab) -> {
+                    if (newTab == seatingTab) {
+                        Platform.runLater(this::renderSeatMap);
+                    } else if (newTab == layoutViewTab) {
+                        Event selectedEvent = layoutEventSelector.getSelectionModel().getSelectedItem();
+                        if (selectedEvent != null) {
+                            // Double-defer: first frame allocates the RTTexture, second draws.
+                            Platform.runLater(() -> loadLayoutViewAsync(selectedEvent));
+                        }
+                    }
+                });
     }
 
     /**
@@ -1072,6 +1179,272 @@ public class AdminDashboardController {
         t.start();
     }
 
+    private void loadLayoutEventsAsync() {
+        User capturedAdmin = currentAdminUser;
+        Task<List<Event>> task = new Task<>() {
+            @Override
+            protected List<Event> call() throws Exception {
+                SessionContext.setCurrentUser(capturedAdmin);
+                try {
+                    return eventService.findAllEvents();
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+            }
+        };
+        task.setOnSucceeded(e -> {
+            Event previousSelection = layoutEventSelector.getSelectionModel().getSelectedItem();
+            layoutEventSelector.getItems().setAll(task.getValue());
+            if (previousSelection != null) {
+                layoutEventSelector.getItems().stream()
+                        .filter(ev -> ev.getEventId() == previousSelection.getEventId())
+                        .findFirst()
+                        .ifPresent(ev -> layoutEventSelector.getSelectionModel().select(ev));
+            }
+        });
+        task.setOnFailed(e -> LOGGER.error("Failed to load events for layout selector", task.getException()));
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void loadLayoutViewAsync(Event event) {
+        if (currentAdminUser == null) return;
+        User capturedAdmin = currentAdminUser;
+        Task<Pair<List<Seat>, List<Zone>>> task = new Task<>() {
+            @Override
+            protected Pair<List<Seat>, List<Zone>> call() throws Exception {
+                SessionContext.setCurrentUser(capturedAdmin);
+                try {
+                    List<Seat> seats = seatService.getSeatsForEvent(event.getEventId());
+                    List<Zone> zones = zoneService.getZonesByEvent(event.getEventId());
+                    return new Pair<>(seats, zones);
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+            }
+        };
+        task.setOnSucceeded(e -> {
+            // Discard results if user changed event selection while this task was in flight
+            Event currentSelection = layoutEventSelector.getSelectionModel().getSelectedItem();
+            if (currentSelection == null || currentSelection.getEventId() != event.getEventId()) return;
+
+            List<Seat> seats = task.getValue().getKey();
+            List<Zone> zones = task.getValue().getValue();
+
+            // Build zoneId → Zone lookup map
+            Map<Integer, Zone> zoneMap = zones.stream()
+                    .collect(java.util.stream.Collectors.toMap(Zone::getZoneId, z -> z));
+
+            // Update stats context panel (AC3)
+            long available = seats.stream().filter(s -> s.getStatus() == SeatStatus.AVAILABLE).count();
+            long sold      = seats.stream().filter(s -> s.getStatus() == SeatStatus.SOLD).count();
+            long disabled  = seats.stream().filter(s -> s.getStatus() == SeatStatus.DISABLED).count();
+            layoutEventNameLabel.setText(event.getName());
+            layoutTotalLabel.setText("Total: " + seats.size());
+            layoutAvailableLabel.setText("Available: " + available);
+            layoutSoldLabel.setText("Sold: " + sold);
+            layoutDisabledLabel.setText("Disabled: " + disabled);
+
+            // Reset zoom/pan on new event load (AC5)
+            layoutZoom = 1.0;
+            layoutPanX = 0;
+            layoutPanY = 0;
+
+            // Store for re-rendering
+            layoutCurrentSeats = seats;
+            layoutCurrentZoneMap = zoneMap;
+
+            renderLayoutView(seats, zoneMap);
+        });
+        task.setOnFailed(e -> {
+            LOGGER.error("Failed to load layout view for event {}", event.getEventId(), task.getException());
+            layoutHoverLabel.setText("Error loading layout. Please try again.");
+        });
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void clearLayoutView() {
+        layoutEventNameLabel.setText("No event selected");
+        layoutTotalLabel.setText("Total: \u2014");
+        layoutAvailableLabel.setText("Available: \u2014");
+        layoutSoldLabel.setText("Sold: \u2014");
+        layoutDisabledLabel.setText("Disabled: \u2014");
+        layoutHoverLabel.setText("");
+        layoutSeatCells.clear();
+        layoutCurrentSeats.clear();
+        layoutCurrentZoneMap.clear();
+        layoutZoom = 1.0;
+        layoutPanX = 0;
+        layoutPanY = 0;
+        double w = layoutCanvas.getWidth();
+        double h = layoutCanvas.getHeight();
+        if (w > 0 && h > 0) {
+            GraphicsContext gc = layoutCanvas.getGraphicsContext2D();
+            gc.clearRect(0, 0, w, h);
+            gc.setFill(Color.GRAY);
+            gc.setFont(Font.font(13));
+            gc.fillText("Select an event above", LAYOUT_PADDING, 30);
+        }
+    }
+
+    private void reRenderLayoutViewFromCache() {
+        if (!layoutCurrentSeats.isEmpty()) {
+            renderLayoutView(layoutCurrentSeats, layoutCurrentZoneMap);
+        }
+    }
+
+    /**
+     * Renders the read-only layout view canvas with all zones and seats for the selected event.
+     * Zones are displayed sequentially (top to bottom), each preceded by a 16px bold zone label.
+     * Seats are 48×48px (UX-DR13). Zoom/pan transform applied via GraphicsContext.
+     */
+    private void renderLayoutView(List<Seat> allSeats, Map<Integer, Zone> zoneMap) {
+        // Guard: skip when the Layout View tab is not selected — the prism RTTexture
+        // for the canvas is only allocated after the tab has been shown at least once.
+        if (mainTabPane.getSelectionModel().getSelectedItem() != layoutViewTab)
+            return;
+        double canvasW = layoutCanvas.getWidth();
+        double canvasH = layoutCanvas.getHeight();
+        if (canvasW <= 0 || canvasH <= 0) return;
+
+        layoutSeatCells.clear();
+
+        if (allSeats.isEmpty()) {
+            GraphicsContext gc = layoutCanvas.getGraphicsContext2D();
+            gc.clearRect(0, 0, canvasW, canvasH);
+            gc.setFill(Color.GRAY);
+            gc.setFont(Font.font(13));
+            gc.fillText("No seats configured for this event", LAYOUT_PADDING, 30);
+            return;
+        }
+
+        // Group seats by zone preserving zone order
+        LinkedHashMap<Integer, List<Seat>> byZone = new LinkedHashMap<>();
+        for (Seat s : allSeats) {
+            byZone.computeIfAbsent(s.getZoneId(), k -> new ArrayList<>()).add(s);
+        }
+
+        // Compute world-space layout dimensions
+        double worldHeight = LAYOUT_PADDING;
+        for (Map.Entry<Integer, List<Seat>> entry : byZone.entrySet()) {
+            worldHeight += 24; // zone label height
+            worldHeight += 8;  // gap below label
+            java.util.TreeMap<String, List<Seat>> byRow = new java.util.TreeMap<>(AdminDashboardController::numericStringCompare);
+            for (Seat s : entry.getValue()) {
+                byRow.computeIfAbsent(s.getRowNumber(), k -> new ArrayList<>()).add(s);
+            }
+            worldHeight += byRow.size() * (LAYOUT_CELL_SIZE + LAYOUT_ROW_GAP);
+            worldHeight += LAYOUT_ZONE_GAP;
+        }
+        worldHeight += LAYOUT_PADDING;
+
+        int maxSeatsPerRow = (int) allSeats.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        s -> s.getZoneId() + ":" + s.getRowNumber(),
+                        java.util.stream.Collectors.counting()))
+                .values().stream().mapToLong(Long::longValue).max().orElse(0L);
+        double worldWidth = LAYOUT_PADDING + LAYOUT_ROW_LABEL_WIDTH + maxSeatsPerRow * (LAYOUT_CELL_SIZE + LAYOUT_CELL_GAP) + LAYOUT_PADDING;
+
+        // Resize canvas to fit zoomed content.
+        // Cap at 8192 to stay within OpenGL min-guaranteed max texture size.
+        // Hide the canvas BEFORE resizing: when theCanvas buffer is non-null (canvas was
+        // drawn before), Prism calls initCanvas on any size change and tries to reallocate
+        // the RTTexture — which can return null, causing NGCanvas NPE. Invisible nodes are
+        // skipped by Prism entirely, so no RTTexture allocation happens during the transition.
+        final double MAX_TEX = 8192.0;
+        double scaledW = Math.min(Math.max(canvasW, worldWidth  * layoutZoom + Math.abs(layoutPanX)), MAX_TEX);
+        double scaledH = Math.min(Math.max(canvasH, worldHeight * layoutZoom + Math.abs(layoutPanY)), MAX_TEX);
+        boolean layoutResized = false;
+        if (layoutCanvas.getWidth() < scaledW) {
+            layoutCanvas.setWidth(scaledW);
+            layoutResized = true;
+        }
+        if (layoutCanvas.getHeight() < scaledH) {
+            layoutCanvas.setHeight(scaledH);
+            layoutResized = true;
+        }
+        if (layoutResized) {
+            layoutCanvas.setVisible(false);
+            Platform.runLater(() -> {
+                layoutCanvas.setVisible(true);
+                Platform.runLater(() -> renderLayoutView(allSeats, zoneMap));
+            });
+            return;
+        }
+
+        GraphicsContext gc = layoutCanvas.getGraphicsContext2D();
+        gc.clearRect(0, 0, layoutCanvas.getWidth(), layoutCanvas.getHeight());
+
+        // Apply zoom + pan transform
+        gc.save();
+        gc.translate(layoutPanX, layoutPanY);
+        gc.scale(layoutZoom, layoutZoom);
+
+        Text measurer = new Text();
+        double yOffset = LAYOUT_PADDING;
+
+        for (Map.Entry<Integer, List<Seat>> zoneEntry : byZone.entrySet()) {
+            Zone zone = zoneMap.get(zoneEntry.getKey());
+            String zoneName = (zone != null) ? zone.getName() : "Zone " + zoneEntry.getKey();
+
+            // Zone label — 16px bold (UX spec)
+            gc.setFill(Color.web("#212121"));
+            gc.setFont(Font.font(null, FontWeight.BOLD, 16));
+            gc.fillText(zoneName, LAYOUT_PADDING, yOffset + 16);
+            yOffset += 24 + 8;
+
+            // Group by row
+            java.util.TreeMap<String, List<Seat>> byRow = new java.util.TreeMap<>(AdminDashboardController::numericStringCompare);
+            for (Seat s : zoneEntry.getValue()) {
+                byRow.computeIfAbsent(s.getRowNumber(), k -> new ArrayList<>()).add(s);
+            }
+
+            for (Map.Entry<String, List<Seat>> rowEntry : byRow.entrySet()) {
+                double xOffset = LAYOUT_PADDING;
+                // Row label
+                gc.setFill(Color.web("#616161"));
+                gc.setFont(Font.font(11));
+                gc.fillText(rowEntry.getKey(), xOffset, yOffset + LAYOUT_CELL_SIZE / 2.0 + 4);
+                xOffset += LAYOUT_ROW_LABEL_WIDTH;
+
+                List<Seat> rowSeats = new ArrayList<>(rowEntry.getValue());
+                rowSeats.sort((a, b) -> numericStringCompare(a.getSeatNumber(), b.getSeatNumber()));
+                for (Seat seat : rowSeats) {
+                    Color fill = switch (seat.getStatus()) {
+                        case AVAILABLE -> Color.web("#4CAF50");
+                        case SOLD      -> Color.web("#F44336");
+                        case DISABLED  -> Color.web("#9E9E9E");
+                        default        -> Color.web("#9E9E9E");
+                    };
+                    gc.setFill(fill);
+                    gc.fillRoundRect(xOffset, yOffset, LAYOUT_CELL_SIZE, LAYOUT_CELL_SIZE, 6, 6);
+
+                    // Seat number label (center-aligned, white)
+                    gc.setFill(Color.WHITE);
+                    gc.setFont(Font.font(11));
+                    String label = seat.getSeatNumber() != null ? seat.getSeatNumber() : "";
+                    measurer.setText(label);
+                    measurer.setFont(Font.font(11));
+                    double textW = measurer.getBoundsInLocal().getWidth();
+                    gc.fillText(label,
+                            xOffset + (LAYOUT_CELL_SIZE - textW) / 2.0,
+                            yOffset + LAYOUT_CELL_SIZE / 2.0 + 4);
+
+                    // Store world-space cell for hit testing (before transform)
+                    layoutSeatCells.add(new LayoutSeatCell(seat, zone, xOffset, yOffset));
+                    xOffset += LAYOUT_CELL_SIZE + LAYOUT_CELL_GAP;
+                }
+                yOffset += LAYOUT_CELL_SIZE + LAYOUT_ROW_GAP;
+            }
+            yOffset += LAYOUT_ZONE_GAP;
+        }
+
+        gc.restore(); // undo zoom/pan transform
+    }
+
     /**
      * Loads zones and seat counts for the specified event on a background daemon
      * thread and populates the {@link ZoneManagementViewModel} on the FX thread.
@@ -1342,8 +1715,11 @@ public class AdminDashboardController {
     }
 
     private void renderSeatMap() {
-        // Guard: canvas has no backing texture until it has been laid out with positive
-        // dimensions.
+        // Guard: skip when the Seating tab is not selected — the prism RTTexture
+        // for the canvas is only allocated after the tab has been shown at least once.
+        // Drawing before that causes NGCanvas.initCanvas NPE.
+        if (mainTabPane.getSelectionModel().getSelectedItem() != seatingTab)
+            return;
         double canvasWidth = seatMapCanvas.getWidth();
         double canvasHeight = seatMapCanvas.getHeight();
         if (canvasWidth <= 0 || canvasHeight <= 0)
@@ -1379,19 +1755,29 @@ public class AdminDashboardController {
             byRow.computeIfAbsent(s.getRowNumber(), k -> new ArrayList<>()).add(s);
         }
 
-        // Grow the canvas to fit all seats — one dimension per pulse to avoid
-        // double-invalidation of the Prism RTTexture which causes an NPE.
+        // Grow the canvas to fit all seats — resize both dimensions at once to keep
+        // the number of deferred pulses to one. After any resize, double-defer so the
+        // Prism RTTexture has two frames to be reallocated before we draw into it.
         int maxRowLength = byRow.values().stream().mapToInt(List::size).max().orElse(0);
-        double requiredWidth  = PADDING + maxRowLength * (CELL_SIZE + CELL_GAP) + PADDING;
-        double requiredHeight = PADDING + byRow.size() * (CELL_SIZE + ROW_GAP) + PADDING;
+        double requiredWidth  = Math.min(PADDING + maxRowLength * (CELL_SIZE + CELL_GAP) + PADDING, 8192.0);
+        double requiredHeight = Math.min(PADDING + byRow.size()   * (CELL_SIZE + ROW_GAP)  + PADDING, 8192.0);
+        boolean resized = false;
         if (canvasWidth < requiredWidth) {
             seatMapCanvas.setWidth(requiredWidth);
-            Platform.runLater(this::renderSeatMap);
-            return;
+            resized = true;
         }
         if (canvasHeight < requiredHeight) {
             seatMapCanvas.setHeight(requiredHeight);
-            Platform.runLater(this::renderSeatMap);
+            resized = true;
+        }
+        if (resized) {
+            // Same visibility-toggle pattern as layoutCanvas: hide during resize so Prism
+            // skips the canvas (no initCanvas call, no RTTexture NPE), then show and draw.
+            seatMapCanvas.setVisible(false);
+            Platform.runLater(() -> {
+                seatMapCanvas.setVisible(true);
+                Platform.runLater(this::renderSeatMap);
+            });
             return;
         }
 
@@ -1452,6 +1838,65 @@ public class AdminDashboardController {
         } else {
             seatMapHoverLabel.setText("");
         }
+    }
+
+    // ── Layout View event handlers ───────────────────────────────────
+
+    private void handleLayoutScroll(javafx.scene.input.ScrollEvent e) {
+        if (e.getDeltaY() == 0) return;
+        double delta = e.getDeltaY() > 0 ? 1.1 : 0.9;
+        double newZoom = Math.max(0.5, Math.min(3.0, layoutZoom * delta));
+        if (newZoom == layoutZoom) return;
+
+        // Zoom toward the mouse cursor position
+        double mouseX = e.getX();
+        double mouseY = e.getY();
+        double worldX = (mouseX - layoutPanX) / layoutZoom;
+        double worldY = (mouseY - layoutPanY) / layoutZoom;
+        layoutZoom = newZoom;
+        layoutPanX = mouseX - worldX * layoutZoom;
+        layoutPanY = mouseY - worldY * layoutZoom;
+
+        reRenderLayoutViewFromCache();
+        e.consume();
+    }
+
+    private void handleLayoutMousePressed(MouseEvent e) {
+        layoutDragStartX    = e.getX();
+        layoutDragStartY    = e.getY();
+        layoutDragStartPanX = layoutPanX;
+        layoutDragStartPanY = layoutPanY;
+    }
+
+    private void handleLayoutMouseDragged(MouseEvent e) {
+        layoutPanX = layoutDragStartPanX + (e.getX() - layoutDragStartX);
+        layoutPanY = layoutDragStartPanY + (e.getY() - layoutDragStartY);
+        reRenderLayoutViewFromCache();
+    }
+
+    private void handleLayoutMouseMoved(MouseEvent e) {
+        // Convert screen coords to world coords (invert zoom+pan)
+        double worldX = (e.getX() - layoutPanX) / layoutZoom;
+        double worldY = (e.getY() - layoutPanY) / layoutZoom;
+
+        for (LayoutSeatCell cell : layoutSeatCells) {
+            if (worldX >= cell.worldX() && worldX <= cell.worldX() + LAYOUT_CELL_SIZE
+                    && worldY >= cell.worldY() && worldY <= cell.worldY() + LAYOUT_CELL_SIZE) {
+                String zoneName  = (cell.zone() != null) ? cell.zone().getName() : "?";
+                String price     = (cell.zone() != null && cell.zone().getPrice() != null)
+                        ? cell.zone().getPrice().toPlainString() : "?";
+                String rowNum    = cell.seat().getRowNumber() != null ? cell.seat().getRowNumber() : "?";
+                String seatNum   = cell.seat().getSeatNumber() != null ? cell.seat().getSeatNumber() : "?";
+                layoutHoverLabel.setText(
+                        "Zone: " + zoneName
+                        + ", Row: " + rowNum
+                        + ", Seat: " + seatNum
+                        + ", Price: \u20AC" + price
+                        + ", Status: " + cell.seat().getStatus());
+                return;
+            }
+        }
+        layoutHoverLabel.setText("");
     }
 
     private void handleCanvasMousePressed(MouseEvent event) {
@@ -1544,6 +1989,8 @@ public class AdminDashboardController {
             String msg;
             if (isDuplicateError(ex)) {
                 msg = "Error: Duplicate seats detected. No seats were created.";
+            } else if (ex != null && ex.getMessage() != null && ex.getMessage().contains("value too long")) {
+                msg = "Error: The row name or seat number is too long (max 10 characters). Please shorten it and try again.";
             } else {
                 msg = "Error generating seats. Please try again.";
             }
@@ -1812,5 +2259,218 @@ public class AdminDashboardController {
         }
         String msg = ex != null ? ex.getMessage() : null;
         return msg != null && (msg.contains("duplicate") || msg.contains("unique constraint") || msg.contains("23505"));
+    }
+
+    @FXML
+    private void handleExportLayout() {
+        Event selectedEvent = layoutEventSelector.getSelectionModel().getSelectedItem();
+        if (selectedEvent == null || layoutCurrentSeats.isEmpty()) return;
+
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Save Seating Layout PDF");
+        String safeName = selectedEvent.getName().replaceAll("[^a-zA-Z0-9_\\-]", "_");
+        fileChooser.setInitialFileName(safeName + "-layout.pdf");
+        fileChooser.getExtensionFilters().add(
+                new javafx.stage.FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+        fileChooser.setInitialDirectory(new java.io.File(System.getProperty("user.home")));
+
+        java.io.File file = fileChooser.showSaveDialog(
+                layoutCanvas.getScene().getWindow());
+        if (file == null) return;
+
+        // Snapshot seat/zone data before handing off to the background thread.
+        List<Seat> seatSnapshot = new ArrayList<>(layoutCurrentSeats);
+        Map<Integer, Zone> zoneSnapshot = new HashMap<>(layoutCurrentZoneMap);
+        layoutExportButton.setDisable(true);
+        layoutHoverLabel.setText("Exporting PDF\u2026");
+
+        Task<Void> exportTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                exportLayoutToPdf(file, selectedEvent, seatSnapshot, zoneSnapshot);
+                return null;
+            }
+        };
+        exportTask.setOnSucceeded(e -> {
+            layoutExportButton.setDisable(false);
+            layoutHoverLabel.setText("Layout exported: " + file.getAbsolutePath());
+        });
+        exportTask.setOnFailed(e -> {
+            layoutExportButton.setDisable(false);
+            LOGGER.error("Failed to export layout PDF", exportTask.getException());
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Export Failed");
+            alert.setHeaderText(null);
+            alert.setContentText("Could not generate the PDF. Please check that the destination folder is writable and try again.");
+            alert.showAndWait();
+        });
+        Thread t = new Thread(exportTask);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /**
+     * Generates a PDF seating chart using Apache PDFBox 3.0.1.
+     * Each zone occupies a section with a bold header; seats are colored rectangles.
+     */
+    private void exportLayoutToPdf(java.io.File file, Event event,
+            List<Seat> seats, Map<Integer, Zone> zoneMap) throws Exception {
+        float pageW    = org.apache.pdfbox.pdmodel.common.PDRectangle.A4.getWidth();
+        float pageH    = org.apache.pdfbox.pdmodel.common.PDRectangle.A4.getHeight();
+        float margin   = 40f;
+        float labelW   = 50f;   // width reserved for row label (fits up to 10 chars at 9pt)
+        float cellSize = 22f;
+        float cellGap  = 3f;
+        float rowGap   = 6f;
+        float zoneGap  = 14f;
+        float lineH    = cellSize + rowGap;
+
+        int seatsPerLine = Math.min(LAYOUT_MAX_SEATS_ROW, Math.max(1, (int) ((pageW - 2 * margin - labelW) / (cellSize + cellGap))));
+
+        org.apache.pdfbox.pdmodel.font.PDType1Font pdfBold = new org.apache.pdfbox.pdmodel.font.PDType1Font(
+                org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName.HELVETICA_BOLD);
+        org.apache.pdfbox.pdmodel.font.PDType1Font pdfNormal = new org.apache.pdfbox.pdmodel.font.PDType1Font(
+                org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName.HELVETICA);
+
+        try (org.apache.pdfbox.pdmodel.PDDocument doc = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            // Start first page
+            org.apache.pdfbox.pdmodel.PDPage curPage =
+                    new org.apache.pdfbox.pdmodel.PDPage(org.apache.pdfbox.pdmodel.common.PDRectangle.A4);
+            doc.addPage(curPage);
+            org.apache.pdfbox.pdmodel.PDPageContentStream cs =
+                    new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, curPage);
+            float yPos = pageH - margin;
+
+            try {
+                // suppress IDE warning — cs is reassigned on page breaks; each old stream is
+                // explicitly closed before reassignment; finally closes the last open stream.
+                // Title
+                cs.beginText();
+                cs.setFont(pdfBold, 14);
+                cs.newLineAtOffset(margin, yPos);
+                cs.showText(toPdfSafe("Seating Layout: " + event.getName()));
+                cs.endText();
+                yPos -= 28;
+
+                // Group by zone (insertion order = query order)
+                LinkedHashMap<Integer, List<Seat>> byZone = new LinkedHashMap<>();
+                for (Seat s : seats) {
+                    byZone.computeIfAbsent(s.getZoneId(), k -> new ArrayList<>()).add(s);
+                }
+
+                for (Map.Entry<Integer, List<Seat>> zoneEntry : byZone.entrySet()) {
+                    Zone zone = zoneMap.get(zoneEntry.getKey());
+                    String zoneName = (zone != null) ? toPdfSafe(zone.getName()) : "Zone " + zoneEntry.getKey();
+
+                    // Need room for zone header + spacing + at least one seat row
+                    if (yPos - (28 + lineH) < margin) {
+                        cs.close();
+                        curPage = new org.apache.pdfbox.pdmodel.PDPage(
+                                org.apache.pdfbox.pdmodel.common.PDRectangle.A4);
+                        doc.addPage(curPage);
+                        cs = new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, curPage);
+                        yPos = pageH - margin;
+                    }
+
+                    // Zone header
+                    cs.beginText();
+                    cs.setFont(pdfBold, 12);
+                    cs.setNonStrokingColor(0.13f, 0.13f, 0.13f);
+                    cs.newLineAtOffset(margin, yPos);
+                    cs.showText(zoneName);  // already toPdfSafe'd above
+                    cs.endText();
+                    yPos -= 28;
+
+                    // Group by row (numeric sort)
+                    java.util.TreeMap<String, List<Seat>> byRow =
+                            new java.util.TreeMap<>(AdminDashboardController::numericStringCompare);
+                    for (Seat s : zoneEntry.getValue()) {
+                        byRow.computeIfAbsent(s.getRowNumber(), k -> new ArrayList<>()).add(s);
+                    }
+
+                    for (Map.Entry<String, List<Seat>> rowEntry : byRow.entrySet()) {
+                        String rowLabel = rowEntry.getKey() != null ? toPdfSafe(rowEntry.getKey()) : "";
+                        List<Seat> rowSeats = new ArrayList<>(rowEntry.getValue());
+                        rowSeats.sort((a, b) -> numericStringCompare(a.getSeatNumber(), b.getSeatNumber()));
+
+                        // Wrap into chunks of seatsPerLine
+                        for (int chunk = 0; chunk < rowSeats.size(); chunk += seatsPerLine) {
+                            List<Seat> line = rowSeats.subList(
+                                    chunk, Math.min(chunk + seatsPerLine, rowSeats.size()));
+
+                            // New page if not enough vertical space
+                            if (yPos - lineH < margin) {
+                                cs.close();
+                                curPage = new org.apache.pdfbox.pdmodel.PDPage(
+                                        org.apache.pdfbox.pdmodel.common.PDRectangle.A4);
+                                doc.addPage(curPage);
+                                cs = new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, curPage);
+                                yPos = pageH - margin;
+                            }
+
+                            // Row label on the first chunk only
+                            if (chunk == 0) {
+                                cs.beginText();
+                                cs.setFont(pdfNormal, 9);
+                                cs.setNonStrokingColor(0.38f, 0.38f, 0.38f);
+                                cs.newLineAtOffset(margin, yPos + cellSize / 2f - 4);
+                                cs.showText(rowLabel);
+                                cs.endText();
+                            }
+
+                            float xPos = margin + labelW;
+                            for (Seat seat : line) {
+                                float[] rgb = switch (seat.getStatus()) {
+                                    case AVAILABLE -> new float[]{0.298f, 0.686f, 0.314f};
+                                    case SOLD      -> new float[]{0.957f, 0.263f, 0.212f};
+                                    case DISABLED  -> new float[]{0.620f, 0.620f, 0.620f};
+                                    default        -> new float[]{0.620f, 0.620f, 0.620f};
+                                };
+                                cs.setNonStrokingColor(rgb[0], rgb[1], rgb[2]);
+                                cs.addRect(xPos, yPos, cellSize, cellSize);
+                                cs.fill();
+
+                                String seatNum = seat.getSeatNumber() != null ? toPdfSafe(seat.getSeatNumber()) : "";
+                                if (!seatNum.isEmpty()) {
+                                    float textWidth = pdfNormal.getStringWidth(seatNum) / 1000f * 8;
+                                    cs.beginText();
+                                    cs.setFont(pdfNormal, 8);
+                                    cs.setNonStrokingColor(1f, 1f, 1f);
+                                    cs.newLineAtOffset(
+                                            xPos + (cellSize - textWidth) / 2f,
+                                            yPos + cellSize / 2f - 3);
+                                    cs.showText(seatNum);
+                                    cs.endText();
+                                }
+                                xPos += cellSize + cellGap;
+                            }
+                            yPos -= lineH;
+                        }
+                    }
+                    yPos -= zoneGap;
+                }
+            } finally {
+                if (cs != null) cs.close();
+            }
+            doc.save(file);
+        }
+    }
+
+    // ── PDF helper ───────────────────────────────────────────────────────────
+
+    /**
+     * Sanitizes a string for use with PDType1Font (WinAnsiEncoding / Helvetica).
+     * Characters outside ISO-8859-1 range (0–255) are replaced with '?' to prevent
+     * {@link IllegalArgumentException} from PDFBox when the event/zone name contains
+     * characters like em-dash, curly quotes, or CJK glyphs.
+     */
+    private static String toPdfSafe(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            sb.append(c <= 0xFF ? c : '?');
+        }
+        return sb.toString();
     }
 }

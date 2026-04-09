@@ -170,6 +170,16 @@ public class SeatService {
     }
 
     /**
+     * Returns all seats for a given event across all zones, ordered by zone_id, row, seat.
+     * Uses READ_COMMITTED isolation (read-only, no locking needed).
+     */
+    public List<Seat> getSeatsForEvent(int eventId) throws SQLException {
+        try (Connection conn = connFactory.get()) {
+            return seatDAO.findByEventId(conn, eventId);
+        }
+    }
+
+    /**
      * Updates the status of the specified seats in a single database transaction.
      * Only AVAILABLE and DISABLED are valid target statuses for admin operations.
      * On any failure the transaction is rolled back.

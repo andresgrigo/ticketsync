@@ -17,6 +17,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Separator?>
 
 <BorderPane prefWidth="900" prefHeight="650"
             xmlns="http://javafx.com/javafx/21"
@@ -114,7 +115,7 @@
             </Tab>
 
             <!-- Seating Tab -->
-            <Tab text="Seating">
+            <Tab text="Seating" fx:id="seatingTab">
                 <content>
                     <BorderPane>
                         <top>
@@ -192,6 +193,50 @@
                                 </BorderPane>
                             </SplitPane>
                         </center>
+                    </BorderPane>
+                </content>
+            </Tab>
+
+            <!-- Layout View Tab -->
+            <Tab text="Layout View" fx:id="layoutViewTab">
+                <content>
+                    <BorderPane>
+                        <!-- Top: toolbar with event selector, stats, export -->
+                        <top>
+                            <VBox spacing="0">
+                                <ToolBar fx:id="layoutToolbar">
+                                    <Label text="Event:"/>
+                                    <ComboBox fx:id="layoutEventSelector" prefWidth="220" promptText="Select event…"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Button fx:id="layoutExportButton" text="Export Layout"
+                                            disable="true" onAction="#handleExportLayout"/>
+                                </ToolBar>
+                                <!-- Stats context panel (UX-DR12) -->
+                                <HBox spacing="24" style="-fx-background-color: #F5F5F5; -fx-padding: 6 12 6 12;">
+                                    <Label fx:id="layoutEventNameLabel" text="No event selected"
+                                           style="-fx-font-weight: bold;"/>
+                                    <Separator orientation="VERTICAL"/>
+                                    <Label fx:id="layoutTotalLabel" text="Total: —"/>
+                                    <Label fx:id="layoutAvailableLabel"
+                                           text="Available: —" style="-fx-text-fill: #388E3C;"/>
+                                    <Label fx:id="layoutSoldLabel"
+                                           text="Sold: —" style="-fx-text-fill: #D32F2F;"/>
+                                    <Label fx:id="layoutDisabledLabel"
+                                           text="Disabled: —" style="-fx-text-fill: #757575;"/>
+                                </HBox>
+                            </VBox>
+                        </top>
+                        <!-- Center: zoomable/pannable canvas in a scroll pane -->
+                        <center>
+                            <ScrollPane fx:id="layoutScrollPane" fitToHeight="false" fitToWidth="false"
+                                        hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
+                                <Canvas fx:id="layoutCanvas" width="800" height="600"/>
+                            </ScrollPane>
+                        </center>
+                        <!-- Bottom: hover tooltip -->
+                        <bottom>
+                            <Label fx:id="layoutHoverLabel" style="-fx-padding: 4;"/>
+                        </bottom>
                     </BorderPane>
                 </content>
             </Tab>
