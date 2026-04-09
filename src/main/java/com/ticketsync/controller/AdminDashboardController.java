@@ -80,7 +80,7 @@ import javafx.util.Pair;
  * <p>
  * Role-based access control is enforced in {@link #initialize()}: if the
  * current session user is absent or not an ADMIN the controller logs an error
- * and navigates back to the login screen (AC: 12, NFR-SEC02).
+ * and navigates back to the login screen.
  */
 public class AdminDashboardController {
 

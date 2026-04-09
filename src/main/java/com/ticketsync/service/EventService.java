@@ -37,9 +37,9 @@ interface ConnectionFactory {
  * {@link SessionContext}. A {@link SecurityException} is thrown if the caller
  * does not have the {@code ADMIN} role.
  *
- * <p>All mutating operations log an audit trail entry at INFO level (NFR-L01).
+ * <p>All mutating operations log an audit trail entry at INFO level.
  * {@link SQLException} from DAO calls is caught, logged at ERROR level
- * (NFR-L03), and re-thrown.
+ * and re-thrown.
  */
 public class EventService {
 

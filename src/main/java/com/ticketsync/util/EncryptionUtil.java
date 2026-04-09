@@ -12,7 +12,7 @@ import org.jasypt.iv.RandomIvGenerator;
  * decrypt them when the configuration file is loaded.</p>
  *
  * <p>The encryption algorithm used is {@code PBEWithHMACSHA512AndAES_256},
- * which requires Java 8 or later (built-in JCE) and satisfies NFR-SEC03.</p>
+ * which requires Java 8 or later (built-in JCE).</p>
  *
 
  * @version 1.0

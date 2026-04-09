@@ -21,7 +21,7 @@ import java.util.Optional;
  * commit/rollback, close). This class never closes the supplied connection.
  *
  * <p>Password hash values are treated as opaque strings — this class never hashes
- * or logs password-related fields (NFR-SEC04).
+ * or logs password-related fields.
  *
  * @see UserDAO
  * @see com.ticketsync.model.User

@@ -22,7 +22,7 @@ import java.util.List;
  *
  * <p>All mutating operations log an audit trail entry at INFO level so
  * that administrator actions are recorded in the application log file
- * (NFR-L01) until the dedicated {@code audit_log} table is available.
+ * until the dedicated {@code audit_log} table is available.
  *
  * <p>Instances of this class are stateless and may be shared across
  * threads. The constructor performs no I/O.

@@ -5,7 +5,7 @@ import org.mindrot.jbcrypt.BCrypt;
 /**
  * Utility class for BCrypt password hashing and verification.
  *
- * <p>Uses jBCrypt with cost factor 12 as mandated by NFR-SEC01. All methods are
+ * <p>Uses jBCrypt with cost factor 12. All methods are
  * static; this class is not instantiable. No database interaction is performed here.
  *
  * <p><strong>Security note:</strong> Never log plaintext passwords or hash values.

@@ -77,8 +77,7 @@ public class LoginController {
      *
      * <p>Validates that a username has been entered, then submits an
      * authentication {@link Task} on a new daemon thread. UI controls are
-     * disabled for the duration of the task to prevent double-submission
-     * (AC 7, NFR-U04).
+     * disabled for the duration of the task to prevent double-submission.
      */
     @FXML
     private void handleLogin() {

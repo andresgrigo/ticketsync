@@ -109,7 +109,7 @@ public class AuthenticationService {
         }
 
         // Generic warning — must NOT distinguish "user not found" from "wrong password"
-        // to prevent log-based username enumeration (NFR-SEC04).
+        // to prevent log-based username enumeration.
         LOGGER.warn("Authentication failed for username: {}", username);
         return Optional.empty();
     }
