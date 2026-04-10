@@ -19,6 +19,7 @@ module com.ticketsync {
     exports com.ticketsync.model;
     exports com.ticketsync.dao;
     exports com.ticketsync.service;
+    exports com.ticketsync.exception;
     exports com.ticketsync.controller;
     exports com.ticketsync.viewmodel;
 }
