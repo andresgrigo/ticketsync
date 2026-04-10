@@ -3,6 +3,7 @@ module com.ticketsync {
     requires javafx.fxml;
     requires transitive java.sql;
     requires com.zaxxer.hikari;
+    requires org.postgresql.jdbc;
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
     requires jbcrypt;
