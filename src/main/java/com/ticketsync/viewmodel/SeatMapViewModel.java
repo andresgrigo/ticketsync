@@ -180,6 +180,10 @@ public class SeatMapViewModel {
         return replaceSeat(replacement);
     }
 
+    public void clearSelection() {
+        uiRunner.accept(selectedSeatIds::clear);
+    }
+
     public void setFocusedSeatId(Integer seatId) {
         uiRunner.accept(() -> updateFocus(seatId));
     }
