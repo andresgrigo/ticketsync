@@ -68,7 +68,7 @@ public class SeatMapViewModel {
         );
     }
 
-    SeatMapViewModel(SeatLoader seatLoader, ZoneLoader zoneLoader, Consumer<Runnable> uiRunner) {
+    public SeatMapViewModel(SeatLoader seatLoader, ZoneLoader zoneLoader, Consumer<Runnable> uiRunner) {
         this.seatLoader = Objects.requireNonNull(seatLoader, "seatLoader must not be null");
         this.zoneLoader = Objects.requireNonNull(zoneLoader, "zoneLoader must not be null");
         this.uiRunner = Objects.requireNonNull(uiRunner, "uiRunner must not be null");
@@ -322,12 +322,12 @@ public class SeatMapViewModel {
     }
 
     @FunctionalInterface
-    interface SeatLoader {
+    public interface SeatLoader {
         List<Seat> load(int eventId) throws SQLException;
     }
 
     @FunctionalInterface
-    interface ZoneLoader {
+    public interface ZoneLoader {
         List<Zone> load(int eventId) throws SQLException;
     }
 }

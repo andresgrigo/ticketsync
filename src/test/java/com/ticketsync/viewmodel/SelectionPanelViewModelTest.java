@@ -165,6 +165,21 @@ class SelectionPanelViewModelTest {
         assertFalse(countdownScheduler.isScheduled());
     }
 
+    @Test
+    void dispose_stopsTimerAndDetachesSeatMapListeners() {
+        seatMapViewModel.toggleSeatSelection(1);
+        assertTrue(countdownScheduler.isScheduled());
+
+        viewModel.dispose();
+
+        assertFalse(countdownScheduler.isScheduled());
+        assertTrue(countdownScheduler.isShutdown());
+
+        seatMapViewModel.toggleSeatSelection(3);
+        assertEquals(1, viewModel.seatCountProperty().get(),
+                "disposed view-model should stop reacting to later seat-map changes");
+    }
+
     private static Seat seat(int seatId, int zoneId, String row, String number, SeatStatus status) {
         return new Seat(seatId, zoneId, row, number, status, null);
     }
@@ -176,6 +191,7 @@ class SelectionPanelViewModelTest {
     private static final class FakeCountdownScheduler implements SelectionPanelViewModel.CountdownScheduler {
         private Runnable scheduledTask;
         private boolean scheduled;
+        private boolean shutdown;
         private int scheduleCount;
 
         @Override
@@ -194,6 +210,7 @@ class SelectionPanelViewModelTest {
         public void shutdown() {
             scheduled = false;
             scheduledTask = null;
+            shutdown = true;
         }
 
         int scheduleCount() {
@@ -202,6 +219,10 @@ class SelectionPanelViewModelTest {
 
         boolean isScheduled() {
             return scheduled;
+        }
+
+        boolean isShutdown() {
+            return shutdown;
         }
 
         void tick(int times) {

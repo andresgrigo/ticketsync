@@ -5,12 +5,16 @@ import com.ticketsync.model.Event;
 import com.ticketsync.model.User;
 import com.ticketsync.service.AuthenticationService;
 import com.ticketsync.service.EventService;
+import com.ticketsync.service.SeatService;
+import com.ticketsync.service.SeatSyncService;
 import com.ticketsync.service.SessionContext;
 import com.ticketsync.viewmodel.PosViewModel;
+import com.ticketsync.viewmodel.SeatMapViewModel;
+import com.ticketsync.viewmodel.SelectionPanelViewModel;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -19,11 +23,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -43,19 +50,44 @@ public class PosController {
 
     private static final Logger LOGGER = LogManager.getLogger(PosController.class);
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final String HEALTHY_BADGE_STYLE =
+            "-fx-background-color: #E8F5E9; -fx-text-fill: #2E7D32; -fx-background-radius: 16; "
+                    + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
+    private static final String UNHEALTHY_BADGE_STYLE =
+            "-fx-background-color: #F5F5F5; -fx-text-fill: #616161; -fx-background-radius: 16; "
+                    + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
 
     @FXML private BorderPane root;
     @FXML private TextField eventSearchField;
     @FXML private ComboBox<Event> eventComboBox;
     @FXML private Label eventStatusLabel;
     @FXML private Label noEventsLabel;
-    @FXML private Label selectedEventLabel;
+    @FXML private Label eventContextLabel;
+    @FXML private Label availableSeatsContextLabel;
+    @FXML private Label boothContextLabel;
+    
+    @FXML private Label lastSyncContextLabel;
+    @FXML private Label systemHealthBadgeLabel;
     @FXML private Label vendorInfoLabel;
     @FXML private Button logoutButton;
+    @FXML private StackPane seatMapContainer;
+    @FXML private StackPane selectionPanelContainer;
 
     private PosViewModel viewModel;
     private final EventService eventService = new EventService();
+    private final SeatService seatService = new SeatService();
+    private final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "POS-Background");
+        thread.setDaemon(true);
+        return thread;
+    });
     private User currentUser;
+    private SeatMapController seatMapController;
+    private SelectionPanelController selectionPanelController;
+    private PosScreenCoordinator posScreenCoordinator;
+    private SeatMapViewModel seatMapViewModel;
+    private boolean disposed;
+    private int currentLoadGeneration;
 
     /**
      * Initialises the POS view on the FX Application Thread.
@@ -81,13 +113,57 @@ public class PosController {
         vendorInfoLabel.setText("Vendor: " + currentUser.getUsername());
 
         viewModel = new PosViewModel();
+        viewModel.setBoothId(deriveBoothId(currentUser));
+
+        try {
+            configureComposedScreen();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to compose POS screen", ex);
+        }
 
         configureComboBox();
         bindLabels();
+        bindContextState();
+        root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (oldScene != null && newScene == null) {
+                dispose();
+            }
+        });
 
         root.addEventFilter(KeyEvent.KEY_PRESSED, this::handleFunctionKeyShortcut);
 
         loadActiveEventsAsync();
+    }
+
+    private void configureComposedScreen() throws IOException {
+        seatMapViewModel = new SeatMapViewModel();
+        SelectionPanelViewModel selectionPanelViewModel = new SelectionPanelViewModel(seatMapViewModel);
+        selectionPanelViewModel.bindPurchaseEnabled(viewModel.purchaseEnabledProperty());
+        selectionPanelViewModel.setOnConfirmAction(this::handleConfirmSelectionRequested);
+
+        FXMLLoader seatMapLoader = new FXMLLoader(App.class.getResource("SeatMapView.fxml"));
+        seatMapContainer.getChildren().clear();
+        seatMapContainer.getChildren().add(seatMapLoader.load());
+        seatMapController = seatMapLoader.getController();
+        seatMapController.setViewModel(seatMapViewModel);
+        seatMapController.setViewActiveCheck(() -> !disposed);
+
+        FXMLLoader selectionPanelLoader = new FXMLLoader(App.class.getResource("SelectionPanelView.fxml"));
+        selectionPanelContainer.getChildren().clear();
+        selectionPanelContainer.getChildren().add(selectionPanelLoader.load());
+        selectionPanelController = selectionPanelLoader.getController();
+        selectionPanelController.setViewModel(selectionPanelViewModel);
+
+        posScreenCoordinator = new PosScreenCoordinator(
+                seatMapViewModel,
+                new SeatSyncService(),
+                seatService::getSeatById
+        );
+        viewModel.selectedEventProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue != null && !disposed) {
+                loadSelectedEventAsync(newValue);
+            }
+        });
     }
 
     /**
@@ -162,19 +238,21 @@ public class PosController {
      * sets the initial hidden state for {@code noEventsLabel}.
      */
     private void bindLabels() {
-        selectedEventLabel.textProperty().bind(
-                Bindings.createStringBinding(
-                        () -> {
-                            Event sel = viewModel.selectedEventProperty().get();
-                            return sel != null ? "Selected: " + sel.getName() : "";
-                        },
-                        viewModel.selectedEventProperty()
-                )
-        );
+        eventContextLabel.textProperty().bind(viewModel.selectedEventTextProperty());
+        availableSeatsContextLabel.textProperty().bind(viewModel.availableSeatCountTextProperty());
+        boothContextLabel.textProperty().bind(viewModel.boothIdTextProperty());
+        lastSyncContextLabel.textProperty().bind(viewModel.lastSyncTimestampTextProperty());
+        systemHealthBadgeLabel.textProperty().bind(viewModel.systemHealthBadgeTextProperty());
 
         // noEventsLabel visibility is controlled by loadActiveEventsAsync after load completes
         noEventsLabel.setVisible(false);
         noEventsLabel.setManaged(false);
+    }
+
+    private void bindContextState() {
+        applySystemHealthBadgeStyle(viewModel.databaseHealthyProperty().get());
+        viewModel.databaseHealthyProperty().addListener((obs, oldValue, newValue) ->
+                applySystemHealthBadgeStyle(newValue));
     }
 
     /**
@@ -187,19 +265,8 @@ public class PosController {
      */
     private void loadActiveEventsAsync() {
         eventStatusLabel.setText("Loading events...");
-        User capturedUser = currentUser;
 
-        Task<List<Event>> task = new Task<>() {
-            @Override
-            protected List<Event> call() throws Exception {
-                SessionContext.setCurrentUser(capturedUser);
-                try {
-                    return eventService.getActiveEvents();
-                } finally {
-                    SessionContext.clearCurrentUser();
-                }
-            }
-        };
+        Task<List<Event>> task = createSessionAwareTask(eventService::getActiveEvents);
 
         task.setOnSucceeded(e -> {
             List<Event> events = task.getValue();
@@ -230,9 +297,7 @@ public class PosController {
             }
         });
 
-        Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
+        submitTask(task);
     }
 
     /**
@@ -275,6 +340,7 @@ public class PosController {
     @FXML
     private void handleLogout() {
         try {
+            dispose();
             new AuthenticationService().logout();
             App.setRoot("LoginView");
         } catch (IOException ex) {
@@ -290,5 +356,117 @@ public class PosController {
      */
     public PosViewModel getViewModel() {
         return viewModel;
+    }
+
+    public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
+        if (posScreenCoordinator != null) {
+            posScreenCoordinator.stopSeatSync();
+        }
+        if (selectionPanelController != null) {
+            selectionPanelController.dispose();
+        }
+        backgroundExecutor.shutdownNow();
+    }
+
+    private void loadSelectedEventAsync(Event event) {
+        eventStatusLabel.setText("Loading seat map...");
+        posScreenCoordinator.stopSeatSync();
+        final int capturedGeneration = ++currentLoadGeneration;
+
+        Task<Void> task = createSessionAwareTask(() -> {
+            posScreenCoordinator.loadSelectedEvent(event);
+            return null;
+        });
+        task.setOnSucceeded(e -> {
+            if (disposed || capturedGeneration != currentLoadGeneration) {
+                return;
+            }
+            eventStatusLabel.setText("");
+            viewModel.updateAvailableSeatCount(seatMapViewModel.seatsProperty());
+            viewModel.markLastSyncNow();
+            posScreenCoordinator.restartSeatSync(this::refreshSeatAsync);
+        });
+        task.setOnFailed(e -> {
+            if (disposed) {
+                return;
+            }
+            Throwable cause = task.getException();
+            if (cause instanceof SecurityException) {
+                LOGGER.error("Session expired loading seats for POS — redirecting to login", cause);
+                try {
+                    App.setRoot("LoginView");
+                } catch (IOException ioEx) {
+                    LOGGER.error("Failed to redirect to LoginView after seat load failure", ioEx);
+                }
+                return;
+            }
+            LOGGER.error("Failed to load seats for event {}", event.getEventId(), cause);
+            eventStatusLabel.setText("Error loading seat map. Please try again.");
+        });
+        submitTask(task);
+    }
+
+    private void refreshSeatAsync(int seatId) {
+        if (disposed) {
+            return;
+        }
+        Task<Void> task = createSessionAwareTask(() -> {
+            posScreenCoordinator.refreshSeat(seatId);
+            return null;
+        });
+        task.setOnSucceeded(e -> {
+            if (disposed) {
+                return;
+            }
+            viewModel.updateAvailableSeatCount(seatMapViewModel.seatsProperty());
+            viewModel.markLastSyncNow();
+        });
+        task.setOnFailed(e -> LOGGER.warn("Failed to refresh seat {} from live sync", seatId, task.getException()));
+        submitTask(task);
+    }
+
+    private void handleConfirmSelectionRequested() {
+        LOGGER.debug("Confirm purchase requested from POS screen; Story 5.9 will implement transaction flow");
+    }
+
+    private void applySystemHealthBadgeStyle(boolean healthy) {
+        systemHealthBadgeLabel.setStyle(healthy ? HEALTHY_BADGE_STYLE : UNHEALTHY_BADGE_STYLE);
+    }
+
+    private void submitTask(Task<?> task) {
+        if (!disposed) {
+            backgroundExecutor.submit(task);
+        }
+    }
+
+    private <T> Task<T> createSessionAwareTask(SessionAction<T> action) {
+        User capturedUser = currentUser;
+        return new Task<>() {
+            @Override
+            protected T call() throws Exception {
+                SessionContext.setCurrentUser(capturedUser);
+                try {
+                    return action.run();
+                } finally {
+                    SessionContext.clearCurrentUser();
+                }
+            }
+        };
+    }
+
+    private static String deriveBoothId(User user) {
+        if (user.getUserId() > 0) {
+            return "Booth " + user.getUserId();
+        }
+        return "Booth " + user.getUsername();
+    }
+
+    @FunctionalInterface
+    private interface SessionAction<T> {
+        T run() throws Exception;
     }
 }

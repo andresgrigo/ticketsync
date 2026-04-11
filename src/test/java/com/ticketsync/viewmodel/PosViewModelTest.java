@@ -1,11 +1,15 @@
 package com.ticketsync.viewmodel;
 
 import com.ticketsync.model.Event;
+import com.ticketsync.model.Seat;
+import com.ticketsync.model.SeatStatus;
+import javafx.beans.property.SimpleBooleanProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,10 +23,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class PosViewModelTest {
 
     private PosViewModel viewModel;
+    private SimpleBooleanProperty databaseConnected;
+    private AtomicReference<LocalDateTime> now;
 
     @BeforeEach
     void setUp() {
-        viewModel = new PosViewModel();
+        databaseConnected = new SimpleBooleanProperty(true);
+        now = new AtomicReference<>(LocalDateTime.of(2026, 4, 11, 14, 15, 9));
+        viewModel = new PosViewModel(databaseConnected, now::get);
     }
 
     // -------------------------------------------------------------------------
@@ -34,6 +42,10 @@ class PosViewModelTest {
         e.setName(name);
         e.setEventDate(LocalDateTime.of(2026, 6, 1, 18, 0));
         return e;
+    }
+
+    private Seat seat(int seatId, SeatStatus status) {
+        return new Seat(seatId, 10, "A", String.valueOf(seatId), status, null);
     }
 
     // -------------------------------------------------------------------------
@@ -50,6 +62,17 @@ class PosViewModelTest {
     void initialState_selectedEventIsNull() {
         assertNull(viewModel.selectedEventProperty().get(),
                 "selectedEvent should be null initially");
+    }
+
+    @Test
+    void initialState_contextPropertiesExposeHealthyDefaults() {
+        assertEquals("Event: No event selected", viewModel.selectedEventTextProperty().get());
+        assertEquals("Available Seats: 0", viewModel.availableSeatCountTextProperty().get());
+        assertEquals("Booth: Unassigned", viewModel.boothIdTextProperty().get());
+        assertEquals("DB Online", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals("Last Sync: Pending", viewModel.lastSyncTimestampTextProperty().get());
+        assertTrue(viewModel.purchaseEnabledProperty().get());
+        assertTrue(viewModel.databaseHealthyProperty().get());
     }
 
     // -------------------------------------------------------------------------
@@ -80,6 +103,30 @@ class PosViewModelTest {
         viewModel.setEvents(List.of(event("Rock Festival"), event("Jazz Gala")));
         assertEquals(2, viewModel.getFilteredEvents().size(),
                 "all events should be visible after setEvents resets the predicate");
+    }
+
+    @Test
+    void contextProperties_updateFromSelectionSeatSnapshotAndHealth() {
+        viewModel.setBoothId("Booth 7");
+        viewModel.selectedEventProperty().set(event("Spring Gala"));
+        viewModel.updateAvailableSeatCount(List.of(
+                seat(1, SeatStatus.AVAILABLE),
+                seat(2, SeatStatus.SOLD),
+                seat(3, SeatStatus.AVAILABLE)
+        ));
+        viewModel.markLastSyncNow();
+
+        assertEquals("Event: Spring Gala", viewModel.selectedEventTextProperty().get());
+        assertEquals(2, viewModel.availableSeatCountProperty().get());
+        assertEquals("Available Seats: 2", viewModel.availableSeatCountTextProperty().get());
+        assertEquals("Booth: Booth 7", viewModel.boothIdTextProperty().get());
+        assertEquals("Last Sync: 2026-04-11 14:15:09", viewModel.lastSyncTimestampTextProperty().get());
+
+        databaseConnected.set(false);
+
+        assertFalse(viewModel.purchaseEnabledProperty().get());
+        assertFalse(viewModel.databaseHealthyProperty().get());
+        assertEquals("DB Offline", viewModel.systemHealthBadgeTextProperty().get());
     }
 
     // -------------------------------------------------------------------------

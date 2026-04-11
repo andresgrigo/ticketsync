@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service class for seat management business logic.
@@ -176,6 +177,19 @@ public class SeatService {
     public List<Seat> getSeatsForEvent(int eventId) throws SQLException {
         try (Connection conn = connFactory.get()) {
             return seatDAO.findByEventId(conn, eventId);
+        }
+    }
+
+    /**
+     * Returns a single seat by primary key.
+     *
+     * @param seatId the seat to look up; must be positive
+     * @return the seat when found, otherwise {@link Optional#empty()}
+     * @throws SQLException if a database error occurs
+     */
+    public Optional<Seat> getSeatById(int seatId) throws SQLException {
+        try (Connection conn = connFactory.get()) {
+            return seatDAO.findById(conn, seatId);
         }
     }
 

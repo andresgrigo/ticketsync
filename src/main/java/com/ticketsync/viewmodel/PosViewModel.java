@@ -1,15 +1,27 @@
 package com.ticketsync.viewmodel;
 
 import com.ticketsync.model.Event;
+import com.ticketsync.model.Seat;
+import com.ticketsync.model.SeatStatus;
 import com.ticketsync.util.DatabaseHealthMonitor;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
+import javafx.beans.property.ReadOnlyStringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -31,13 +43,51 @@ import java.util.stream.Collectors;
  */
 public class PosViewModel {
 
+    private static final DateTimeFormatter SYNC_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final ObservableList<Event> allEvents = FXCollections.observableArrayList();
     private final ObservableList<Event> displayedEvents = FXCollections.observableArrayList();
     private final ObjectProperty<Event> selectedEvent = new SimpleObjectProperty<>(null);
     private final ReadOnlyBooleanWrapper purchaseEnabled = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyBooleanWrapper databaseHealthy = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyIntegerWrapper availableSeatCount = new ReadOnlyIntegerWrapper(0);
+    private final ReadOnlyStringWrapper selectedEventText = new ReadOnlyStringWrapper();
+    private final ReadOnlyStringWrapper availableSeatCountText = new ReadOnlyStringWrapper();
+    private final ReadOnlyStringWrapper boothIdText = new ReadOnlyStringWrapper("Booth: Unassigned");
+    private final ReadOnlyStringWrapper systemHealthBadgeText = new ReadOnlyStringWrapper();
+    private final ReadOnlyStringWrapper lastSyncTimestampText = new ReadOnlyStringWrapper("Last Sync: Pending");
+    private final Supplier<LocalDateTime> timestampSupplier;
 
     public PosViewModel() {
-        purchaseEnabled.bind(DatabaseHealthMonitor.getInstance().connectedProperty());
+        this(DatabaseHealthMonitor.getInstance().connectedProperty(), LocalDateTime::now);
+    }
+
+    public PosViewModel(ObservableBooleanValue databaseConnected, Supplier<LocalDateTime> timestampSupplier) {
+        Objects.requireNonNull(databaseConnected, "databaseConnected must not be null");
+        this.timestampSupplier = Objects.requireNonNull(timestampSupplier, "timestampSupplier must not be null");
+
+        purchaseEnabled.bind(databaseConnected);
+        databaseHealthy.bind(databaseConnected);
+
+        selectedEventText.bind(Bindings.createStringBinding(
+                () -> {
+                    Event selected = selectedEvent.get();
+                    return selected != null && selected.getName() != null && !selected.getName().isBlank()
+                            ? "Event: " + selected.getName()
+                            : "Event: No event selected";
+                },
+                selectedEvent
+        ));
+        availableSeatCountText.bind(Bindings.createStringBinding(
+            () -> "Available Seats: " + availableSeatCount.get(),
+            availableSeatCount
+        ));
+        systemHealthBadgeText.bind(Bindings.createStringBinding(
+            () -> databaseHealthy.get()
+            ? "DB Online"
+                : "DB Offline",
+            databaseHealthy
+        ));
     }
 
     /**
@@ -110,6 +160,52 @@ public class PosViewModel {
      */
     public ReadOnlyBooleanProperty purchaseEnabledProperty() {
         return purchaseEnabled.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty databaseHealthyProperty() {
+        return databaseHealthy.getReadOnlyProperty();
+    }
+
+    public ReadOnlyIntegerProperty availableSeatCountProperty() {
+        return availableSeatCount.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty selectedEventTextProperty() {
+        return selectedEventText.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty availableSeatCountTextProperty() {
+        return availableSeatCountText.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty boothIdTextProperty() {
+        return boothIdText.getReadOnlyProperty();
+    }
+    public ReadOnlyStringProperty systemHealthBadgeTextProperty() {
+        return systemHealthBadgeText.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty lastSyncTimestampTextProperty() {
+        return lastSyncTimestampText.getReadOnlyProperty();
+    }
+
+    public void setBoothId(String boothId) {
+        if (boothId == null || boothId.isBlank()) {
+            boothIdText.set("Booth: Unassigned");
+            return;
+        }
+        boothIdText.set("Booth: " + boothId.strip());
+    }
+
+    public void updateAvailableSeatCount(List<Seat> seats) {
+        long availableCount = seats == null
+                ? 0
+                : seats.stream().filter(seat -> seat.getStatus() == SeatStatus.AVAILABLE).count();
+        availableSeatCount.set((int) availableCount);
+    }
+
+    public void markLastSyncNow() {
+        lastSyncTimestampText.set("Last Sync: " + timestampSupplier.get().format(SYNC_TIMESTAMP_FORMATTER));
     }
 
 }
