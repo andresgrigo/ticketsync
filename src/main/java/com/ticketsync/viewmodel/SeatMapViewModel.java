@@ -39,6 +39,9 @@ public class SeatMapViewModel {
 
     private final ObservableList<Seat> seats = FXCollections.observableArrayList();
     private final ObservableList<Seat> readOnlySeats = FXCollections.unmodifiableObservableList(seats);
+    private final ObservableList<Seat> renderedSeats = FXCollections.observableArrayList();
+    private final ObservableList<Seat> readOnlyRenderedSeats =
+            FXCollections.unmodifiableObservableList(renderedSeats);
     private final ObservableList<Zone> zones = FXCollections.observableArrayList();
     private final ObservableList<Zone> readOnlyZones = FXCollections.unmodifiableObservableList(zones);
     private final ObservableSet<Integer> selectedSeatIds = FXCollections.observableSet();
@@ -53,6 +56,7 @@ public class SeatMapViewModel {
     private final SeatLoader seatLoader;
     private final ZoneLoader zoneLoader;
     private final Consumer<Runnable> uiRunner;
+    private Integer recoveryFilterZoneId;
 
     public SeatMapViewModel() {
         this(
@@ -76,6 +80,10 @@ public class SeatMapViewModel {
 
     public ObservableList<Seat> seatsProperty() {
         return readOnlySeats;
+    }
+
+    public ObservableList<Seat> renderedSeatsProperty() {
+        return readOnlyRenderedSeats;
     }
 
     public ObservableList<Zone> zonesProperty() {
@@ -135,6 +143,10 @@ public class SeatMapViewModel {
 
         boolean selectedAfterToggle = !selectedSeatIds.contains(seatId);
         uiRunner.accept(() -> {
+            if (recoveryFilterZoneId != null) {
+                recoveryFilterZoneId = null;
+                refreshRenderedSeats();
+            }
             if (selectedSeatIds.contains(seatId)) {
                 selectedSeatIds.remove(seatId);
             } else {
@@ -155,6 +167,7 @@ public class SeatMapViewModel {
         Seat replacement = copySeat(updatedSeat);
         uiRunner.accept(() -> {
             seats.set(index, replacement);
+            refreshRenderedSeats();
             pruneSelectionForUnavailableSeats();
             reconcileFocus();
         });
@@ -184,6 +197,23 @@ public class SeatMapViewModel {
         uiRunner.accept(selectedSeatIds::clear);
     }
 
+    public void showAvailableSeatsInZone(int zoneId) {
+        if (zoneId <= 0) {
+            throw new IllegalArgumentException("zoneId must be positive");
+        }
+        uiRunner.accept(() -> {
+            recoveryFilterZoneId = zoneId;
+            refreshRenderedSeats();
+        });
+    }
+
+    public void clearRecoveryFilter() {
+        uiRunner.accept(() -> {
+            recoveryFilterZoneId = null;
+            refreshRenderedSeats();
+        });
+    }
+
     public void setFocusedSeatId(Integer seatId) {
         uiRunner.accept(() -> updateFocus(seatId));
     }
@@ -209,6 +239,8 @@ public class SeatMapViewModel {
         for (Zone zone : zoneCopies) {
             zoneById.put(zone.getZoneId(), zone);
         }
+        recoveryFilterZoneId = null;
+        refreshRenderedSeats();
         selectedSeatIds.clear();
         if (seats.isEmpty()) {
             focusedSeatId.set(null);
@@ -222,6 +254,17 @@ public class SeatMapViewModel {
 
     private void setLoading(boolean loadingValue) {
         uiRunner.accept(() -> loading.set(loadingValue));
+    }
+
+    private void refreshRenderedSeats() {
+        if (recoveryFilterZoneId == null) {
+            renderedSeats.setAll(seats);
+            return;
+        }
+        renderedSeats.setAll(seats.stream()
+                .filter(seat -> seat.getZoneId() == recoveryFilterZoneId)
+                .filter(seat -> seat.getStatus() == SeatStatus.AVAILABLE)
+                .toList());
     }
 
     private boolean isSelectableSeat(int seatId) {

@@ -128,14 +128,14 @@ public class SeatMapController {
     }
 
     private void attachViewModelListeners(SeatMapViewModel model) {
-        model.seatsProperty().addListener(seatListListener);
+        model.renderedSeatsProperty().addListener(seatListListener);
         model.selectedSeatIdsProperty().addListener(selectionListener);
         model.focusedSeatIdProperty().addListener(focusListener);
         model.loadingProperty().addListener(loadingListener);
     }
 
     private void detachViewModelListeners(SeatMapViewModel model) {
-        model.seatsProperty().removeListener(seatListListener);
+        model.renderedSeatsProperty().removeListener(seatListListener);
         model.selectedSeatIdsProperty().removeListener(selectionListener);
         model.focusedSeatIdProperty().removeListener(focusListener);
         model.loadingProperty().removeListener(loadingListener);
@@ -167,7 +167,7 @@ public class SeatMapController {
             return;
         }
 
-        if (viewModel.seatsProperty().isEmpty()) {
+        if (viewModel.renderedSeatsProperty().isEmpty()) {
             renderPlaceholder(viewportWidth, viewportHeight);
             currentLayout = SeatMapLayoutHelper.buildLayout(List.of(), Map.of());
             return;
@@ -177,7 +177,7 @@ public class SeatMapController {
         for (Zone zone : viewModel.zonesProperty()) {
             zonesById.put(zone.getZoneId(), zone);
         }
-        currentLayout = SeatMapLayoutHelper.buildLayout(viewModel.seatsProperty(), zonesById);
+        currentLayout = SeatMapLayoutHelper.buildLayout(viewModel.renderedSeatsProperty(), zonesById);
 
         SeatMapLayoutHelper.CanvasExtent extent = SeatMapLayoutHelper.requiredCanvasExtent(
                 currentLayout,

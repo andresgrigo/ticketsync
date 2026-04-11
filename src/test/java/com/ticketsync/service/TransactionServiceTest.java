@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class TransactionServiceTest {
 
     private static final User VENDOR = new User(5, "vendor1", "hash", "VENDOR", null);
+    private static final String BOOTH_ID = "Booth 5";
 
     private StubSeatDAO stubSeatDAO;
     private StubSaleDAO stubSaleDAO;
@@ -64,14 +65,16 @@ class TransactionServiceTest {
                 availableSeat(10), availableSeat(11));
         stubSaleDAO.generatedSaleId = 42;
 
-        Sale result = service.purchaseSeats(1, List.of(10, 11), new BigDecimal("20.00"));
+        Sale result = service.purchaseSeats(1, List.of(10, 11), new BigDecimal("20.00"), BOOTH_ID);
 
         assertEquals(42, result.getSaleId());
         assertEquals(1,  result.getEventId());
         assertEquals(5,  result.getVendorId());
         assertEquals(new BigDecimal("20.00"), result.getTotalAmount());
         assertNotNull(result.getSaleTimestamp());
-        assertNull(result.getBoothId());
+        assertEquals(BOOTH_ID, result.getBoothId());
+        assertNotNull(stubSaleDAO.insertedSale);
+        assertEquals(BOOTH_ID, stubSaleDAO.insertedSale.getBoothId());
         assertTrue(stubSeatDAO.updateStatusCalled, "updateStatus must be called to mark seats SOLD");
         assertEquals(SeatStatus.SOLD, stubSeatDAO.lastUpdateStatusStatus, "seats must be marked SOLD");
     }
@@ -81,7 +84,7 @@ class TransactionServiceTest {
         stubSeatDAO.seatsToReturn = List.of(availableSeat(1));
         stubSaleDAO.generatedSaleId = 1;
 
-        service.purchaseSeats(1, List.of(1), new BigDecimal("10.00"));
+        service.purchaseSeats(1, List.of(1), new BigDecimal("10.00"), BOOTH_ID);
 
         assertTrue(stubSeatDAO.commitCalled, "commit() must be called on successful purchase");
         assertFalse(stubSeatDAO.rollbackCalled, "rollback() must NOT be called on success");
@@ -92,7 +95,7 @@ class TransactionServiceTest {
         stubSeatDAO.seatsToReturn = List.of(availableSeat(1), availableSeat(2));
         stubSaleDAO.generatedSaleId = 7;
 
-        service.purchaseSeats(2, List.of(1, 2), new BigDecimal("10.00"));
+        service.purchaseSeats(2, List.of(1, 2), new BigDecimal("10.00"), BOOTH_ID);
 
         assertEquals(2, stubSaleDAO.insertedItems.size());
         assertEquals(new BigDecimal("5.00"), stubSaleDAO.insertedItems.get(0).getPricePaid());
@@ -204,7 +207,7 @@ class TransactionServiceTest {
         stubSeatDAO.seatsToReturn = List.of(availableSeat(1));
         stubSaleDAO.generatedSaleId = 1;
 
-        service.purchaseSeats(1, List.of(1), new BigDecimal("10.00"));
+        service.purchaseSeats(1, List.of(1), new BigDecimal("10.00"), BOOTH_ID);
 
         assertTrue(stubSeatDAO.transactionIsolationSet, "setTransactionIsolation must be called");
         assertEquals(Connection.TRANSACTION_SERIALIZABLE, stubSeatDAO.lastTransactionIsolation,
@@ -246,6 +249,48 @@ class TransactionServiceTest {
 
         assertTrue(ex.getUnavailableSeatIds().contains(99), "missing seat ID must be in exception");
         assertTrue(stubSeatDAO.rollbackCalled, "rollback() must be called when seat not found");
+    }
+
+    @Test
+    void purchaseReceiptDetails_fromSale_buildsDeterministicReceiptMetadata() {
+        Sale sale = new Sale(
+                42,
+                1,
+                5,
+                new BigDecimal("20.00"),
+                java.time.LocalDateTime.of(2026, 4, 11, 14, 15, 9),
+                BOOTH_ID
+        );
+
+        PurchaseReceiptDetails receipt = PurchaseReceiptDetails.fromSale(
+                sale,
+                List.of("Section A, Row 12, Seat 5", "Section A, Row 12, Seat 6")
+        );
+
+        assertEquals("TXN-20260411-141509-B5", receipt.transactionId());
+        assertEquals("April 11, 2026 14:15:09", receipt.timestampText());
+        assertEquals(BOOTH_ID, receipt.boothId());
+        assertEquals("EUR20.00", receipt.totalPriceText());
+        assertEquals(
+                List.of("Section A, Row 12, Seat 5", "Section A, Row 12, Seat 6"),
+                receipt.seatLines()
+        );
+    }
+
+    @Test
+    void purchaseReceiptDetails_formatTransactionId_nullBoothIdProducesBUNKNOWN() {
+        Sale sale = new Sale(
+                1,
+                1,
+                5,
+                new BigDecimal("10.00"),
+                java.time.LocalDateTime.of(2026, 4, 11, 10, 0, 0),
+                null
+        );
+
+        String txnId = PurchaseReceiptDetails.formatTransactionId(sale);
+
+        assertEquals("TXN-20260411-100000-BUNKNOWN", txnId);
     }
 
     // -----------------------------------------------------------------------
@@ -371,6 +416,7 @@ class TransactionServiceTest {
 
         int generatedSaleId = 1;
         List<SaleItem> insertedItems = new ArrayList<>();
+        Sale insertedSale;
 
         @Override
         public Optional<Sale> findById(Connection conn, int saleId) throws SQLException {
@@ -389,6 +435,7 @@ class TransactionServiceTest {
 
         @Override
         public int insert(Connection conn, Sale sale) throws SQLException {
+            insertedSale = sale;
             return generatedSaleId;
         }
 

@@ -96,6 +96,33 @@ class SeatMapViewModelTest {
     }
 
     @Test
+    void showAvailableSeatsInZone_filtersRenderedSeatsWithoutChangingCanonicalSnapshot() throws Exception {
+        viewModel.loadEventData(99);
+
+        viewModel.showAvailableSeatsInZone(10);
+
+        assertEquals(List.of(1), viewModel.renderedSeatsProperty().stream().map(Seat::getSeatId).toList());
+        assertEquals(List.of(1, 2, 3), viewModel.seatsProperty().stream().map(Seat::getSeatId).toList());
+
+        viewModel.clearRecoveryFilter();
+
+        assertEquals(List.of(1, 2, 3), viewModel.renderedSeatsProperty().stream().map(Seat::getSeatId).toList());
+    }
+
+    @Test
+    void toggleSeatSelection_clearsRecoveryFilterWhenNewSelectionBegins() throws Exception {
+        viewModel.loadEventData(99);
+        viewModel.showAvailableSeatsInZone(10);
+
+        assertEquals(List.of(1), viewModel.renderedSeatsProperty().stream().map(Seat::getSeatId).toList());
+
+        assertTrue(viewModel.toggleSeatSelection(1));
+
+        assertEquals(Set.of(1), viewModel.selectedSeatIdsProperty());
+        assertEquals(List.of(1, 2, 3), viewModel.renderedSeatsProperty().stream().map(Seat::getSeatId).toList());
+    }
+
+    @Test
     void loadEventData_failureResetsLoadingState() {
         SeatMapViewModel failing = new SeatMapViewModel(
                 eventId -> {

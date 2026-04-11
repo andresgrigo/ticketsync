@@ -82,6 +82,11 @@ public class TransactionService {
      */
     public Sale purchaseSeats(int eventId, List<Integer> seatIds, BigDecimal total)
             throws SeatUnavailableException {
+        return purchaseSeats(eventId, seatIds, total, null);
+    }
+
+    public Sale purchaseSeats(int eventId, List<Integer> seatIds, BigDecimal total, String boothId)
+            throws SeatUnavailableException {
         if (eventId <= 0) throw new IllegalArgumentException("eventId must be positive");
         if (seatIds == null || seatIds.isEmpty()) throw new IllegalArgumentException("seatIds must not be null or empty");
         if (seatIds.stream().anyMatch(Objects::isNull)) throw new IllegalArgumentException("seatIds must not contain null elements");
@@ -131,7 +136,7 @@ public class TransactionService {
             sale.setVendorId(vendorId);
             sale.setTotalAmount(total);
             sale.setSaleTimestamp(LocalDateTime.now());
-            // boothId is intentionally null — no booth context available in this version
+            sale.setBoothId(normalizeBoothId(boothId));
 
             // Step 4: Insert Sale
             int saleId = saleDAO.insert(conn, sale);
@@ -201,5 +206,12 @@ public class TransactionService {
                 LOGGER.warn("Failed to close connection: {}", ex.getMessage());
             }
         }
+    }
+
+    private static String normalizeBoothId(String boothId) {
+        if (boothId == null || boothId.isBlank()) {
+            return null;
+        }
+        return boothId.strip();
     }
 }

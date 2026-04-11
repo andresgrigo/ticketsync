@@ -166,6 +166,23 @@ class SelectionPanelViewModelTest {
     }
 
     @Test
+    void resetToReadyState_clearsSelectionProcessingAndCountdown() {
+        seatMapViewModel.toggleSeatSelection(1);
+        seatMapViewModel.toggleSeatSelection(3);
+        countdownScheduler.tick(4);
+        viewModel.setProcessing(true);
+
+        viewModel.resetToReadyState();
+
+        assertFalse(viewModel.processingProperty().get());
+        assertTrue(seatMapViewModel.selectedSeatIdsProperty().isEmpty());
+        assertTrue(viewModel.emptyStateVisibleProperty().get());
+        assertFalse(viewModel.lockActiveProperty().get());
+        assertFalse(countdownScheduler.isScheduled());
+        assertEquals(60, viewModel.remainingLockSecondsProperty().get());
+    }
+
+    @Test
     void dispose_stopsTimerAndDetachesSeatMapListeners() {
         seatMapViewModel.toggleSeatSelection(1);
         assertTrue(countdownScheduler.isScheduled());

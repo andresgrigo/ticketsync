@@ -6,6 +6,8 @@ import com.ticketsync.service.SeatSyncService;
 import com.ticketsync.viewmodel.SeatMapViewModel;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -38,6 +40,40 @@ final class PosScreenCoordinator {
         }
 
         seatMapViewModel.replaceSeat(refreshedSeat.get());
+    }
+
+    List<Seat> refreshSeats(List<Integer> seatIds) throws SQLException {
+        List<Seat> refreshedSeats = new ArrayList<>();
+        if (seatIds == null || seatIds.isEmpty()) {
+            return List.of();
+        }
+
+        for (Integer seatId : seatIds) {
+            if (seatId == null) {
+                continue;
+            }
+            Optional<Seat> refreshedSeat = seatLookup.findById(seatId);
+            if (refreshedSeat.isEmpty()) {
+                continue;
+            }
+            if (seatMapViewModel.replaceSeat(refreshedSeat.get())) {
+                refreshedSeats.add(refreshedSeat.get());
+            }
+        }
+
+        // Intentionally do not update PosViewModel here; UI-thread updates
+        // must be performed by the controller/view-model owner to respect
+        // JavaFX threading rules and avoid stale reads.
+
+        return List.copyOf(refreshedSeats);
+    }
+
+    void showAvailableSeatsInZone(int zoneId) {
+        seatMapViewModel.showAvailableSeatsInZone(zoneId);
+    }
+
+    void clearRecoveryFilter() {
+        seatMapViewModel.clearRecoveryFilter();
     }
 
     void restartSeatSync(Consumer<Integer> seatUpdateCallback) {

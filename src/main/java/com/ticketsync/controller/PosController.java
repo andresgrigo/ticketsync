@@ -2,12 +2,17 @@ package com.ticketsync.controller;
 
 import com.ticketsync.App;
 import com.ticketsync.model.Event;
+import com.ticketsync.model.Seat;
+import com.ticketsync.model.Zone;
 import com.ticketsync.model.User;
 import com.ticketsync.service.AuthenticationService;
 import com.ticketsync.service.EventService;
+import com.ticketsync.service.PurchaseReceiptDetails;
+import com.ticketsync.service.SaleLookupService;
 import com.ticketsync.service.SeatService;
 import com.ticketsync.service.SeatSyncService;
 import com.ticketsync.service.SessionContext;
+import com.ticketsync.service.TransactionService;
 import com.ticketsync.viewmodel.PosViewModel;
 import com.ticketsync.viewmodel.SeatMapViewModel;
 import com.ticketsync.viewmodel.SelectionPanelViewModel;
@@ -15,7 +20,10 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -29,10 +37,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * FXML controller for the Vendor POS view ({@code PosView.fxml}).
@@ -76,16 +86,20 @@ public class PosController {
     private PosViewModel viewModel;
     private final EventService eventService = new EventService();
     private final SeatService seatService = new SeatService();
+    private final TransactionService transactionService = new TransactionService();
+    private final SaleLookupService saleLookupService = new SaleLookupService();
     private final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "POS-Background");
         thread.setDaemon(true);
         return thread;
     });
     private User currentUser;
+    private SeatMapViewModel seatMapViewModel;
+    private SelectionPanelViewModel selectionPanelViewModel;
     private SeatMapController seatMapController;
     private SelectionPanelController selectionPanelController;
     private PosScreenCoordinator posScreenCoordinator;
-    private SeatMapViewModel seatMapViewModel;
+    private PosPurchaseCoordinator purchaseCoordinator;
     private boolean disposed;
     private int currentLoadGeneration;
 
@@ -137,7 +151,7 @@ public class PosController {
 
     private void configureComposedScreen() throws IOException {
         seatMapViewModel = new SeatMapViewModel();
-        SelectionPanelViewModel selectionPanelViewModel = new SelectionPanelViewModel(seatMapViewModel);
+        selectionPanelViewModel = new SelectionPanelViewModel(seatMapViewModel);
         selectionPanelViewModel.bindPurchaseEnabled(viewModel.purchaseEnabledProperty());
         selectionPanelViewModel.setOnConfirmAction(this::handleConfirmSelectionRequested);
 
@@ -158,6 +172,11 @@ public class PosController {
                 seatMapViewModel,
                 new SeatSyncService(),
                 seatService::getSeatById
+        );
+        purchaseCoordinator = new PosPurchaseCoordinator(
+                transactionService::purchaseSeats,
+                posScreenCoordinator::refreshSeats,
+                saleLookupService::getSaleById
         );
         viewModel.selectedEventProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue != null && !disposed) {
@@ -430,7 +449,147 @@ public class PosController {
     }
 
     private void handleConfirmSelectionRequested() {
-        LOGGER.debug("Confirm purchase requested from POS screen; Story 5.9 will implement transaction flow");
+        if (disposed || purchaseCoordinator == null || seatMapViewModel == null || selectionPanelViewModel == null) {
+            return;
+        }
+
+        Event selectedEvent = viewModel.selectedEventProperty().get();
+        if (selectedEvent == null) {
+            LOGGER.warn("Purchase requested without a selected event");
+            return;
+        }
+
+        List<PosPurchaseCoordinator.SelectedSeat> selectedSeats = captureSelectedSeats();
+        if (selectedSeats.isEmpty()) {
+            LOGGER.warn("Purchase requested without any selected available seats");
+            return;
+        }
+
+        selectionPanelViewModel.setProcessing(true);
+        PosPurchaseCoordinator.PurchaseRequest request = new PosPurchaseCoordinator.PurchaseRequest(
+                selectedEvent.getEventId(),
+                deriveBoothId(currentUser),
+                selectionPanelViewModel.totalPriceProperty().get(),
+                selectedSeats
+        );
+
+        Task<PosPurchaseCoordinator.PurchaseOutcome> task = createSessionAwareTask(() -> purchaseCoordinator.execute(request));
+        task.setOnSucceeded(event -> handlePurchaseOutcome(task.getValue()));
+        task.setOnFailed(event -> handlePurchaseFailure(task.getException()));
+        submitTask(task);
+    }
+
+    private List<PosPurchaseCoordinator.SelectedSeat> captureSelectedSeats() {
+        return seatMapViewModel.seatsProperty().stream()
+                .filter(seat -> seatMapViewModel.selectedSeatIdsProperty().contains(seat.getSeatId()))
+                .map(this::toSelectedSeatSnapshot)
+                .toList();
+    }
+
+    private PosPurchaseCoordinator.SelectedSeat toSelectedSeatSnapshot(Seat seat) {
+        Zone zone = seatMapViewModel.getZone(seat.getZoneId());
+        String zoneName = zone != null && zone.getName() != null && !zone.getName().isBlank()
+                ? zone.getName()
+                : "Unknown Zone";
+        return new PosPurchaseCoordinator.SelectedSeat(
+                seat.getSeatId(),
+                seat.getZoneId(),
+                zoneName,
+                seat.getRowNumber(),
+                seat.getSeatNumber()
+        );
+    }
+
+    private void handlePurchaseOutcome(PosPurchaseCoordinator.PurchaseOutcome outcome) {
+        if (disposed || selectionPanelViewModel == null) {
+            return;
+        }
+
+        selectionPanelViewModel.resetToReadyState();
+        posScreenCoordinator.clearRecoveryFilter();
+
+        if (outcome instanceof PosPurchaseCoordinator.PurchaseSuccess success) {
+            showReceiptDialog(success.receiptDetails());
+            return;
+        }
+
+        if (outcome instanceof PosPurchaseCoordinator.PurchaseConflict conflict) {
+            showConflictDialog(conflict);
+        }
+    }
+
+    private void handlePurchaseFailure(Throwable cause) {
+        if (disposed || selectionPanelViewModel == null) {
+            return;
+        }
+
+        selectionPanelViewModel.setProcessing(false);
+        if (cause instanceof SecurityException) {
+            LOGGER.error("Session expired during purchase flow — redirecting to login", cause);
+            try {
+                App.setRoot("LoginView");
+            } catch (IOException ioEx) {
+                LOGGER.error("Failed to redirect to LoginView after purchase security failure", ioEx);
+            }
+            return;
+        }
+
+        LOGGER.error("Unexpected failure in purchase flow", cause);
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Purchase Unavailable");
+        alert.setHeaderText("Purchase could not be completed");
+        alert.setContentText("Please try the purchase again.");
+        alert.showAndWait();
+    }
+
+    private void showReceiptDialog(PurchaseReceiptDetails receiptDetails) {
+        ButtonType printButton = new ButtonType("Print", ButtonBar.ButtonData.OK_DONE);
+        ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Purchase Confirmed");
+        alert.setHeaderText("Purchase Confirmed");
+        alert.getButtonTypes().setAll(printButton, closeButton);
+        alert.setContentText(buildReceiptContent(receiptDetails));
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == printButton) {
+            LOGGER.info("Print requested for {} - deferred to Epic 6", receiptDetails.transactionId());
+            Alert printAlert = new Alert(Alert.AlertType.INFORMATION);
+            printAlert.setTitle("Printing Coming Soon");
+            printAlert.setHeaderText("Receipt saved in TicketSync");
+            printAlert.setContentText(
+                    "Ticket printing will be enabled in a later story.\nTransaction: " + receiptDetails.transactionId()
+            );
+            printAlert.showAndWait();
+        }
+    }
+
+    private String buildReceiptContent(PurchaseReceiptDetails receiptDetails) {
+        String seatLines = String.join("\n", receiptDetails.seatLines());
+        return "Transaction ID: " + receiptDetails.transactionId()
+                + "\nTimestamp: " + receiptDetails.timestampText()
+                + "\nSeats:\n" + seatLines
+                + "\nTotal: " + receiptDetails.totalPriceText()
+                + "\nBooth: " + receiptDetails.boothId();
+    }
+
+    private void showConflictDialog(PosPurchaseCoordinator.PurchaseConflict conflict) {
+        ButtonType filterButton = new ButtonType(conflict.primaryActionLabel(), ButtonBar.ButtonData.OK_DONE);
+        ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Seat No Longer Available");
+        alert.setHeaderText("Seat No Longer Available");
+        alert.getButtonTypes().setAll(filterButton, closeButton);
+        alert.setContentText(conflict.message());
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == filterButton) {
+            posScreenCoordinator.showAvailableSeatsInZone(conflict.zoneId());
+        } else {
+            posScreenCoordinator.clearRecoveryFilter();
+        }
     }
 
     private void applySystemHealthBadgeStyle(boolean healthy) {

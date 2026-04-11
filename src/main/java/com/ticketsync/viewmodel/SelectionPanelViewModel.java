@@ -202,6 +202,11 @@ public class SelectionPanelViewModel implements AutoCloseable {
         }
     }
 
+    public void resetToReadyState() {
+        setProcessing(false);
+        seatMapViewModel.clearSelection();
+    }
+
     public void dispose() {
         disposed = true;
         seatMapViewModel.selectedSeatIdsProperty().removeListener(selectedSeatListener);
