@@ -2,6 +2,7 @@ package com.ticketsync;
 
 import atlantafx.base.theme.PrimerLight;
 import com.ticketsync.util.DatabaseConfig;
+import com.ticketsync.util.DatabaseHealthMonitor;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -22,6 +23,7 @@ public class App extends Application {
 
     private static final Logger LOGGER = LogManager.getLogger(App.class);
     private static Scene scene;
+    private volatile boolean dbStarted = false;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -57,6 +59,8 @@ public class App extends Application {
             return;
         }
 
+        DatabaseHealthMonitor.getInstance().start();
+        dbStarted = true;
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         scene = new Scene(loadFXML("LoginView"), 640, 480);
         stage.setTitle("TicketSync");
@@ -81,6 +85,10 @@ public class App extends Application {
     public void stop() throws Exception {
         try {
             LOGGER.info("TicketSync Application Shutting Down");
+            if (dbStarted) {
+                DatabaseHealthMonitor.getInstance().shutdown();
+                DatabaseConfig.shutdown();
+            }
         } finally {
             super.stop();
         }

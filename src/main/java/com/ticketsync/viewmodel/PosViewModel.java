@@ -1,7 +1,10 @@
 package com.ticketsync.viewmodel;
 
 import com.ticketsync.model.Event;
+import com.ticketsync.util.DatabaseHealthMonitor;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -31,6 +34,11 @@ public class PosViewModel {
     private final ObservableList<Event> allEvents = FXCollections.observableArrayList();
     private final ObservableList<Event> displayedEvents = FXCollections.observableArrayList();
     private final ObjectProperty<Event> selectedEvent = new SimpleObjectProperty<>(null);
+    private final ReadOnlyBooleanWrapper purchaseEnabled = new ReadOnlyBooleanWrapper(true);
+
+    public PosViewModel() {
+        purchaseEnabled.bind(DatabaseHealthMonitor.getInstance().connectedProperty());
+    }
 
     /**
      * Returns the displayed events list that the {@code ComboBox} binds to.
@@ -89,6 +97,19 @@ public class PosViewModel {
      */
     public ObjectProperty<Event> selectedEventProperty() {
         return selectedEvent;
+    }
+
+    /**
+     * Returns a read-only view of the purchase-enabled property.
+     *
+     * <p>This property is bound to {@link DatabaseHealthMonitor#connectedProperty()}.
+     * It becomes {@code false} automatically when the database goes offline
+     * (fail-safe mode) and re-enables when connectivity is restored.
+     *
+     * @return the purchaseEnabled property; never {@code null}
+     */
+    public ReadOnlyBooleanProperty purchaseEnabledProperty() {
+        return purchaseEnabled.getReadOnlyProperty();
     }
 
 }
