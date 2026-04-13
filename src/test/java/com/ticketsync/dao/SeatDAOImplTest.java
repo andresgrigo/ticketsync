@@ -223,8 +223,8 @@ class SeatDAOImplTest {
     // -------------------------------------------------------------------------
 
     /**
-     * selectForUpdate() under a SERIALIZABLE transaction should return the locked seats
-     * with correct field values (happy-path, AC6).
+    * selectForUpdate() under a SERIALIZABLE transaction should return the locked seats
+    * with correct field values (happy-path).
      */
     @Test
     void selectForUpdate_serializable_returnsLockedSeats() throws SQLException {

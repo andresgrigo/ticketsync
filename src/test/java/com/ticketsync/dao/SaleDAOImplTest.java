@@ -120,11 +120,11 @@ class SaleDAOImplTest {
     }
 
     // -------------------------------------------------------------------------
-    // insert (AC1)
+    // insert
     // -------------------------------------------------------------------------
 
     /**
-     * insert() should return a positive generated sale_id. (AC1)
+     * insert() should return a positive generated sale_id.
      */
     @Test
     void insert_returnsPositiveGeneratedSaleId() throws SQLException {
@@ -137,7 +137,7 @@ class SaleDAOImplTest {
     }
 
     /**
-     * insert() should throw IllegalArgumentException for a null sale. (AC1 guard)
+     * insert() should throw IllegalArgumentException for a null sale.
      */
     @Test
     void insert_nullSale_throwsIllegalArgument() {
@@ -146,11 +146,11 @@ class SaleDAOImplTest {
     }
 
     // -------------------------------------------------------------------------
-    // insertSaleItems (AC2)
+    // insertSaleItems
     // -------------------------------------------------------------------------
 
     /**
-     * insertSaleItems() should persist all provided items to the database. (AC2)
+     * insertSaleItems() should persist all provided items to the database.
      */
     @Test
     void insertSaleItems_persistsAllItems() throws SQLException {
@@ -176,7 +176,7 @@ class SaleDAOImplTest {
     }
 
     /**
-     * insertSaleItems() should throw IllegalArgumentException for empty items list. (AC2 guard)
+     * insertSaleItems() should throw IllegalArgumentException for empty items list.
      */
     @Test
     void insertSaleItems_emptyList_throwsIllegalArgument() {
@@ -185,7 +185,7 @@ class SaleDAOImplTest {
     }
 
     /**
-     * insertSaleItems() should throw IllegalArgumentException for null items. (AC2 guard)
+     * insertSaleItems() should throw IllegalArgumentException for null items.
      */
     @Test
     void insertSaleItems_nullList_throwsIllegalArgument() {
@@ -194,11 +194,11 @@ class SaleDAOImplTest {
     }
 
     // -------------------------------------------------------------------------
-    // findById (AC3)
+    // findById
     // -------------------------------------------------------------------------
 
     /**
-     * findById() should return a fully-populated Sale for an existing record. (AC3)
+     * findById() should return a fully-populated Sale for an existing record.
      */
     @Test
     void findById_existingSale_returnsFullyPopulatedSale() throws SQLException {
@@ -220,7 +220,7 @@ class SaleDAOImplTest {
     }
 
     /**
-     * findById() should return Optional.empty() for a non-existent id. (AC3)
+     * findById() should return Optional.empty() for a non-existent id.
      */
     @Test
     void findById_nonExistentId_returnsEmpty() throws SQLException {
@@ -229,7 +229,7 @@ class SaleDAOImplTest {
     }
 
     /**
-     * findById() should throw IllegalArgumentException for a non-positive id. (AC3 guard)
+     * findById() should throw IllegalArgumentException for a non-positive id.
      */
     @Test
     void findById_nonPositiveId_throwsIllegalArgument() {
@@ -238,11 +238,11 @@ class SaleDAOImplTest {
     }
 
     // -------------------------------------------------------------------------
-    // findByEventId (AC4)
+    // findByEventId
     // -------------------------------------------------------------------------
 
     /**
-     * findByEventId() should return all sales for the given event. (AC4)
+     * findByEventId() should return all sales for the given event.
      */
     @Test
     void findByEventId_returnsSalesForEvent() throws SQLException {
@@ -269,11 +269,11 @@ class SaleDAOImplTest {
     }
 
     // -------------------------------------------------------------------------
-    // findByVendor (AC5)
+    // findByVendor
     // -------------------------------------------------------------------------
 
     /**
-     * findByVendor() should return only the specified vendor's sales on the given date. (AC5)
+     * findByVendor() should return only the specified vendor's sales on the given date.
      */
     @Test
     void findByVendor_returnsOnlyVendorSalesOnDate() throws SQLException {

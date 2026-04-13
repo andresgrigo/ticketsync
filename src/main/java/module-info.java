@@ -1,6 +1,8 @@
 module com.ticketsync {
     requires javafx.controls;
     requires javafx.fxml;
+    requires transitive javafx.base;
+    requires transitive javafx.graphics;
     requires transitive java.sql;
     requires com.zaxxer.hikari;
     requires org.postgresql.jdbc;
@@ -8,7 +10,7 @@ module com.ticketsync {
     requires org.apache.logging.log4j.core;
     requires jbcrypt;
     requires atlantafx.base;
-    requires jasypt;
+    requires transitive jasypt;
     requires org.apache.pdfbox;
 
     opens com.ticketsync to javafx.fxml;

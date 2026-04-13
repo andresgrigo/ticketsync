@@ -1,6 +1,4 @@
 package com.ticketsync.controller;
-
-import com.ticketsync.App;
 import com.ticketsync.model.Event;
 import com.ticketsync.model.Seat;
 import com.ticketsync.model.SeatStatus;

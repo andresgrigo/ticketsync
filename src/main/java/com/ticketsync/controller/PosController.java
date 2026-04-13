@@ -29,7 +29,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -40,7 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.math.BigDecimal;
+ 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -588,12 +587,12 @@ public class PosController {
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == printButton) {
-            LOGGER.info("Print requested for {} - deferred to Epic 6", receiptDetails.transactionId());
+            LOGGER.info("Print requested for {}; printing not implemented yet", receiptDetails.transactionId());
             Alert printAlert = new Alert(Alert.AlertType.INFORMATION);
             printAlert.setTitle("Printing Coming Soon");
             printAlert.setHeaderText("Receipt saved in TicketSync");
             printAlert.setContentText(
-                    "Ticket printing will be enabled in a later story.\nTransaction: " + receiptDetails.transactionId()
+                "Ticket printing is not yet available.\nTransaction: " + receiptDetails.transactionId()
             );
             printAlert.showAndWait();
         }

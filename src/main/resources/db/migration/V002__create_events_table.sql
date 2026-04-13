@@ -1,6 +1,6 @@
 -- TicketSync Database Schema - Events Table
 -- Migration: V002__create_events_table.sql
--- Purpose: Create events table for event lifecycle management (FR06-FR10)
+-- Purpose: Create events table for event lifecycle management
 
 -- Date: 2026-04-02
 

@@ -247,7 +247,7 @@ public class SeatingTabController {
                     }
                 });
 
-        // AC9: sync zone TableView selection → seatsZoneSelector
+        // sync zone TableView selection → seatsZoneSelector
         zonesTable.getSelectionModel().selectedItemProperty()
                 .addListener((obs, oldVal, newZone) -> {
                     if (newZone != null) {

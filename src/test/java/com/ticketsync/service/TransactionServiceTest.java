@@ -230,7 +230,7 @@ class TransactionServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // purchaseSeats — transaction setup verification (AC1)
+    // purchaseSeats — transaction setup verification
     // -----------------------------------------------------------------------
 
     @Test

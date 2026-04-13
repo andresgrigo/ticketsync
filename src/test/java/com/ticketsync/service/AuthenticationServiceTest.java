@@ -50,7 +50,7 @@ class AuthenticationServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC1: Successful login with seeded admin credentials
+    // Successful login with seeded admin credentials
     // -----------------------------------------------------------------------
 
     @Test
@@ -67,7 +67,7 @@ class AuthenticationServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC2: Wrong password returns empty Optional; SessionContext stays empty
+    // Wrong password returns empty Optional; SessionContext stays empty
     // -----------------------------------------------------------------------
 
     @Test
@@ -80,7 +80,7 @@ class AuthenticationServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC3: Non-existent username returns empty Optional
+    // Non-existent username returns empty Optional
     // -----------------------------------------------------------------------
 
     @Test
@@ -117,7 +117,7 @@ class AuthenticationServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC4: Logout clears SessionContext
+    // Logout clears SessionContext
     // -----------------------------------------------------------------------
 
     @Test
@@ -136,7 +136,7 @@ class AuthenticationServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC5: hasRole returns true for admin user's role, false for other roles
+    // hasRole returns true for admin user's role, false for other roles
     // -----------------------------------------------------------------------
 
     @Test
@@ -154,7 +154,7 @@ class AuthenticationServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC6 (VENDOR positive case) and AC7 (no-DB tests) — see SessionContextTest
+    // VENDOR positive case and no-DB tests — see SessionContextTest
     // -----------------------------------------------------------------------
 
     private int maxAuditLogId() throws SQLException {

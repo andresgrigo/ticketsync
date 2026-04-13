@@ -1,6 +1,6 @@
 -- TicketSync Database Schema - Zones and Seats Tables
 -- Migration: V003__create_zones_seats_tables.sql
--- Purpose: Create zones and seats tables for venue seating layout with zone-based pricing (FR11-FR14)
+-- Purpose: Create zones and seats tables for venue seating layout with zone-based pricing
 
 -- Date: 2026-04-07
 

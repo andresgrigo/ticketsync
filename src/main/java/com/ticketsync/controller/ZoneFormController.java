@@ -43,7 +43,7 @@ public class ZoneFormController {
 
     @FXML
     private void initialize() {
-        // Allow only digits and at most one decimal point (AC7)
+        // Allow only digits and at most one decimal point
         priceField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             if (newText.matches("\\d*\\.?\\d*")) {

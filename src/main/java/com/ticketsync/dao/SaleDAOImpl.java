@@ -2,7 +2,6 @@ package com.ticketsync.dao;
 
 import com.ticketsync.model.Sale;
 import com.ticketsync.model.SaleItem;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +25,7 @@ import org.apache.logging.log4j.Logger;
  * commit/rollback, close). This class never closes the supplied connection.
  *
  * <p>Transaction coordination (autoCommit=false, SERIALIZABLE isolation, commit/rollback)
- * is the responsibility of the service layer (TransactionService, Story 5.3).
+ * is the responsibility of the service layer (TransactionService).
  *
  * @see SaleDAO
  * @see com.ticketsync.model.Sale
@@ -69,7 +67,7 @@ public class SaleDAOImpl implements SaleDAO {
     // -------------------------------------------------------------------------
 
     /**
-     * Finds a sale by primary key. (AC3)
+     * Finds a sale by primary key.
      *
      * @param conn   Active database connection
      * @param saleId Primary key of the sale to retrieve
@@ -95,7 +93,7 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-     * Retrieves all sales for a specific event, ordered by {@code sale_timestamp DESC}. (AC4)
+    * Retrieves all sales for a specific event, ordered by {@code sale_timestamp DESC}.
      *
      * @param conn    Active database connection
      * @param eventId Event ID to retrieve sales for
@@ -118,7 +116,7 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-     * Retrieves all sales by a specific vendor on a specific date. (AC5)
+    * Retrieves all sales by a specific vendor on a specific date.
      *
      * <p>Uses PostgreSQL's {@code ::date} cast to compare the {@code sale_timestamp}
      * column against the supplied date. Note: the cast uses the database server's local
@@ -151,7 +149,7 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-     * Inserts a new sale record and returns the database-generated {@code sale_id}. (AC1)
+    * Inserts a new sale record and returns the database-generated {@code sale_id}.
      *
      * <p>This method is called within a transaction AFTER seat availability is validated
      * and BEFORE seat status is updated. See {@link SaleDAO} class documentation for the
@@ -189,7 +187,7 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-     * Inserts sale item records linking seats to a sale. (AC2)
+    * Inserts sale item records linking seats to a sale.
      *
      * <p>This method is called within the same transaction as {@link #insert},
      * immediately after the Sale record is created.

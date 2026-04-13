@@ -10,7 +10,7 @@ package com.ticketsync.model;
  *   <li>RESERVED (future enhancement, not MVP)</li>
  * </ul>
  * 
- * <h2>Color Coding (UX-DR11)</h2>
+ * <h2>Color Coding</h2>
  * <ul>
  *   <li>AVAILABLE: Green (can be purchased)</li>
  *   <li>SOLD: Red (purchased by any booth)</li>

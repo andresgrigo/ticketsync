@@ -59,7 +59,7 @@ public class UserFormController {
     private Label errorLabel;
 
     private Mode mode = Mode.CREATE;
-    private User existingUser = null;
+    
 
     /**
      * Initialises the controller after FXML injection.
@@ -102,7 +102,6 @@ public class UserFormController {
      * @param user the user whose data should be displayed; must not be {@code null}
      */
     public void setUser(User user) {
-        this.existingUser = user;
         usernameField.setText(user.getUsername());
         roleComboBox.setValue(user.getRole());
     }

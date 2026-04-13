@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -32,8 +30,8 @@ import java.util.function.Consumer;
  *
  * <p>The view-model owns an observable seat snapshot, local yellow selection
  * state, keyboard focus state, and zone metadata. It deliberately does not
- * persist seat selection; Story 5.6 only needs local UI state while later POS
- * stories wire locking and purchase flow.
+ * persist seat selection; this view-model only maintains local UI state while later
+ * POS flows wire locking and purchase flow.
  */
 public class SeatMapViewModel {
 

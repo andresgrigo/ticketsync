@@ -154,8 +154,8 @@ class EventDAOImplTest {
     // -------------------------------------------------------------------------
 
     /**
-     * findAll() should return a non-null list that contains inserted events
-     * ordered by event_date DESC (AC2).
+    * findAll() should return a non-null list that contains inserted events
+    * ordered by event_date DESC.
      */
     @Test
     void findAll_containsInsertedEvent() throws SQLException {
@@ -191,8 +191,8 @@ class EventDAOImplTest {
     // -------------------------------------------------------------------------
 
     /**
-     * findActive() should return only events where is_active = true, ordered by
-     * event_date DESC (AC3). Inserts two active events with different dates and one
+    * findActive() should return only events where is_active = true, ordered by
+    * event_date DESC. Inserts two active events with different dates and one
      * inactive event; asserts filter correctness and ordering.
      */
     @Test

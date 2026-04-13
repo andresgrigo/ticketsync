@@ -41,10 +41,10 @@ CREATE TABLE audit_log (
 ALTER TABLE seats
     ADD CONSTRAINT seats_sale_id_fk FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE SET NULL;
 
--- Indexes for sales reporting queries (NFR-P01)
+-- Indexes for sales reporting queries
 CREATE INDEX idx_sales_event_id       ON sales(event_id);
 CREATE INDEX idx_sales_vendor_id      ON sales(vendor_id);
 CREATE INDEX idx_sales_sale_timestamp ON sales(sale_timestamp);
 
--- Index for audit queries by time and action type (FR26)
+-- Index for audit queries by time and action type
 CREATE INDEX idx_audit_timestamp_action ON audit_log(timestamp DESC, action);

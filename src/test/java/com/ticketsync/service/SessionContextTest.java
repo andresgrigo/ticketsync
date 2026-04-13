@@ -4,8 +4,6 @@ import com.ticketsync.model.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -14,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>These tests require no database connection and run unconditionally (no
  * {@code DB_TEST_ENABLED} guard). They cover:
  * <ul>
- *   <li>AC6 — VENDOR role positive case</li>
- *   <li>AC7 — {@code hasRole()} returns {@code false} when no user is logged in</li>
+ *   <li>VENDOR role positive case</li>
+ *   <li>{@code hasRole()} returns {@code false} when no user is logged in</li>
  *   <li>Input validation guards on {@link AuthenticationService#login}</li>
  * </ul>
  */
@@ -27,7 +25,7 @@ class SessionContextTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC7: hasRole returns false when no user is logged in
+    // hasRole returns false when no user is logged in
     // -----------------------------------------------------------------------
 
     @Test
@@ -45,7 +43,7 @@ class SessionContextTest {
     }
 
     // -----------------------------------------------------------------------
-    // AC6: VENDOR role — positive case
+    // VENDOR role — positive case
     // -----------------------------------------------------------------------
 
     @Test

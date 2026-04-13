@@ -27,12 +27,12 @@ import java.util.function.Consumer;
  *
  * <p>A background daemon thread executes {@code SELECT 1} every 30 seconds.
  * If the query fails, the monitor switches to a 10-second retry interval for
- * faster recovery (NFR-E02). Once connectivity is restored, the interval
+ * faster recovery. Once connectivity is restored, the interval
  * returns to 30 seconds and normal operations resume automatically.
  *
  * <p>ViewModels bind their {@code purchaseEnabled} property to
  * {@link #connectedProperty()} so that all purchase actions are automatically
- * disabled when the database goes offline (fail-safe mode, NFR-E01, UX-DR08).
+ * disabled when the database goes offline (fail-safe mode).
  *
  * <p>This class is an eager static singleton. Obtain the shared instance via
  * {@link #getInstance()} and call {@link #start()} once after the initial DB

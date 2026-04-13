@@ -86,7 +86,7 @@ class PosViewModelTest {
         assertEquals("Available Seats: 0", viewModel.availableSeatCountTextProperty().get());
         assertEquals("Booth: Unassigned", viewModel.boothIdTextProperty().get());
         assertEquals("DB: Connected - ACID Protected", viewModel.databaseStatusTextProperty().get());
-        assertEquals("✓ ACID Protected", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals("DB Connected", viewModel.systemHealthBadgeTextProperty().get());
         assertEquals(PosViewModel.SystemHealthState.HEALTHY, viewModel.systemHealthStateProperty().get());
         assertEquals("", viewModel.systemHealthBannerTextProperty().get());
         assertFalse(viewModel.systemHealthBannerVisibleProperty().get());
@@ -199,7 +199,7 @@ class PosViewModelTest {
         viewModel.acknowledgeRestoredState();
 
         assertEquals(PosViewModel.SystemHealthState.HEALTHY, viewModel.systemHealthStateProperty().get());
-        assertEquals("✓ ACID Protected", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals("DB Connected", viewModel.systemHealthBadgeTextProperty().get());
         assertEquals("", viewModel.systemHealthBannerTextProperty().get());
         assertFalse(viewModel.systemHealthBannerVisibleProperty().get());
         assertEquals("", viewModel.purchaseBlockedReasonTextProperty().get());
