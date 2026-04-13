@@ -51,7 +51,7 @@ final class PosPurchaseCoordinator {
             return new PurchaseSuccess(PurchaseReceiptDetails.fromSale(
                     sale,
                     request.selectedSeats().stream().map(SelectedSeat::receiptLabel).toList()
-            ));
+            ), sale);
         } catch (SeatUnavailableException ex) {
             List<Seat> refreshedSeats = seatRefresher.refreshSeats(ex.getUnavailableSeatIds());
             SelectedSeat conflictSeat = findConflictSeat(request.selectedSeats(), ex.getUnavailableSeatIds());
@@ -143,9 +143,10 @@ final class PosPurchaseCoordinator {
     sealed interface PurchaseOutcome permits PurchaseSuccess, PurchaseConflict {
     }
 
-    record PurchaseSuccess(PurchaseReceiptDetails receiptDetails) implements PurchaseOutcome {
+    record PurchaseSuccess(PurchaseReceiptDetails receiptDetails, Sale sale) implements PurchaseOutcome {
         PurchaseSuccess {
             Objects.requireNonNull(receiptDetails, "receiptDetails must not be null");
+            Objects.requireNonNull(sale, "sale must not be null");
         }
     }
 

@@ -48,6 +48,17 @@ public interface SaleDAO {
      * @throws IllegalArgumentException if saleId is zero or negative
      */
     Optional<Sale> findById(Connection conn, int saleId) throws SQLException;
+
+    /**
+     * Retrieves committed sale items for a specific sale.
+     *
+     * @param conn Active database connection
+     * @param saleId Sale ID whose line items should be returned
+     * @return List of committed sale items in insertion order, empty if none exist
+     * @throws SQLException if database access error occurs
+     * @throws IllegalArgumentException if saleId is zero or negative
+     */
+    List<SaleItem> findSaleItemsBySaleId(Connection conn, int saleId) throws SQLException;
     
     /**
      * Retrieves all sales for a specific event.

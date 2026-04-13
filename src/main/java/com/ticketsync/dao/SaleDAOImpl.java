@@ -52,6 +52,10 @@ public class SaleDAOImpl implements SaleDAO {
             "SELECT sale_id, event_id, vendor_id, total_amount, sale_timestamp, booth_id "
             + "FROM sales WHERE event_id = ? ORDER BY sale_timestamp DESC";
 
+    private static final String SQL_FIND_SALE_ITEMS_BY_SALE_ID =
+            "SELECT sale_item_id, sale_id, seat_id, price_paid "
+            + "FROM sale_items WHERE sale_id = ? ORDER BY sale_item_id ASC";
+
     private static final String SQL_FIND_BY_VENDOR =
             "SELECT sale_id, event_id, vendor_id, total_amount, sale_timestamp, booth_id "
             + "FROM sales WHERE vendor_id = ? AND sale_timestamp::date = ? ORDER BY sale_timestamp DESC";
@@ -113,6 +117,24 @@ public class SaleDAOImpl implements SaleDAO {
             }
         }
         return sales;
+    }
+
+    @Override
+    public List<SaleItem> findSaleItemsBySaleId(Connection conn, int saleId) throws SQLException {
+        if (saleId <= 0) {
+            throw new IllegalArgumentException("saleId must be positive, got: " + saleId);
+        }
+        LOGGER.debug("Finding sale items by saleId={}", saleId);
+        List<SaleItem> items = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(SQL_FIND_SALE_ITEMS_BY_SALE_ID)) {
+            ps.setInt(1, saleId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapSaleItem(rs));
+                }
+            }
+        }
+        return items;
     }
 
     /**
@@ -242,5 +264,14 @@ public class SaleDAOImpl implements SaleDAO {
         sale.setSaleTimestamp(ts != null ? ts.toLocalDateTime() : null);
         sale.setBoothId(rs.getString("booth_id"));
         return sale;
+    }
+
+    private SaleItem mapSaleItem(ResultSet rs) throws SQLException {
+        SaleItem item = new SaleItem();
+        item.setSaleItemId(rs.getInt("sale_item_id"));
+        item.setSaleId(rs.getInt("sale_id"));
+        item.setSeatId(rs.getInt("seat_id"));
+        item.setPricePaid(rs.getBigDecimal("price_paid"));
+        return item;
     }
 }

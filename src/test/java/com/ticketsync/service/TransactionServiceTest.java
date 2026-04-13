@@ -455,6 +455,11 @@ class TransactionServiceTest {
         }
 
         @Override
+        public List<SaleItem> findSaleItemsBySaleId(Connection conn, int saleId) throws SQLException {
+            return Collections.emptyList();
+        }
+
+        @Override
         public List<Sale> findByEventId(Connection conn, int eventId) throws SQLException {
             return Collections.emptyList();
         }

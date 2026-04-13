@@ -7,11 +7,13 @@ import com.ticketsync.model.Zone;
 import com.ticketsync.model.User;
 import com.ticketsync.service.AuthenticationService;
 import com.ticketsync.service.EventService;
+import com.ticketsync.service.FilesystemTicketSaver;
 import com.ticketsync.service.PurchaseReceiptDetails;
 import com.ticketsync.service.SaleLookupService;
 import com.ticketsync.service.SeatService;
 import com.ticketsync.service.SeatSyncService;
 import com.ticketsync.service.SessionContext;
+import com.ticketsync.service.TicketGenerator;
 import com.ticketsync.service.TransactionService;
 import com.ticketsync.viewmodel.PosViewModel;
 import com.ticketsync.viewmodel.SeatMapViewModel;
@@ -28,6 +30,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
@@ -39,7 +42,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
- 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -92,6 +94,7 @@ public class PosController {
     @FXML private Label lastSyncContextLabel;
     @FXML private Label systemHealthBadgeLabel;
     @FXML private Label vendorInfoLabel;
+    @FXML private MenuItem ticketsDirectoryMenuItem;
     @FXML private Button logoutButton;
     @FXML private StackPane seatMapContainer;
     @FXML private StackPane selectionPanelContainer;
@@ -101,6 +104,13 @@ public class PosController {
     private final SeatService seatService = new SeatService();
     private final TransactionService transactionService = new TransactionService();
     private final SaleLookupService saleLookupService = new SaleLookupService();
+    private final TicketGenerator ticketGenerator = new TicketGenerator();
+    private final FilesystemTicketSaver filesystemTicketSaver = new FilesystemTicketSaver();
+    private final PosTicketDeliveryCoordinator ticketDeliveryCoordinator = new PosTicketDeliveryCoordinator(
+            saleLookupService::getSaleItemsBySaleId,
+            ticketGenerator::generateTicket,
+            filesystemTicketSaver::saveTicket
+    );
     private final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "POS-Background");
         thread.setDaemon(true);
@@ -151,6 +161,7 @@ public class PosController {
 
         configureComboBox();
         bindLabels();
+        configureHelpMenu();
         bindContextState();
         root.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (oldScene != null && newScene == null) {
@@ -161,6 +172,12 @@ public class PosController {
         root.addEventFilter(KeyEvent.KEY_PRESSED, this::handleFunctionKeyShortcut);
 
         loadActiveEventsAsync();
+    }
+
+    private void configureHelpMenu() {
+        if (ticketsDirectoryMenuItem != null) {
+            ticketsDirectoryMenuItem.setText("Tickets Folder: " + filesystemTicketSaver.getTicketsRootDirectory());
+        }
     }
 
     private void configureComposedScreen() throws IOException {
@@ -542,7 +559,7 @@ public class PosController {
         posScreenCoordinator.clearRecoveryFilter();
 
         if (outcome instanceof PosPurchaseCoordinator.PurchaseSuccess success) {
-            showReceiptDialog(success.receiptDetails());
+            showReceiptDialog(success);
             return;
         }
 
@@ -575,26 +592,20 @@ public class PosController {
         alert.showAndWait();
     }
 
-    private void showReceiptDialog(PurchaseReceiptDetails receiptDetails) {
-        ButtonType printButton = new ButtonType("Print", ButtonBar.ButtonData.OK_DONE);
+    private void showReceiptDialog(PosPurchaseCoordinator.PurchaseSuccess success) {
+        PurchaseReceiptDetails receiptDetails = success.receiptDetails();
+        ButtonType saveButton = new ButtonType("Save Ticket PDF", ButtonBar.ButtonData.OK_DONE);
         ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Purchase Confirmed");
         alert.setHeaderText("Purchase Confirmed");
-        alert.getButtonTypes().setAll(printButton, closeButton);
+        alert.getButtonTypes().setAll(saveButton, closeButton);
         alert.setContentText(buildReceiptContent(receiptDetails));
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == printButton) {
-            LOGGER.info("Print requested for {}; printing not implemented yet", receiptDetails.transactionId());
-            Alert printAlert = new Alert(Alert.AlertType.INFORMATION);
-            printAlert.setTitle("Printing Coming Soon");
-            printAlert.setHeaderText("Receipt saved in TicketSync");
-            printAlert.setContentText(
-                "Ticket printing is not yet available.\nTransaction: " + receiptDetails.transactionId()
-            );
-            printAlert.showAndWait();
+        if (result.isPresent() && result.get() == saveButton) {
+            handleSaveTicketRequested(success);
         }
     }
 
@@ -605,6 +616,73 @@ public class PosController {
                 + "\nSeats:\n" + seatLines
                 + "\nTotal: " + receiptDetails.totalPriceText()
                 + "\nBooth: " + receiptDetails.boothId();
+    }
+
+    private void handleSaveTicketRequested(PosPurchaseCoordinator.PurchaseSuccess success) {
+        if (disposed) {
+            return;
+        }
+
+        String transactionId = success.receiptDetails().transactionId();
+        Task<PosTicketDeliveryCoordinator.DeliveryOutcome> task =
+                createSessionAwareTask(() -> ticketDeliveryCoordinator.execute(success));
+        task.setOnSucceeded(event -> {
+            if (disposed) {
+                return;
+            }
+            PosTicketDeliveryCoordinator.DeliveryOutcome outcome = task.getValue();
+            if (outcome instanceof PosTicketDeliveryCoordinator.TicketSavedToFile saved) {
+                showPrintInfo(
+                        "Ticket Saved",
+                        "Ticket PDF stored",
+                        saved.operatorMessage()
+                );
+            } else if (outcome instanceof PosTicketDeliveryCoordinator.TicketSaveFailed failed) {
+                showAlert(
+                        Alert.AlertType.ERROR,
+                        "Ticket Save Failed",
+                        "Ticket could not be preserved",
+                        failed.operatorMessage()
+                );
+            }
+        });
+        task.setOnFailed(event -> {
+            LOGGER.error("Ticket PDF save failed for {}", transactionId, task.getException());
+            if (!disposed) {
+                showAlert(
+                        Alert.AlertType.ERROR,
+                        "Ticket Save Failed",
+                        "Ticket could not be preserved",
+                        "Ticket PDF could not be saved for " + transactionId
+                                + ". Please contact support before handing tickets to the customer."
+                );
+            }
+        });
+        submitTask(task);
+    }
+
+    @FXML
+    private void handleShowTicketsDirectory() {
+        if (disposed) {
+            return;
+        }
+        showPrintInfo(
+                "Ticket Folder",
+                "Saved tickets folder",
+                filesystemTicketSaver.getTicketsRootDirectory().toString()
+        );
+    }
+
+    private void showPrintInfo(String title, String headerText, String contentText) {
+        showAlert(Alert.AlertType.INFORMATION, title, headerText, contentText);
+    }
+
+    private void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private void showConflictDialog(PosPurchaseCoordinator.PurchaseConflict conflict) {

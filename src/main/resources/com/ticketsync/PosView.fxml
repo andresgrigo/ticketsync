@@ -4,6 +4,8 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
@@ -33,6 +35,13 @@
                        text="DB Connected"
                        style="-fx-background-color: #E8F5E9; -fx-text-fill: #2E7D32; -fx-background-radius: 16; -fx-padding: 6 12 6 12; -fx-font-weight: bold;"/>
                 <Label fx:id="vendorInfoLabel"/>
+                <MenuButton text="Help">
+                    <items>
+                        <MenuItem fx:id="ticketsDirectoryMenuItem"
+                                  onAction="#handleShowTicketsDirectory"
+                                  text="Tickets Folder"/>
+                    </items>
+                </MenuButton>
                 <Button fx:id="logoutButton" text="Logout" onAction="#handleLogout"/>
             </HBox>
 

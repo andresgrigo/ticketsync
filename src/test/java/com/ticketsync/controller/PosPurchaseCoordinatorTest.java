@@ -47,6 +47,9 @@ class PosPurchaseCoordinatorTest {
         PosPurchaseCoordinator.PurchaseSuccess success =
                 assertInstanceOf(PosPurchaseCoordinator.PurchaseSuccess.class, outcome);
         assertEquals(List.of(1, 3), seatRefresher.refreshedSeatIds);
+        assertEquals(42, success.sale().getSaleId());
+        assertEquals(99, success.sale().getEventId());
+        assertEquals("Booth 5", success.sale().getBoothId());
         assertEquals("TXN-20260411-141509-B5", success.receiptDetails().transactionId());
         assertEquals("April 11, 2026 14:15:09", success.receiptDetails().timestampText());
         assertEquals("Booth 5", success.receiptDetails().boothId());

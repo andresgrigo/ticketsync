@@ -3,10 +3,12 @@ package com.ticketsync.service;
 import com.ticketsync.dao.SaleDAO;
 import com.ticketsync.dao.SaleDAOImpl;
 import com.ticketsync.model.Sale;
+import com.ticketsync.model.SaleItem;
 import com.ticketsync.util.DatabaseConfig;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 public class SaleLookupService {
@@ -29,6 +31,15 @@ public class SaleLookupService {
         }
         try (Connection conn = connFactory.get()) {
             return saleDAO.findById(conn, saleId);
+        }
+    }
+
+    public List<SaleItem> getSaleItemsBySaleId(int saleId) throws SQLException {
+        if (saleId <= 0) {
+            return List.of();
+        }
+        try (Connection conn = connFactory.get()) {
+            return saleDAO.findSaleItemsBySaleId(conn, saleId);
         }
     }
 }
