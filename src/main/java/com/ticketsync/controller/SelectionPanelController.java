@@ -1,12 +1,15 @@
 package com.ticketsync.controller;
 
 import com.ticketsync.viewmodel.SelectionPanelViewModel;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableStringValue;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -24,11 +27,17 @@ public class SelectionPanelController {
     @FXML private ListView<String> selectedSeatsListView;
     @FXML private Label totalPriceLabel;
     @FXML private Label countdownLabel;
+    @FXML private StackPane confirmPurchaseHelpTarget;
     @FXML private Button confirmPurchaseButton;
     @FXML private Button releaseLockButton;
     @FXML private StackPane processingOverlay;
 
+    private final Tooltip confirmPurchaseTooltip = new Tooltip();
+    private final ChangeListener<String> confirmPurchaseTooltipListener =
+            (obs, oldValue, newValue) -> applyConfirmPurchaseTooltip(newValue);
+
     private SelectionPanelViewModel viewModel;
+    private ObservableStringValue confirmPurchaseTooltipSource;
 
     @FXML
     public void initialize() {
@@ -63,11 +72,25 @@ public class SelectionPanelController {
         return viewModel;
     }
 
+    public void bindConfirmPurchaseTooltip(ObservableStringValue tooltipText) {
+        if (confirmPurchaseTooltipSource != null) {
+            confirmPurchaseTooltipSource.removeListener(confirmPurchaseTooltipListener);
+        }
+        confirmPurchaseTooltipSource = tooltipText;
+        if (confirmPurchaseTooltipSource != null) {
+            confirmPurchaseTooltipSource.addListener(confirmPurchaseTooltipListener);
+            applyConfirmPurchaseTooltip(confirmPurchaseTooltipSource.getValue());
+        } else {
+            applyConfirmPurchaseTooltip("");
+        }
+    }
+
     public void dispose() {
         unbindCurrentViewModel();
         if (viewModel != null) {
             viewModel.dispose();
         }
+        bindConfirmPurchaseTooltip(null);
         viewModel = null;
     }
 
@@ -99,5 +122,15 @@ public class SelectionPanelController {
         confirmPurchaseButton.disableProperty().unbind();
         releaseLockButton.disableProperty().unbind();
         selectedSeatsListView.setItems(FXCollections.emptyObservableList());
+    }
+
+    private void applyConfirmPurchaseTooltip(String tooltipText) {
+        String normalizedText = tooltipText == null ? "" : tooltipText.strip();
+        confirmPurchaseTooltip.setText(normalizedText);
+        if (normalizedText.isEmpty()) {
+            Tooltip.uninstall(confirmPurchaseHelpTarget, confirmPurchaseTooltip);
+        } else {
+            Tooltip.install(confirmPurchaseHelpTarget, confirmPurchaseTooltip);
+        }
     }
 }

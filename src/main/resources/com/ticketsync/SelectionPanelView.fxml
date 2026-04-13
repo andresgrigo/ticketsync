@@ -45,13 +45,16 @@
                        style="-fx-font-size: 18; -fx-font-weight: bold;"/>
 
                 <HBox spacing="10">
-                    <Button fx:id="confirmPurchaseButton"
-                            text="Confirm Purchase"
-                            defaultButton="true"
-                            disable="true"
-                            onAction="#handleConfirmPurchase"
-                            maxWidth="1.7976931348623157E308"
-                            HBox.hgrow="ALWAYS"/>
+                    <StackPane fx:id="confirmPurchaseHelpTarget"
+                               HBox.hgrow="ALWAYS">
+                        <Button fx:id="confirmPurchaseButton"
+                                text="Confirm Purchase"
+                                defaultButton="true"
+                                disable="true"
+                                onAction="#handleConfirmPurchase"
+                                maxWidth="1.7976931348623157E308"
+                                StackPane.alignment="CENTER"/>
+                    </StackPane>
                     <Button fx:id="releaseLockButton"
                             text="Release Lock"
                             disable="true"

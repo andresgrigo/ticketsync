@@ -76,6 +76,10 @@ final class PosScreenCoordinator {
         seatMapViewModel.clearRecoveryFilter();
     }
 
+    void enterFailSafeMode() {
+        seatMapViewModel.clearSelection();
+    }
+
     void restartSeatSync(Consumer<Integer> seatUpdateCallback) {
         Objects.requireNonNull(seatUpdateCallback, "seatUpdateCallback must not be null");
         seatSyncService.stopListening();

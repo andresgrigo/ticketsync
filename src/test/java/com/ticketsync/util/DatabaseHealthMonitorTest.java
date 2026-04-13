@@ -1,6 +1,9 @@
 package com.ticketsync.util;
 
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
@@ -82,13 +85,57 @@ class DatabaseHealthMonitorTest {
         DatabaseHealthMonitor m = monitor(() -> successConnection());
         invokeCheck(m);
         assertTrue(m.isConnected(), "databaseConnected should be true after a successful SELECT 1");
+        assertEquals(DatabaseHealthMonitor.RuntimeStatus.HEALTHY, m.runtimeStatusProperty().get());
+        assertEquals(0, m.retryAttemptCountProperty().get());
+        assertEquals(30L, m.currentCheckIntervalSecondsProperty().get());
     }
 
     @Test
-    void checkHealth_sqlException_setsDatabaseConnectedFalse() throws Exception {
+    void checkHealth_firstSqlException_entersFailSafeMode() throws Exception {
         DatabaseHealthMonitor m = monitor(() -> { throw new SQLException("test failure"); });
         invokeCheck(m);
         assertFalse(m.isConnected(), "databaseConnected should be false when SELECT 1 throws SQLException");
+        assertEquals(DatabaseHealthMonitor.RuntimeStatus.FAIL_SAFE, m.runtimeStatusProperty().get());
+        assertEquals(1, m.retryAttemptCountProperty().get());
+        assertEquals(10L, m.currentCheckIntervalSecondsProperty().get());
+    }
+
+    @Test
+    void checkHealth_secondConsecutiveFailure_switchesToReconnecting() throws Exception {
+        DatabaseHealthMonitor m = monitor(() -> { throw new SQLException("test failure"); });
+
+        invokeCheck(m);
+        invokeCheck(m);
+
+        assertFalse(m.isConnected());
+        assertEquals(DatabaseHealthMonitor.RuntimeStatus.RECONNECTING, m.runtimeStatusProperty().get());
+        assertEquals(2, m.retryAttemptCountProperty().get());
+        assertEquals(10L, m.currentCheckIntervalSecondsProperty().get());
+    }
+
+    @Test
+    void checkHealth_recovery_resetsRetryState() throws Exception {
+        DatabaseHealthMonitor m = monitor(new DatabaseHealthMonitor.ConnectionFactory() {
+            private int calls;
+
+            @Override
+            public Connection get() throws SQLException {
+                calls++;
+                if (calls < 3) {
+                    throw new SQLException("test failure");
+                }
+                return successConnection();
+            }
+        });
+
+        invokeCheck(m);
+        invokeCheck(m);
+        invokeCheck(m);
+
+        assertTrue(m.isConnected());
+        assertEquals(DatabaseHealthMonitor.RuntimeStatus.HEALTHY, m.runtimeStatusProperty().get());
+        assertEquals(0, m.retryAttemptCountProperty().get());
+        assertEquals(30L, m.currentCheckIntervalSecondsProperty().get());
     }
 
     @Test
@@ -100,6 +147,19 @@ class DatabaseHealthMonitorTest {
         Method method = DatabaseHealthMonitor.class.getDeclaredMethod("connectedProperty");
         assertEquals(ReadOnlyBooleanProperty.class, method.getReturnType(),
                 "connectedProperty() must declare ReadOnlyBooleanProperty as its return type");
+    }
+
+    @Test
+    void runtimeStateProperties_returnReadOnlyViews() throws Exception {
+        DatabaseHealthMonitor m = monitor(() -> successConnection());
+
+        ReadOnlyObjectProperty<DatabaseHealthMonitor.RuntimeStatus> statusProperty = m.runtimeStatusProperty();
+        ReadOnlyIntegerProperty retryAttemptsProperty = m.retryAttemptCountProperty();
+        ReadOnlyLongProperty intervalProperty = m.currentCheckIntervalSecondsProperty();
+
+        assertNotNull(statusProperty);
+        assertNotNull(retryAttemptsProperty);
+        assertNotNull(intervalProperty);
     }
 
     @Test

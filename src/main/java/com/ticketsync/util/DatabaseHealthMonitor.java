@@ -3,6 +3,12 @@ package com.ticketsync.util;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.ReadOnlyLongWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,8 +21,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Monitors database connectivity and exposes a {@link ReadOnlyBooleanProperty}
- * that reflects the current connection health.
+ * Monitors database connectivity and exposes both the legacy
+ * {@link ReadOnlyBooleanProperty} health signal and a richer runtime state model
+ * for POS fail-safe messaging.
  *
  * <p>A background daemon thread executes {@code SELECT 1} every 30 seconds.
  * If the query fails, the monitor switches to a 10-second retry interval for
@@ -42,6 +49,12 @@ public class DatabaseHealthMonitor {
     /** Eager static singleton — initialized once at class-load time. */
     private static final DatabaseHealthMonitor INSTANCE = new DatabaseHealthMonitor();
 
+    public enum RuntimeStatus {
+        HEALTHY,
+        FAIL_SAFE,
+        RECONNECTING
+    }
+
     @FunctionalInterface
     interface ConnectionFactory {
         Connection get() throws SQLException;
@@ -51,10 +64,16 @@ public class DatabaseHealthMonitor {
     private final Consumer<Runnable> uiRunner;
 
     private final ReadOnlyBooleanWrapper databaseConnected = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyObjectWrapper<RuntimeStatus> runtimeStatus =
+            new ReadOnlyObjectWrapper<>(RuntimeStatus.HEALTHY);
+    private final ReadOnlyIntegerWrapper retryAttemptCount = new ReadOnlyIntegerWrapper(0);
+    private final ReadOnlyLongWrapper currentCheckIntervalSeconds =
+            new ReadOnlyLongWrapper(HEALTHY_INTERVAL_SECONDS);
 
     private ScheduledExecutorService scheduler;
     private volatile ScheduledFuture<?> scheduledTask;
     private volatile boolean lastCheckFailed = false;
+    private volatile int consecutiveFailureCount = 0;
 
     /** Production constructor — uses live DB and JavaFX {@code Platform.runLater}. */
     private DatabaseHealthMonitor() {
@@ -111,6 +130,18 @@ public class DatabaseHealthMonitor {
         return databaseConnected.get();
     }
 
+    public ReadOnlyObjectProperty<RuntimeStatus> runtimeStatusProperty() {
+        return runtimeStatus.getReadOnlyProperty();
+    }
+
+    public ReadOnlyIntegerProperty retryAttemptCountProperty() {
+        return retryAttemptCount.getReadOnlyProperty();
+    }
+
+    public ReadOnlyLongProperty currentCheckIntervalSecondsProperty() {
+        return currentCheckIntervalSeconds.getReadOnlyProperty();
+    }
+
     private void checkDatabaseHealth() {
         boolean healthy = false;
         try (Connection conn = connFactory.get()) {
@@ -122,10 +153,38 @@ public class DatabaseHealthMonitor {
                 LOGGER.debug("Database health check passed");
             }
         } catch (SQLException e) {
-            LOGGER.error("Database health check failed: {}", e.getMessage());
+            consecutiveFailureCount = lastCheckFailed ? consecutiveFailureCount + 1 : 1;
+            if (lastCheckFailed) {
+                LOGGER.warn("Database reconnect attempt {} failed: {}", consecutiveFailureCount, e.getMessage());
+            } else {
+                LOGGER.error("Database connection lost; entering fail-safe mode: {}", e.getMessage());
+            }
         }
-        final boolean h = healthy;
-        uiRunner.accept(() -> databaseConnected.set(h));
+
+        RuntimeStatus nextStatus;
+        int nextRetryAttemptCount;
+        long nextIntervalSeconds;
+        if (healthy) {
+            consecutiveFailureCount = 0;
+            nextStatus = RuntimeStatus.HEALTHY;
+            nextRetryAttemptCount = 0;
+            nextIntervalSeconds = HEALTHY_INTERVAL_SECONDS;
+        } else {
+            nextStatus = consecutiveFailureCount == 1 ? RuntimeStatus.FAIL_SAFE : RuntimeStatus.RECONNECTING;
+            nextRetryAttemptCount = consecutiveFailureCount;
+            nextIntervalSeconds = RETRY_INTERVAL_SECONDS;
+        }
+
+        final boolean connected = healthy;
+        final RuntimeStatus runtimeStatusValue = nextStatus;
+        final int retryAttemptValue = nextRetryAttemptCount;
+        final long intervalValue = nextIntervalSeconds;
+        uiRunner.accept(() -> {
+            databaseConnected.set(connected);
+            runtimeStatus.set(runtimeStatusValue);
+            retryAttemptCount.set(retryAttemptValue);
+            currentCheckIntervalSeconds.set(intervalValue);
+        });
         adjustSchedule(healthy);
     }
 

@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PosScreenCoordinatorTest {
 
@@ -81,6 +82,24 @@ class PosScreenCoordinatorTest {
         assertEquals(1, seatSyncService.startCalls);
         assertEquals(2, seatSyncService.stopCalls);
         assertSame(callback, seatSyncService.lastCallback);
+    }
+
+    @Test
+    void enterFailSafeMode_clearsLocalSelectionWithoutDiscardingSeatMap() throws Exception {
+        PosScreenCoordinator coordinator = new PosScreenCoordinator(
+            seatMapViewModel,
+            seatSyncService,
+            seatId -> Optional.empty()
+        );
+        coordinator.loadSelectedEvent(event(99, "Tonight"));
+        seatMapViewModel.toggleSeatSelection(1);
+        seatMapViewModel.toggleSeatSelection(3);
+
+        coordinator.enterFailSafeMode();
+
+        assertTrue(seatMapViewModel.selectedSeatIdsProperty().isEmpty());
+        assertEquals(3, seatMapViewModel.seatsProperty().size());
+        // PosScreenCoordinator does not update PosViewModel; selection cleared locally
     }
 
     private static Event event(int eventId, String name) {

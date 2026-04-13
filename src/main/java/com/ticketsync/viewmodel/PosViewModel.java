@@ -5,15 +5,23 @@ import com.ticketsync.model.Seat;
 import com.ticketsync.model.SeatStatus;
 import com.ticketsync.util.DatabaseHealthMonitor;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.IntegerBinding;
+import javafx.beans.binding.LongBinding;
+import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableBooleanValue;
+import javafx.beans.value.ObservableIntegerValue;
+import javafx.beans.value.ObservableLongValue;
+import javafx.beans.value.ObservableObjectValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -45,25 +53,63 @@ public class PosViewModel {
 
     private static final DateTimeFormatter SYNC_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    public enum SystemHealthState {
+        HEALTHY,
+        FAIL_SAFE,
+        RECONNECTING,
+        RESTORED
+    }
+
     private final ObservableList<Event> allEvents = FXCollections.observableArrayList();
     private final ObservableList<Event> displayedEvents = FXCollections.observableArrayList();
     private final ObjectProperty<Event> selectedEvent = new SimpleObjectProperty<>(null);
     private final ReadOnlyBooleanWrapper purchaseEnabled = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyBooleanWrapper databaseHealthy = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyIntegerWrapper availableSeatCount = new ReadOnlyIntegerWrapper(0);
+    private final ReadOnlyObjectWrapper<SystemHealthState> systemHealthState =
+            new ReadOnlyObjectWrapper<>(SystemHealthState.HEALTHY);
     private final ReadOnlyStringWrapper selectedEventText = new ReadOnlyStringWrapper();
     private final ReadOnlyStringWrapper availableSeatCountText = new ReadOnlyStringWrapper();
     private final ReadOnlyStringWrapper boothIdText = new ReadOnlyStringWrapper("Booth: Unassigned");
+    private final ReadOnlyStringWrapper databaseStatusText = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper systemHealthBadgeText = new ReadOnlyStringWrapper();
+    private final ReadOnlyStringWrapper systemHealthBannerText = new ReadOnlyStringWrapper("");
+    private final ReadOnlyBooleanWrapper systemHealthBannerVisible = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyStringWrapper purchaseBlockedReasonText = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper lastSyncTimestampText = new ReadOnlyStringWrapper("Last Sync: Pending");
     private final Supplier<LocalDateTime> timestampSupplier;
 
     public PosViewModel() {
-        this(DatabaseHealthMonitor.getInstance().connectedProperty(), LocalDateTime::now);
+        this(
+                DatabaseHealthMonitor.getInstance().connectedProperty(),
+                DatabaseHealthMonitor.getInstance().runtimeStatusProperty(),
+                DatabaseHealthMonitor.getInstance().retryAttemptCountProperty(),
+                DatabaseHealthMonitor.getInstance().currentCheckIntervalSecondsProperty(),
+                LocalDateTime::now
+        );
     }
 
     public PosViewModel(ObservableBooleanValue databaseConnected, Supplier<LocalDateTime> timestampSupplier) {
+        this(
+                databaseConnected,
+                fallbackRuntimeStatus(databaseConnected),
+                fallbackRetryAttemptCount(databaseConnected),
+                fallbackRetryIntervalSeconds(databaseConnected),
+                timestampSupplier
+        );
+    }
+
+    public PosViewModel(
+            ObservableBooleanValue databaseConnected,
+            ObservableObjectValue<DatabaseHealthMonitor.RuntimeStatus> runtimeStatus,
+            ObservableIntegerValue retryAttemptCount,
+            ObservableLongValue retryIntervalSeconds,
+            Supplier<LocalDateTime> timestampSupplier
+    ) {
         Objects.requireNonNull(databaseConnected, "databaseConnected must not be null");
+        Objects.requireNonNull(runtimeStatus, "runtimeStatus must not be null");
+        Objects.requireNonNull(retryAttemptCount, "retryAttemptCount must not be null");
+        Objects.requireNonNull(retryIntervalSeconds, "retryIntervalSeconds must not be null");
         this.timestampSupplier = Objects.requireNonNull(timestampSupplier, "timestampSupplier must not be null");
 
         purchaseEnabled.bind(databaseConnected);
@@ -79,15 +125,19 @@ public class PosViewModel {
                 selectedEvent
         ));
         availableSeatCountText.bind(Bindings.createStringBinding(
-            () -> "Available Seats: " + availableSeatCount.get(),
-            availableSeatCount
+                () -> "Available Seats: " + availableSeatCount.get(),
+                availableSeatCount
         ));
-        systemHealthBadgeText.bind(Bindings.createStringBinding(
-            () -> databaseHealthy.get()
-            ? "DB Online"
-                : "DB Offline",
-            databaseHealthy
-        ));
+
+        runtimeStatus.addListener((obs, oldValue, newValue) -> {
+            applyRuntimeStatusTransition(oldValue, newValue);
+            refreshHealthCopy(retryAttemptCount, retryIntervalSeconds);
+        });
+        retryAttemptCount.addListener((obs, oldValue, newValue) -> refreshHealthCopy(retryAttemptCount, retryIntervalSeconds));
+        retryIntervalSeconds.addListener((obs, oldValue, newValue) -> refreshHealthCopy(retryAttemptCount, retryIntervalSeconds));
+
+        applyRuntimeStatusTransition(null, runtimeStatus.getValue());
+        refreshHealthCopy(retryAttemptCount, retryIntervalSeconds);
     }
 
     /**
@@ -170,6 +220,10 @@ public class PosViewModel {
         return availableSeatCount.getReadOnlyProperty();
     }
 
+    public ReadOnlyObjectProperty<SystemHealthState> systemHealthStateProperty() {
+        return systemHealthState.getReadOnlyProperty();
+    }
+
     public ReadOnlyStringProperty selectedEventTextProperty() {
         return selectedEventText.getReadOnlyProperty();
     }
@@ -181,8 +235,23 @@ public class PosViewModel {
     public ReadOnlyStringProperty boothIdTextProperty() {
         return boothIdText.getReadOnlyProperty();
     }
+    public ReadOnlyStringProperty databaseStatusTextProperty() {
+        return databaseStatusText.getReadOnlyProperty();
+    }
     public ReadOnlyStringProperty systemHealthBadgeTextProperty() {
         return systemHealthBadgeText.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty systemHealthBannerTextProperty() {
+        return systemHealthBannerText.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty systemHealthBannerVisibleProperty() {
+        return systemHealthBannerVisible.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty purchaseBlockedReasonTextProperty() {
+        return purchaseBlockedReasonText.getReadOnlyProperty();
     }
 
     public ReadOnlyStringProperty lastSyncTimestampTextProperty() {
@@ -206,6 +275,111 @@ public class PosViewModel {
 
     public void markLastSyncNow() {
         lastSyncTimestampText.set("Last Sync: " + timestampSupplier.get().format(SYNC_TIMESTAMP_FORMATTER));
+    }
+
+    public void acknowledgeRestoredState() {
+        if (systemHealthState.get() == SystemHealthState.RESTORED) {
+            systemHealthState.set(SystemHealthState.HEALTHY);
+            refreshHealthCopy(null, null);
+        }
+    }
+
+    private void applyRuntimeStatusTransition(
+            DatabaseHealthMonitor.RuntimeStatus previousStatus,
+            DatabaseHealthMonitor.RuntimeStatus currentStatus
+    ) {
+        DatabaseHealthMonitor.RuntimeStatus effectiveCurrentStatus = currentStatus != null
+                ? currentStatus
+                : DatabaseHealthMonitor.RuntimeStatus.HEALTHY;
+
+        if (effectiveCurrentStatus == DatabaseHealthMonitor.RuntimeStatus.HEALTHY) {
+            if (previousStatus == DatabaseHealthMonitor.RuntimeStatus.FAIL_SAFE
+                    || previousStatus == DatabaseHealthMonitor.RuntimeStatus.RECONNECTING) {
+                systemHealthState.set(SystemHealthState.RESTORED);
+            } else if (systemHealthState.get() != SystemHealthState.RESTORED) {
+                systemHealthState.set(SystemHealthState.HEALTHY);
+            }
+        } else if (effectiveCurrentStatus == DatabaseHealthMonitor.RuntimeStatus.FAIL_SAFE) {
+            systemHealthState.set(SystemHealthState.FAIL_SAFE);
+        } else {
+            systemHealthState.set(SystemHealthState.RECONNECTING);
+        }
+    }
+
+    private void refreshHealthCopy(
+            ObservableIntegerValue retryAttemptCount,
+            ObservableLongValue retryIntervalSeconds
+    ) {
+        int attempts = retryAttemptCount != null ? retryAttemptCount.get() : 0;
+        long retryInterval = retryIntervalSeconds != null ? retryIntervalSeconds.get() : 0L;
+
+        switch (systemHealthState.get()) {
+            case HEALTHY -> {
+                databaseStatusText.set("DB: Connected - ACID Protected");
+                systemHealthBadgeText.set("DB Connected");
+                systemHealthBannerText.set("");
+                systemHealthBannerVisible.set(false);
+                purchaseBlockedReasonText.set("");
+            }
+            case FAIL_SAFE -> {
+                databaseStatusText.set("DB: Offline - Sales Paused");
+                systemHealthBadgeText.set("Fail-Safe Active");
+                systemHealthBannerText.set("Database offline. Sales paused while TicketSync enters fail-safe mode.");
+                systemHealthBannerVisible.set(true);
+                purchaseBlockedReasonText.set(
+                        "Sales are paused while TicketSync reconnects to the database. Retry checks run every "
+                                + retryInterval + " seconds."
+                );
+            }
+            case RECONNECTING -> {
+                int displayAttempt = Math.max(attempts, 1);
+                databaseStatusText.set("DB: Reconnecting - Sales Paused");
+                systemHealthBadgeText.set("Reconnecting...");
+                systemHealthBannerText.set(
+                        "Reconnecting to the database (attempt " + displayAttempt + "). Sales remain paused."
+                );
+                systemHealthBannerVisible.set(true);
+                purchaseBlockedReasonText.set(
+                        "Sales are paused while TicketSync reconnects to the database. Retry attempt "
+                                + displayAttempt + " is in progress."
+                );
+            }
+            case RESTORED -> {
+                databaseStatusText.set("DB: Connected - ACID Protected");
+                systemHealthBadgeText.set("System Online");
+                systemHealthBannerText.set("System Online - Sales resumed");
+                systemHealthBannerVisible.set(true);
+                purchaseBlockedReasonText.set("");
+            }
+        }
+    }
+
+    private static ObservableObjectValue<DatabaseHealthMonitor.RuntimeStatus> fallbackRuntimeStatus(
+            ObservableBooleanValue databaseConnected
+    ) {
+        ObjectBinding<DatabaseHealthMonitor.RuntimeStatus> binding = Bindings.createObjectBinding(
+                () -> databaseConnected.get()
+                        ? DatabaseHealthMonitor.RuntimeStatus.HEALTHY
+                        : DatabaseHealthMonitor.RuntimeStatus.FAIL_SAFE,
+                databaseConnected
+        );
+        return binding;
+    }
+
+    private static ObservableIntegerValue fallbackRetryAttemptCount(ObservableBooleanValue databaseConnected) {
+        IntegerBinding binding = Bindings.createIntegerBinding(
+                () -> databaseConnected.get() ? 0 : 1,
+                databaseConnected
+        );
+        return binding;
+    }
+
+    private static ObservableLongValue fallbackRetryIntervalSeconds(ObservableBooleanValue databaseConnected) {
+        LongBinding binding = Bindings.createLongBinding(
+                () -> databaseConnected.get() ? 30L : 10L,
+                databaseConnected
+        );
+        return binding;
     }
 
 }

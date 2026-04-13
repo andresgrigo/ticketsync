@@ -3,7 +3,11 @@ package com.ticketsync.viewmodel;
 import com.ticketsync.model.Event;
 import com.ticketsync.model.Seat;
 import com.ticketsync.model.SeatStatus;
+import com.ticketsync.util.DatabaseHealthMonitor;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,13 +28,25 @@ class PosViewModelTest {
 
     private PosViewModel viewModel;
     private SimpleBooleanProperty databaseConnected;
+    private SimpleObjectProperty<DatabaseHealthMonitor.RuntimeStatus> runtimeStatus;
+    private SimpleIntegerProperty retryAttemptCount;
+    private SimpleLongProperty retryIntervalSeconds;
     private AtomicReference<LocalDateTime> now;
 
     @BeforeEach
     void setUp() {
         databaseConnected = new SimpleBooleanProperty(true);
+        runtimeStatus = new SimpleObjectProperty<>(DatabaseHealthMonitor.RuntimeStatus.HEALTHY);
+        retryAttemptCount = new SimpleIntegerProperty(0);
+        retryIntervalSeconds = new SimpleLongProperty(30);
         now = new AtomicReference<>(LocalDateTime.of(2026, 4, 11, 14, 15, 9));
-        viewModel = new PosViewModel(databaseConnected, now::get);
+        viewModel = new PosViewModel(
+                databaseConnected,
+                runtimeStatus,
+                retryAttemptCount,
+                retryIntervalSeconds,
+                now::get
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -69,7 +85,12 @@ class PosViewModelTest {
         assertEquals("Event: No event selected", viewModel.selectedEventTextProperty().get());
         assertEquals("Available Seats: 0", viewModel.availableSeatCountTextProperty().get());
         assertEquals("Booth: Unassigned", viewModel.boothIdTextProperty().get());
-        assertEquals("DB Online", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals("DB: Connected - ACID Protected", viewModel.databaseStatusTextProperty().get());
+        assertEquals("✓ ACID Protected", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals(PosViewModel.SystemHealthState.HEALTHY, viewModel.systemHealthStateProperty().get());
+        assertEquals("", viewModel.systemHealthBannerTextProperty().get());
+        assertFalse(viewModel.systemHealthBannerVisibleProperty().get());
+        assertEquals("", viewModel.purchaseBlockedReasonTextProperty().get());
         assertEquals("Last Sync: Pending", viewModel.lastSyncTimestampTextProperty().get());
         assertTrue(viewModel.purchaseEnabledProperty().get());
         assertTrue(viewModel.databaseHealthyProperty().get());
@@ -106,7 +127,7 @@ class PosViewModelTest {
     }
 
     @Test
-    void contextProperties_updateFromSelectionSeatSnapshotAndHealth() {
+    void contextProperties_updateFromSelectionSeatSnapshotAndFailSafeHealth() {
         viewModel.setBoothId("Booth 7");
         viewModel.selectedEventProperty().set(event("Spring Gala"));
         viewModel.updateAvailableSeatCount(List.of(
@@ -123,10 +144,65 @@ class PosViewModelTest {
         assertEquals("Last Sync: 2026-04-11 14:15:09", viewModel.lastSyncTimestampTextProperty().get());
 
         databaseConnected.set(false);
+        runtimeStatus.set(DatabaseHealthMonitor.RuntimeStatus.FAIL_SAFE);
+        retryAttemptCount.set(1);
+        retryIntervalSeconds.set(10);
 
         assertFalse(viewModel.purchaseEnabledProperty().get());
         assertFalse(viewModel.databaseHealthyProperty().get());
-        assertEquals("DB Offline", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals(PosViewModel.SystemHealthState.FAIL_SAFE, viewModel.systemHealthStateProperty().get());
+        assertEquals("DB: Offline - Sales Paused", viewModel.databaseStatusTextProperty().get());
+        assertEquals("Fail-Safe Active", viewModel.systemHealthBadgeTextProperty().get());
+        assertTrue(viewModel.systemHealthBannerVisibleProperty().get());
+        assertEquals(
+            "Database offline. Sales paused while TicketSync enters fail-safe mode.",
+            viewModel.systemHealthBannerTextProperty().get()
+        );
+        assertEquals(
+            "Sales are paused while TicketSync reconnects to the database. Retry checks run every 10 seconds.",
+            viewModel.purchaseBlockedReasonTextProperty().get()
+        );
+        }
+
+        @Test
+        void reconnectingAndRecoveryStates_updateOperatorMessaging() {
+        databaseConnected.set(false);
+        runtimeStatus.set(DatabaseHealthMonitor.RuntimeStatus.FAIL_SAFE);
+        retryAttemptCount.set(1);
+        retryIntervalSeconds.set(10);
+
+        runtimeStatus.set(DatabaseHealthMonitor.RuntimeStatus.RECONNECTING);
+        retryAttemptCount.set(2);
+
+        assertEquals(PosViewModel.SystemHealthState.RECONNECTING, viewModel.systemHealthStateProperty().get());
+        assertEquals("Reconnecting...", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals("DB: Reconnecting - Sales Paused", viewModel.databaseStatusTextProperty().get());
+        assertEquals(
+            "Reconnecting to the database (attempt 2). Sales remain paused.",
+            viewModel.systemHealthBannerTextProperty().get()
+        );
+        assertEquals(
+            "Sales are paused while TicketSync reconnects to the database. Retry attempt 2 is in progress.",
+            viewModel.purchaseBlockedReasonTextProperty().get()
+        );
+
+        databaseConnected.set(true);
+        runtimeStatus.set(DatabaseHealthMonitor.RuntimeStatus.HEALTHY);
+        retryAttemptCount.set(0);
+        retryIntervalSeconds.set(30);
+
+        assertEquals(PosViewModel.SystemHealthState.RESTORED, viewModel.systemHealthStateProperty().get());
+        assertEquals("System Online", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals("System Online - Sales resumed", viewModel.systemHealthBannerTextProperty().get());
+        assertTrue(viewModel.systemHealthBannerVisibleProperty().get());
+
+        viewModel.acknowledgeRestoredState();
+
+        assertEquals(PosViewModel.SystemHealthState.HEALTHY, viewModel.systemHealthStateProperty().get());
+        assertEquals("✓ ACID Protected", viewModel.systemHealthBadgeTextProperty().get());
+        assertEquals("", viewModel.systemHealthBannerTextProperty().get());
+        assertFalse(viewModel.systemHealthBannerVisibleProperty().get());
+        assertEquals("", viewModel.purchaseBlockedReasonTextProperty().get());
     }
 
     // -------------------------------------------------------------------------

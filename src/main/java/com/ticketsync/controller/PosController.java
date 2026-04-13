@@ -16,6 +16,7 @@ import com.ticketsync.service.TransactionService;
 import com.ticketsync.viewmodel.PosViewModel;
 import com.ticketsync.viewmodel.SeatMapViewModel;
 import com.ticketsync.viewmodel.SelectionPanelViewModel;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -31,7 +32,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,14 +66,25 @@ public class PosController {
     private static final String HEALTHY_BADGE_STYLE =
             "-fx-background-color: #E8F5E9; -fx-text-fill: #2E7D32; -fx-background-radius: 16; "
                     + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
-    private static final String UNHEALTHY_BADGE_STYLE =
-            "-fx-background-color: #F5F5F5; -fx-text-fill: #616161; -fx-background-radius: 16; "
+    private static final String RECONNECTING_BADGE_STYLE =
+            "-fx-background-color: #FFF3E0; -fx-text-fill: #8A4B08; -fx-background-radius: 16; "
                     + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
+    private static final String FAIL_SAFE_BADGE_STYLE =
+            "-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-background-radius: 16; "
+                    + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
+    private static final String HEALTHY_BANNER_STYLE =
+            "-fx-background-color: #E8F5E9; -fx-border-color: #81C784; -fx-border-width: 1 0 1 0;";
+    private static final String RECONNECTING_BANNER_STYLE =
+            "-fx-background-color: #FFF3E0; -fx-border-color: #FFB74D; -fx-border-width: 1 0 1 0;";
+    private static final String FAIL_SAFE_BANNER_STYLE =
+            "-fx-background-color: #FFEBEE; -fx-border-color: #EF9A9A; -fx-border-width: 1 0 1 0;";
 
     @FXML private BorderPane root;
     @FXML private TextField eventSearchField;
     @FXML private ComboBox<Event> eventComboBox;
     @FXML private Label eventStatusLabel;
+    @FXML private HBox systemHealthBanner;
+    @FXML private Label systemHealthBannerLabel;
     @FXML private Label noEventsLabel;
     @FXML private Label eventContextLabel;
     @FXML private Label availableSeatsContextLabel;
@@ -102,6 +116,7 @@ public class PosController {
     private PosPurchaseCoordinator purchaseCoordinator;
     private boolean disposed;
     private int currentLoadGeneration;
+    private final PauseTransition restoredBannerPause = new PauseTransition(Duration.seconds(4));
 
     /**
      * Initialises the POS view on the FX Application Thread.
@@ -161,12 +176,14 @@ public class PosController {
         seatMapController = seatMapLoader.getController();
         seatMapController.setViewModel(seatMapViewModel);
         seatMapController.setViewActiveCheck(() -> !disposed);
+        seatMapController.bindInteractionEnabled(viewModel.purchaseEnabledProperty());
 
         FXMLLoader selectionPanelLoader = new FXMLLoader(App.class.getResource("SelectionPanelView.fxml"));
         selectionPanelContainer.getChildren().clear();
         selectionPanelContainer.getChildren().add(selectionPanelLoader.load());
         selectionPanelController = selectionPanelLoader.getController();
         selectionPanelController.setViewModel(selectionPanelViewModel);
+        selectionPanelController.bindConfirmPurchaseTooltip(viewModel.purchaseBlockedReasonTextProperty());
 
         posScreenCoordinator = new PosScreenCoordinator(
                 seatMapViewModel,
@@ -262,6 +279,7 @@ public class PosController {
         boothContextLabel.textProperty().bind(viewModel.boothIdTextProperty());
         lastSyncContextLabel.textProperty().bind(viewModel.lastSyncTimestampTextProperty());
         systemHealthBadgeLabel.textProperty().bind(viewModel.systemHealthBadgeTextProperty());
+        systemHealthBannerLabel.textProperty().bind(viewModel.systemHealthBannerTextProperty());
 
         // noEventsLabel visibility is controlled by loadActiveEventsAsync after load completes
         noEventsLabel.setVisible(false);
@@ -269,9 +287,24 @@ public class PosController {
     }
 
     private void bindContextState() {
-        applySystemHealthBadgeStyle(viewModel.databaseHealthyProperty().get());
-        viewModel.databaseHealthyProperty().addListener((obs, oldValue, newValue) ->
-                applySystemHealthBadgeStyle(newValue));
+        systemHealthBanner.visibleProperty().bind(viewModel.systemHealthBannerVisibleProperty());
+        systemHealthBanner.managedProperty().bind(viewModel.systemHealthBannerVisibleProperty());
+        applySystemHealthPresentation(viewModel.systemHealthStateProperty().get());
+        viewModel.systemHealthStateProperty().addListener((obs, oldValue, newValue) -> {
+            applySystemHealthPresentation(newValue);
+            if (newValue == PosViewModel.SystemHealthState.RESTORED) {
+                restoredBannerPause.stop();
+                restoredBannerPause.setOnFinished(event -> viewModel.acknowledgeRestoredState());
+                restoredBannerPause.playFromStart();
+            } else {
+                restoredBannerPause.stop();
+            }
+        });
+        viewModel.purchaseEnabledProperty().addListener((obs, oldValue, newValue) -> {
+            if (Boolean.TRUE.equals(oldValue) && Boolean.FALSE.equals(newValue) && posScreenCoordinator != null) {
+                posScreenCoordinator.enterFailSafeMode();
+            }
+        });
     }
 
     /**
@@ -382,6 +415,7 @@ public class PosController {
             return;
         }
         disposed = true;
+        restoredBannerPause.stop();
         if (posScreenCoordinator != null) {
             posScreenCoordinator.stopSeatSync();
         }
@@ -592,8 +626,31 @@ public class PosController {
         }
     }
 
-    private void applySystemHealthBadgeStyle(boolean healthy) {
-        systemHealthBadgeLabel.setStyle(healthy ? HEALTHY_BADGE_STYLE : UNHEALTHY_BADGE_STYLE);
+    private void applySystemHealthPresentation(PosViewModel.SystemHealthState state) {
+        applySystemHealthBadgeStyle(state);
+        applySystemHealthBannerStyle(state);
+    }
+
+    private void applySystemHealthBadgeStyle(PosViewModel.SystemHealthState state) {
+        PosViewModel.SystemHealthState effectiveState =
+                state != null ? state : PosViewModel.SystemHealthState.HEALTHY;
+        String style = switch (effectiveState) {
+            case HEALTHY, RESTORED -> HEALTHY_BADGE_STYLE;
+            case RECONNECTING -> RECONNECTING_BADGE_STYLE;
+            case FAIL_SAFE -> FAIL_SAFE_BADGE_STYLE;
+        };
+        systemHealthBadgeLabel.setStyle(style);
+    }
+
+    private void applySystemHealthBannerStyle(PosViewModel.SystemHealthState state) {
+        PosViewModel.SystemHealthState effectiveState =
+                state != null ? state : PosViewModel.SystemHealthState.HEALTHY;
+        String bannerStyle = switch (effectiveState) {
+            case HEALTHY, RESTORED -> HEALTHY_BANNER_STYLE;
+            case RECONNECTING -> RECONNECTING_BANNER_STYLE;
+            case FAIL_SAFE -> FAIL_SAFE_BANNER_STYLE;
+        };
+        systemHealthBanner.setStyle(bannerStyle);
     }
 
     private void submitTask(Task<?> task) {
