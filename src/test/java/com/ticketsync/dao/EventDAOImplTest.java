@@ -36,8 +36,8 @@ class EventDAOImplTest {
     private EventDAOImpl dao;
     private Connection conn;
 
-    /** Unique prefix avoids collisions between test runs and existing data. */
-    private final String prefix = "test_event_" + System.currentTimeMillis();
+    /** Unique, short prefix avoids collisions while fitting DB column limits. */
+    private final String prefix = "t" + (System.currentTimeMillis() % 10000);
 
     /**
      * Tracks all event_ids inserted during a test so tearDown can clean up.

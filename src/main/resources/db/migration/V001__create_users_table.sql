@@ -23,3 +23,8 @@ CREATE TABLE users (
 -- IMPORTANT: Change this password immediately after first login.
 INSERT INTO users (username, password_hash, role)
 VALUES ('admin', '$2a$12$bPjnKcxOg4MA0yr0NraJ5uKNIbDFRcohMdIK/VCYANK3HzkFEwDUW', 'ADMIN');
+
+-- Developer vendor seed (dev-only)
+-- Creates a vendor with user_id=2 when run after the admin insert.
+INSERT INTO users (username, password_hash, role)
+VALUES ('vendor1', '$2a$12$YjOf6Ml0WGulH45l.DRX6uXqty4OHrLVAbDao9F9xG8/olzt1LzAG', 'VENDOR');

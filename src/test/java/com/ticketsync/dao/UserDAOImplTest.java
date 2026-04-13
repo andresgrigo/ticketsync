@@ -35,8 +35,8 @@ class UserDAOImplTest {
     private UserDAOImpl dao;
     private Connection conn;
 
-    /** Unique prefix avoids collisions between test runs and the seeded admin row. */
-    private final String prefix = "test_user_" + System.currentTimeMillis();
+    /** Unique, short prefix avoids collisions while fitting DB column limits. */
+    private final String prefix = "t" + (System.currentTimeMillis() % 10000);
 
     /** Tracks any user_id inserted during a test so tearDown can clean up. */
     private int insertedUserId = -1;

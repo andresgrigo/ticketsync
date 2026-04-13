@@ -42,8 +42,8 @@ class SeatDAOImplTest {
     private EventDAOImpl eventDao;
     private Connection conn;
 
-    /** Unique prefix avoids collisions between test runs and parallel suites. */
-    private final String prefix = "test_seat_" + System.currentTimeMillis();
+    /** Unique, short prefix avoids collisions while fitting DB column limits. */
+    private final String prefix = "t" + (System.currentTimeMillis() % 10000);
 
     /** Tracks all seat_ids inserted during a test so tearDown can clean up. */
     private final List<Integer> insertedSeatIds = new ArrayList<>();
