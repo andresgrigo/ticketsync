@@ -1,6 +1,7 @@
 package com.ticketsync.service;
 
 import com.ticketsync.dao.SeatDAO;
+import com.ticketsync.model.AuditLog;
 import com.ticketsync.model.Seat;
 import com.ticketsync.model.SeatStatus;
 import com.ticketsync.model.User;
@@ -157,6 +158,20 @@ class SeatServiceTest {
                 .map(Seat::getSeatNumber)
                 .toList();
         assertEquals(List.of("3", "4", "5"), numbers);
+    }
+
+    @Test
+    void generateSeats_success_writesAuditAfterCommit() throws SQLException {
+        CapturingAuditService auditService = new CapturingAuditService();
+        SeatService auditedService = new SeatService(stubDao, auditService, () -> noopConn);
+
+        auditedService.generateSeats(3, "B", 2, 4);
+
+        assertEquals(1, auditService.persisted.size());
+        assertTrue(auditService.commitSeenAtPersist, "seat generation audit must run after commit");
+        assertEquals("SEATS_GENERATED", auditService.persisted.getFirst().getAction());
+        assertEquals("ZONE", auditService.persisted.getFirst().getEntityType());
+        assertEquals(3, auditService.persisted.getFirst().getEntityId());
     }
 
     @Test
@@ -374,6 +389,7 @@ class SeatServiceTest {
                 new Class<?>[] { Connection.class },
                 (proxy, method, args) -> {
                     if ("isClosed".equals(method.getName())) return false;
+                    if ("commit".equals(method.getName())) stubDao.commitCalled = true;
                     if ("rollback".equals(method.getName())) stubDao.rollbackCalled = true;
                     Class<?> ret = method.getReturnType();
                     if (ret == boolean.class) return false;
@@ -397,6 +413,7 @@ class SeatServiceTest {
         // --- invocation tracking ---
         boolean      insertCalled        = false;
         boolean      deleteCalled        = false;
+        boolean      commitCalled        = false;
         boolean      rollbackCalled      = false;
         boolean      findByZoneIdCalled  = false;
         boolean      updateStatusCalled  = false;
@@ -450,6 +467,24 @@ class SeatServiceTest {
             updateStatusCalled = true;
             lastUpdateStatusIds = new ArrayList<>(seatIds);
             lastUpdateStatusStatus = status;
+        }
+    }
+
+    final class CapturingAuditService extends AuditService {
+        private final List<AuditLog> persisted = new ArrayList<>();
+        private boolean commitSeenAtPersist;
+
+        @Override
+        protected void persistAuditLog(AuditLog auditLog) {
+            commitSeenAtPersist = stubDao.commitCalled;
+            persisted.add(auditLog);
+        }
+
+        @Override
+        protected List<AuditLog> queryAuditLogs(java.time.LocalDateTime fromInclusive,
+                                                java.time.LocalDateTime toExclusive,
+                                                String actionFilter, int limit) {
+            return List.of();
         }
     }
 }

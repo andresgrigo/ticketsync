@@ -1,6 +1,7 @@
 package com.ticketsync.service;
 
 import com.ticketsync.dao.EventDAO;
+import com.ticketsync.model.AuditLog;
 import com.ticketsync.model.Event;
 import com.ticketsync.model.User;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -132,6 +134,21 @@ class EventServiceTest {
         assertEquals(7, id,                "returned id must match the generated event_id");
     }
 
+    @Test
+    void createEvent_validEvent_writesAuditEntry() throws SQLException {
+        stubDao.nextInsertId = 7;
+        CapturingAuditService auditService = new CapturingAuditService();
+        EventService auditedService = new EventService(stubDao, auditService, () -> noopConn);
+        Event e = futureEvent();
+
+        auditedService.createEvent(e);
+
+        assertEquals(1, auditService.persisted.size());
+        assertEquals("EVENT_CREATED", auditService.persisted.getFirst().getAction());
+        assertEquals("EVENT", auditService.persisted.getFirst().getEntityType());
+        assertEquals(7, auditService.persisted.getFirst().getEntityId());
+    }
+
     // -----------------------------------------------------------------------
     // updateEvent
     // -----------------------------------------------------------------------
@@ -194,6 +211,10 @@ class EventServiceTest {
 
     @Test
     void deleteEvent_validId_callsDelete() throws SQLException {
+        Event existing = futureEvent();
+        existing.setEventId(3);
+        stubDao.eventToReturn = existing;
+
         service.deleteEvent(3);
 
         assertTrue(stubDao.deleteCalled);
@@ -394,6 +415,22 @@ class EventServiceTest {
         public void delete(Connection conn, int eventId) throws SQLException {
             deleteCalled = true;
             lastDeletedId = eventId;
+        }
+    }
+
+    static final class CapturingAuditService extends AuditService {
+        private final List<AuditLog> persisted = new ArrayList<>();
+
+        @Override
+        protected void persistAuditLog(AuditLog auditLog) {
+            persisted.add(auditLog);
+        }
+
+        @Override
+        protected List<AuditLog> queryAuditLogs(java.time.LocalDateTime fromInclusive,
+                                                java.time.LocalDateTime toExclusive,
+                                                String actionFilter, int limit) {
+            return List.of();
         }
     }
 }

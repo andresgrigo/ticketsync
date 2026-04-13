@@ -48,12 +48,14 @@ public class AuthenticationService {
 
     /** DAO used to look up users from the database. */
     private final UserDAO userDAO;
+    private final AuditService auditService;
+    private final ConnectionFactory connFactory;
 
     /**
      * Production constructor — creates a live {@link UserDAOImpl} instance.
      */
     public AuthenticationService() {
-        this.userDAO = new UserDAOImpl();
+        this(new UserDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
@@ -65,7 +67,16 @@ public class AuthenticationService {
      * @param userDAO the DAO implementation to use; must not be {@code null}
      */
     AuthenticationService(UserDAO userDAO) {
+        this(userDAO, AuditService.noop(), DatabaseConfig::getConnection);
+    }
+
+    /**
+     * Package-private constructor for full unit-test injection.
+     */
+    AuthenticationService(UserDAO userDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.userDAO = userDAO;
+        this.auditService = auditService;
+        this.connFactory = connFactory;
     }
 
     /**
@@ -94,7 +105,7 @@ public class AuthenticationService {
 
         LOGGER.info("Authentication attempt for username: {}", username);
 
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = connFactory.get()) {
             Optional<User> userOpt = userDAO.findByUsername(conn, username);
             if (userOpt.isPresent()
                     && PasswordHasher.verifyPassword(password, userOpt.get().getPasswordHash())) {
@@ -104,6 +115,7 @@ public class AuthenticationService {
                 SessionContext.clearCurrentUser();
                 SessionContext.setCurrentUser(user);
                 LOGGER.info("Authentication successful for username: {}", username);
+                auditService.logLoginSuccess(username);
                 return Optional.of(user);
             }
         }
@@ -111,6 +123,7 @@ public class AuthenticationService {
         // Generic warning — must NOT distinguish "user not found" from "wrong password"
         // to prevent log-based username enumeration.
         LOGGER.warn("Authentication failed for username: {}", username);
+        auditService.logLoginFailure(username);
         return Optional.empty();
     }
 

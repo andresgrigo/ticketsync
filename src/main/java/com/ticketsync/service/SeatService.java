@@ -31,6 +31,7 @@ public class SeatService {
     private static final Logger LOGGER = LogManager.getLogger(SeatService.class);
 
     private final SeatDAO seatDAO;
+    private final AuditService auditService;
     private final ConnectionFactory connFactory;
 
     /**
@@ -39,8 +40,7 @@ public class SeatService {
      * acquisition.
      */
     public SeatService() {
-        this.seatDAO = new SeatDAOImpl();
-        this.connFactory = DatabaseConfig::getConnection;
+        this(new SeatDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
@@ -50,7 +50,15 @@ public class SeatService {
      * @param connFactory the connection provider stub; must not be {@code null}
      */
     SeatService(SeatDAO seatDAO, ConnectionFactory connFactory) {
+        this(seatDAO, AuditService.noop(), connFactory);
+    }
+
+    /**
+     * Package-private constructor with injectable audit seam.
+     */
+    SeatService(SeatDAO seatDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.seatDAO = seatDAO;
+        this.auditService = auditService;
         this.connFactory = connFactory;
     }
 
@@ -106,6 +114,7 @@ public class SeatService {
                 conn.commit();
                 LOGGER.info("Admin '{}' generated {} seats in zone {} row '{}'",
                         adminUsername, count, zoneId, rowNumber);
+                auditService.logSeatsGenerated(zoneId, rowNumber.strip(), fromSeat, toSeat);
             } catch (SQLException e) {
                 conn.rollback();
                 LOGGER.error("Failed to generate seats in zone {} — rolled back", zoneId, e);
@@ -148,6 +157,7 @@ public class SeatService {
                 deleteSeatsBatch(conn, seatIds);
                 conn.commit();
                 LOGGER.info("Admin '{}' deleted {} seats", adminUsername, seatIds.size());
+                auditService.logSeatsDeleted(List.copyOf(seatIds));
             } catch (SQLException e) {
                 conn.rollback();
                 LOGGER.error("Failed to delete seats — rolled back", e);
@@ -222,6 +232,7 @@ public class SeatService {
                 seatDAO.updateStatus(conn, seatIds, targetStatus, null);
                 conn.commit();
                 LOGGER.info("Admin '{}' updated {} seats to status {}", adminUsername, seatIds.size(), targetStatus);
+                auditService.logSeatStatusUpdated(List.copyOf(seatIds), targetStatus);
             } catch (SQLException e) {
                 conn.rollback();
                 LOGGER.error("Failed to update seat status to {} — rolled back", targetStatus, e);

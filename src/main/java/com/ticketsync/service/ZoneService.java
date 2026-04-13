@@ -36,6 +36,7 @@ public class ZoneService {
     private static final String SQL_COUNT_SEATS = "SELECT COUNT(*) FROM seats WHERE zone_id = ?";
 
     private final ZoneDAO zoneDAO;
+    private final AuditService auditService;
     private final ConnectionFactory connFactory;
 
     /**
@@ -43,8 +44,7 @@ public class ZoneService {
      * uses {@link DatabaseConfig#getConnection()} for connection acquisition.
      */
     public ZoneService() {
-        this.zoneDAO = new ZoneDAOImpl();
-        this.connFactory = DatabaseConfig::getConnection;
+        this(new ZoneDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
@@ -54,7 +54,15 @@ public class ZoneService {
      * @param connFactory the connection provider stub; must not be {@code null}
      */
     ZoneService(ZoneDAO zoneDAO, ConnectionFactory connFactory) {
+        this(zoneDAO, AuditService.noop(), connFactory);
+    }
+
+    /**
+     * Package-private constructor with injectable audit seam.
+     */
+    ZoneService(ZoneDAO zoneDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.zoneDAO = zoneDAO;
+        this.auditService = auditService;
         this.connFactory = connFactory;
     }
 
@@ -101,7 +109,9 @@ public class ZoneService {
         zone.setPrice(price);
         try (Connection conn = connFactory.get()) {
             int newId = zoneDAO.insert(conn, zone);
+            zone.setZoneId(newId);
             LOGGER.info("Admin '{}' created zone '{}'", adminUsername, name);
+            auditService.logZoneCreated(zone);
             return newId;
         } catch (SQLException e) {
             LOGGER.error("Failed to create zone '{}'", name, e);
@@ -133,6 +143,7 @@ public class ZoneService {
         try (Connection conn = connFactory.get()) {
             zoneDAO.update(conn, zone);
             LOGGER.info("Admin '{}' updated zone '{}'", adminUsername, zone.getName());
+            auditService.logZoneUpdated(zone);
         } catch (SQLException e) {
             LOGGER.error("Failed to update zone '{}'", zone.getName(), e);
             throw e;
@@ -154,8 +165,11 @@ public class ZoneService {
         }
         String adminUsername = SessionContext.getCurrentUser().map(User::getUsername).orElse("unknown");
         try (Connection conn = connFactory.get()) {
+            Zone existing = zoneDAO.findById(conn, zoneId)
+                    .orElseThrow(() -> new IllegalArgumentException("Zone not found: " + zoneId));
             zoneDAO.delete(conn, zoneId);
             LOGGER.info("Admin '{}' deleted zone id '{}'", adminUsername, zoneId);
+            auditService.logZoneDeleted(existing);
         } catch (SQLException e) {
             LOGGER.error("Failed to delete zone id '{}'", zoneId, e);
             throw e;

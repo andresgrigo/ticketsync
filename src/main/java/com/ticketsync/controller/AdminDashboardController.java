@@ -26,11 +26,13 @@ public class AdminDashboardController {
     @FXML private TabPane mainTabPane;
     @FXML private Tab seatingTab;
     @FXML private Tab layoutViewTab;
+    @FXML private Tab auditLogTab;
 
     @FXML private UsersTabController usersTabContentController;
     @FXML private EventsTabController eventsTabContentController;
     @FXML private SeatingTabController seatingTabContentController;
     @FXML private LayoutViewTabController layoutViewTabContentController;
+    @FXML private AuditLogTabController auditLogTabContentController;
 
     @FXML
     public void initialize() {
@@ -54,11 +56,14 @@ public class AdminDashboardController {
         eventsTabContentController.setAdminUser(admin);
         seatingTabContentController.setAdminUser(admin);
         layoutViewTabContentController.setAdminUser(admin);
+        auditLogTabContentController.setAdminUser(admin);
 
         seatingTabContentController.setTabActiveCheck(
                 () -> mainTabPane.getSelectionModel().getSelectedItem() == seatingTab);
         layoutViewTabContentController.setTabActiveCheck(
                 () -> mainTabPane.getSelectionModel().getSelectedItem() == layoutViewTab);
+        auditLogTabContentController.setTabActiveCheck(
+                () -> mainTabPane.getSelectionModel().getSelectedItem() == auditLogTab);
 
         mainTabPane.getSelectionModel().selectedItemProperty()
                 .addListener((obs, oldTab, newTab) -> {
@@ -66,6 +71,8 @@ public class AdminDashboardController {
                         seatingTabContentController.onTabActivated();
                     } else if (newTab == layoutViewTab) {
                         layoutViewTabContentController.onTabActivated();
+                    } else if (newTab == auditLogTab) {
+                        auditLogTabContentController.onTabActivated();
                     }
                 });
     }

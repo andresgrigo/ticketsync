@@ -42,19 +42,28 @@ public class TransactionService {
 
     private final SeatDAO seatDAO;
     private final SaleDAO saleDAO;
+    private final AuditService auditService;
     private final ConnectionFactory connFactory;
 
     /** Production constructor. */
     public TransactionService() {
         this.seatDAO = new SeatDAOImpl();
         this.saleDAO = new SaleDAOImpl();
+        this.auditService = new AuditService();
         this.connFactory = DatabaseConfig::getConnection;
     }
 
     /** Test constructor — no DB required. */
     TransactionService(SeatDAO seatDAO, SaleDAO saleDAO, ConnectionFactory connFactory) {
+        this(seatDAO, saleDAO, AuditService.noop(), connFactory);
+    }
+
+    /** Test constructor with injectable audit seam. */
+    TransactionService(SeatDAO seatDAO, SaleDAO saleDAO,
+                       AuditService auditService, ConnectionFactory connFactory) {
         this.seatDAO = seatDAO;
         this.saleDAO = saleDAO;
+        this.auditService = auditService;
         this.connFactory = connFactory;
     }
 
@@ -159,6 +168,7 @@ public class TransactionService {
             conn.commit();
             LOGGER.info("Purchase committed: saleId={}, event={}, seats={}, vendor={}",
                     saleId, eventId, seatIds.size(), vendorId);
+            auditService.logPurchaseCompleted(sale, seatIds);
             return sale;
 
         } catch (SeatUnavailableException e) {

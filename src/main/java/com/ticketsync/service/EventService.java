@@ -46,6 +46,7 @@ public class EventService {
     private static final Logger LOGGER = LogManager.getLogger(EventService.class);
 
     private final EventDAO eventDAO;
+    private final AuditService auditService;
     private final ConnectionFactory connFactory;
 
     /**
@@ -53,8 +54,7 @@ public class EventService {
      * uses {@link DatabaseConfig#getConnection()} for connection acquisition.
      */
     public EventService() {
-        this.eventDAO = new EventDAOImpl();
-        this.connFactory = DatabaseConfig::getConnection;
+        this(new EventDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
@@ -67,8 +67,7 @@ public class EventService {
      * @param eventDAO the DAO implementation to use; must not be {@code null}
      */
     EventService(EventDAO eventDAO) {
-        this.eventDAO = eventDAO;
-        this.connFactory = DatabaseConfig::getConnection;
+        this(eventDAO, AuditService.noop(), DatabaseConfig::getConnection);
     }
 
     /**
@@ -81,7 +80,15 @@ public class EventService {
      * @param connFactory the connection provider stub; must not be {@code null}
      */
     EventService(EventDAO eventDAO, ConnectionFactory connFactory) {
+        this(eventDAO, AuditService.noop(), connFactory);
+    }
+
+    /**
+     * Package-private constructor with injectable audit seam.
+     */
+    EventService(EventDAO eventDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.eventDAO = eventDAO;
+        this.auditService = auditService;
         this.connFactory = connFactory;
     }
 
@@ -154,7 +161,9 @@ public class EventService {
         String adminUsername = SessionContext.getCurrentUser().map(User::getUsername).orElse("unknown");
         try (Connection conn = connFactory.get()) {
             int newId = eventDAO.insert(conn, event);
+            event.setEventId(newId);
             LOGGER.info("Admin '{}' created event '{}'", adminUsername, event.getName());
+            auditService.logEventCreated(event);
             return newId;
         } catch (SQLException e) {
             LOGGER.error("Failed to create event '{}'", event.getName(), e);
@@ -187,6 +196,7 @@ public class EventService {
                     .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventId));
             eventDAO.update(conn, event);
             LOGGER.info("Admin '{}' updated event '{}'", adminUsername, event.getName());
+            auditService.logEventUpdated(event);
         } catch (SQLException e) {
             LOGGER.error("Failed to update event '{}'", event.getName(), e);
             throw e;
@@ -210,8 +220,11 @@ public class EventService {
         }
         String adminUsername = SessionContext.getCurrentUser().map(User::getUsername).orElse("unknown");
         try (Connection conn = connFactory.get()) {
+            Event existing = eventDAO.findById(conn, eventId)
+                    .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventId));
             eventDAO.delete(conn, eventId);
             LOGGER.info("Admin '{}' deleted event id '{}'", adminUsername, eventId);
+            auditService.logEventDeleted(existing);
         } catch (SQLException e) {
             LOGGER.error("Failed to delete event id '{}'", eventId, e);
             throw e;
@@ -241,6 +254,7 @@ public class EventService {
             event.setActive(true);
             eventDAO.update(conn, event);
             LOGGER.info("Admin '{}' activated event '{}'", adminUsername, event.getName());
+            auditService.logEventActivated(event);
         } catch (SQLException e) {
             LOGGER.error("Failed to activate event id '{}'", eventId, e);
             throw e;
@@ -270,6 +284,7 @@ public class EventService {
             event.setActive(false);
             eventDAO.update(conn, event);
             LOGGER.info("Admin '{}' deactivated event '{}'", adminUsername, event.getName());
+            auditService.logEventDeactivated(event);
         } catch (SQLException e) {
             LOGGER.error("Failed to deactivate event id '{}'", eventId, e);
             throw e;

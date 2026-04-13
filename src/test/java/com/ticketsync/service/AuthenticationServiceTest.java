@@ -1,10 +1,14 @@
 package com.ticketsync.service;
 
 import com.ticketsync.model.User;
+import com.ticketsync.util.DatabaseConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 
@@ -86,6 +90,32 @@ class AuthenticationServiceTest {
         assertFalse(result.isPresent(), "login() must return empty Optional for non-existent user");
     }
 
+    @Test
+    void login_withValidAdminCredentials_writesLoginSuccessAudit() throws SQLException {
+        int previousMaxId = maxAuditLogId();
+
+        Optional<User> result = service.login("admin", "admin123");
+
+        assertTrue(result.isPresent(), "login() must succeed before audit verification");
+        AuditRow row = findAuditLogAfter(previousMaxId, "LOGIN_SUCCESS", "admin");
+        assertTrue(row != null, "login success should write an audit row");
+        assertTrue(row.details().contains("\"outcome\":\"success\""));
+        deleteAuditLog(row.id());
+    }
+
+    @Test
+    void login_withWrongPassword_writesLoginFailureAudit() throws SQLException {
+        int previousMaxId = maxAuditLogId();
+
+        Optional<User> result = service.login("admin", "wrongpass");
+
+        assertFalse(result.isPresent(), "login must fail before failure-audit verification");
+        AuditRow row = findAuditLogAfter(previousMaxId, "LOGIN_FAILURE", "admin");
+        assertTrue(row != null, "login failure should write an audit row");
+        assertFalse(row.details().toLowerCase().contains("password"));
+        deleteAuditLog(row.id());
+    }
+
     // -----------------------------------------------------------------------
     // AC4: Logout clears SessionContext
     // -----------------------------------------------------------------------
@@ -126,4 +156,42 @@ class AuthenticationServiceTest {
     // -----------------------------------------------------------------------
     // AC6 (VENDOR positive case) and AC7 (no-DB tests) — see SessionContextTest
     // -----------------------------------------------------------------------
+
+    private int maxAuditLogId() throws SQLException {
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT COALESCE(MAX(log_id), 0) FROM audit_log");
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    private AuditRow findAuditLogAfter(int previousMaxId, String action, String username)
+            throws SQLException {
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT log_id, details FROM audit_log "
+                             + "WHERE log_id > ? AND action = ? AND username = ? "
+                             + "ORDER BY log_id DESC LIMIT 1")) {
+            ps.setInt(1, previousMaxId);
+            ps.setString(2, action);
+            ps.setString(3, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                return new AuditRow(rs.getInt(1), rs.getString(2));
+            }
+        }
+    }
+
+    private void deleteAuditLog(int logId) throws SQLException {
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement("DELETE FROM audit_log WHERE log_id = ?")) {
+            ps.setInt(1, logId);
+            ps.executeUpdate();
+        }
+    }
+
+    private record AuditRow(int id, String details) {
+    }
 }

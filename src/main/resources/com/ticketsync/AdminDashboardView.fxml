@@ -61,6 +61,13 @@
                 </content>
             </Tab>
 
+            <!-- Audit Log Tab -->
+            <Tab text="Audit Log" fx:id="auditLogTab">
+                <content>
+                    <fx:include fx:id="auditLogTabContent" source="AuditLogTab.fxml"/>
+                </content>
+            </Tab>
+
         </TabPane>
     </center>
 

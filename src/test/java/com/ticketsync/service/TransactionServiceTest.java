@@ -38,6 +38,7 @@ class TransactionServiceTest {
 
     private StubSeatDAO stubSeatDAO;
     private StubSaleDAO stubSaleDAO;
+    private CapturingAuditService stubAuditService;
     private Connection noopConn;
     private TransactionService service;
 
@@ -45,8 +46,9 @@ class TransactionServiceTest {
     void setUp() throws Exception {
         stubSeatDAO = new StubSeatDAO();
         stubSaleDAO = new StubSaleDAO();
+        stubAuditService = new CapturingAuditService();
         noopConn = noopConnection();
-        service = new TransactionService(stubSeatDAO, stubSaleDAO, () -> noopConn);
+        service = new TransactionService(stubSeatDAO, stubSaleDAO, stubAuditService, () -> noopConn);
         SessionContext.setCurrentUser(VENDOR);
     }
 
@@ -88,6 +90,35 @@ class TransactionServiceTest {
 
         assertTrue(stubSeatDAO.commitCalled, "commit() must be called on successful purchase");
         assertFalse(stubSeatDAO.rollbackCalled, "rollback() must NOT be called on success");
+    }
+
+    @Test
+    void purchaseSeats_success_writesPurchaseAuditAfterCommit() throws Exception {
+        stubSeatDAO.seatsToReturn = List.of(availableSeat(10), availableSeat(11));
+        stubSaleDAO.generatedSaleId = 77;
+
+        service.purchaseSeats(1, List.of(10, 11), new BigDecimal("20.00"), BOOTH_ID);
+
+        assertEquals(1, stubAuditService.persisted.size(), "purchase success must write one audit log");
+        assertTrue(stubAuditService.commitSeenAtPersist, "purchase audit must be written only after commit");
+        assertEquals("PURCHASE_SEATS", stubAuditService.persisted.getFirst().getAction());
+        assertEquals("SALE", stubAuditService.persisted.getFirst().getEntityType());
+        assertEquals(77, stubAuditService.persisted.getFirst().getEntityId());
+        assertTrue(stubAuditService.persisted.getFirst().getDetails().contains("\"seatIds\":[10,11]"));
+        assertTrue(stubAuditService.persisted.getFirst().getDetails().contains("\"boothId\":\"Booth 5\""));
+    }
+
+    @Test
+    void purchaseSeats_auditFailure_doesNotMaskCommittedSale() throws Exception {
+        stubSeatDAO.seatsToReturn = List.of(availableSeat(10), availableSeat(11));
+        stubSaleDAO.generatedSaleId = 101;
+        stubAuditService.throwOnPersist = true;
+
+        Sale result = service.purchaseSeats(1, List.of(10, 11), new BigDecimal("20.00"), BOOTH_ID);
+
+        assertEquals(101, result.getSaleId());
+        assertTrue(stubSeatDAO.commitCalled, "business transaction must still commit");
+        assertFalse(stubSeatDAO.rollbackCalled, "audit failure after commit must not roll back purchase");
     }
 
     @Test
@@ -442,6 +473,30 @@ class TransactionServiceTest {
         @Override
         public void insertSaleItems(Connection conn, int saleId, List<SaleItem> items) throws SQLException {
             insertedItems.addAll(items);
+        }
+    }
+
+    final class CapturingAuditService extends AuditService {
+        final List<com.ticketsync.model.AuditLog> persisted = new ArrayList<>();
+        boolean throwOnPersist;
+        boolean commitSeenAtPersist;
+
+        @Override
+        protected void persistAuditLog(com.ticketsync.model.AuditLog auditLog) throws SQLException {
+            commitSeenAtPersist = stubSeatDAO.commitCalled;
+            if (throwOnPersist) {
+                throw new SQLException("audit insert failed");
+            }
+            persisted.add(auditLog);
+        }
+
+        @Override
+        protected List<com.ticketsync.model.AuditLog> queryAuditLogs(
+                java.time.LocalDateTime fromInclusive,
+                java.time.LocalDateTime toExclusive,
+                String actionFilter,
+                int limit) {
+            return List.of();
         }
     }
 }

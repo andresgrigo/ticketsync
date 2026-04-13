@@ -31,7 +31,25 @@ public class UserManagementService {
 
     private static final Logger LOGGER = LogManager.getLogger(UserManagementService.class);
 
-    private final UserDAO userDAO = new UserDAOImpl();
+    private final UserDAO userDAO;
+    private final AuditService auditService;
+    private final ConnectionFactory connFactory;
+
+    /**
+     * Production constructor.
+     */
+    public UserManagementService() {
+        this(new UserDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
+    }
+
+    /**
+     * Package-private constructor for full unit-test injection.
+     */
+    UserManagementService(UserDAO userDAO, AuditService auditService, ConnectionFactory connFactory) {
+        this.userDAO = userDAO;
+        this.auditService = auditService;
+        this.connFactory = connFactory;
+    }
 
     /**
      * Returns all users stored in the {@code users} table, ordered by
@@ -41,7 +59,7 @@ public class UserManagementService {
      * @throws SQLException if a database access error occurs
      */
     public List<User> getAllUsers() throws SQLException {
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = connFactory.get()) {
             return userDAO.findAll(conn);
         }
     }
@@ -59,7 +77,7 @@ public class UserManagementService {
      * @throws SQLException if a database access error occurs
      */
     public boolean usernameExists(String username) throws SQLException {
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = connFactory.get()) {
             return userDAO.findByUsername(conn, username).isPresent();
         }
     }
@@ -85,9 +103,10 @@ public class UserManagementService {
         validateRole(role);
         String passwordHash = PasswordHasher.hashPassword(rawPassword);
         User user = new User(0, username, passwordHash, role, null);
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = connFactory.get()) {
             int newId = userDAO.insert(conn, user);
             LOGGER.info("Admin '{}' created user '{}' with role '{}'", adminUsername, username, role);
+            auditService.logUserCreated(adminUsername, newId, username, role);
             return newId;
         } catch (SQLException e) {
             if (e.getMessage() != null && e.getMessage().contains("duplicate key")) {
@@ -119,10 +138,11 @@ public class UserManagementService {
                 newRole,
                 existingUser.getCreatedAt()
         );
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = connFactory.get()) {
             userDAO.update(conn, updated);
             LOGGER.info("Admin '{}' updated role of user '{}' to '{}'",
                     adminUsername, existingUser.getUsername(), newRole);
+            auditService.logUserRoleUpdated(adminUsername, existingUser, newRole);
         }
     }
 
@@ -139,9 +159,10 @@ public class UserManagementService {
      */
     public void deleteUser(int userId, String deletedUsername, String adminUsername)
             throws SQLException {
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = connFactory.get()) {
             userDAO.delete(conn, userId);
             LOGGER.info("Admin '{}' deleted user '{}'", adminUsername, deletedUsername);
+            auditService.logUserDeleted(adminUsername, userId, deletedUsername);
         }
     }
 

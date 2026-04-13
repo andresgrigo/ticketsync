@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.ticketsync.controller.AuditLogTabController">
+
+    <top>
+        <VBox spacing="12" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="16" right="16" bottom="12" left="16"/>
+            </padding>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Window"/>
+                <ComboBox fx:id="timeWindowCombo" prefWidth="150"/>
+                <Label text="Action"/>
+                <ComboBox fx:id="actionFilterCombo" prefWidth="180"/>
+                <Label text="Username"/>
+                <TextField fx:id="usernameFilterField" promptText="Optional exact username"/>
+                <Button fx:id="refreshButton" text="Refresh" onAction="#handleRefresh"/>
+            </HBox>
+            <Label text="Read-only audit history from the database-backed audit_log trail."
+                   style="-fx-text-fill: #616161;"/>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="auditTable">
+            <columns>
+                <TableColumn fx:id="timestampColumn" text="Timestamp" prefWidth="170"/>
+                <TableColumn fx:id="usernameColumn" text="Username" prefWidth="120"/>
+                <TableColumn fx:id="actionColumn" text="Action" prefWidth="150"/>
+                <TableColumn fx:id="entityColumn" text="Entity" prefWidth="110"/>
+                <TableColumn fx:id="detailsColumn" text="Details" prefWidth="420"/>
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER_LEFT">
+            <padding>
+                <Insets top="12" right="16" bottom="16" left="16"/>
+            </padding>
+            <Label fx:id="auditStatusLabel" text="Select a filter and refresh to load audit entries."/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
