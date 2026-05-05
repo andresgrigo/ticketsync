@@ -45,7 +45,7 @@
 
     <!-- Row 4: Validation error — opacity-based toggle keeps row height constant -->
     <Label fx:id="errorLabel" text="" opacity="0"
-           style="-fx-text-fill: #D32F2F; -fx-font-size: 12px;"
-           GridPane.rowIndex="4" GridPane.columnIndex="0"
-           GridPane.columnSpan="2"/>
+            styleClass="form-error-label"
+            GridPane.rowIndex="4" GridPane.columnIndex="0"
+            GridPane.columnSpan="2"/>
 </GridPane>

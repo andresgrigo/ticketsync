@@ -15,21 +15,21 @@
       fx:id="rootContainer"
       spacing="12"
       prefWidth="320"
-      style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8;">
+      styleClass="selection-panel">
     <padding>
         <Insets top="16" right="16" bottom="16" left="16"/>
     </padding>
 
     <Label fx:id="headerLabel"
            text="Selected Seats (0 seats)"
-           style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+           styleClass="selection-panel-title"/>
 
     <StackPane VBox.vgrow="ALWAYS">
         <VBox spacing="12" fillWidth="true">
             <Label fx:id="emptyStateLabel"
                    text="No seats selected - click seats on map to begin"
                    wrapText="true"
-                   style="-fx-text-fill: #616161;"/>
+                   styleClass="muted-help-text"/>
 
             <VBox fx:id="selectionContent" spacing="12" visible="false" managed="false">
                 <ListView fx:id="selectedSeatsListView"
@@ -38,11 +38,11 @@
 
                 <Label fx:id="countdownLabel"
                        text="Lock expires in: 60"
-                       style="-fx-text-fill: #616161;"/>
+                       styleClass="countdown-label"/>
 
                 <Label fx:id="totalPriceLabel"
                        text="Total: EUR0.00"
-                       style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+                       styleClass="selection-panel-total"/>
 
                 <HBox spacing="10">
                     <StackPane fx:id="confirmPurchaseHelpTarget"
@@ -66,7 +66,7 @@
         <StackPane fx:id="processingOverlay"
                    visible="false"
                    managed="false"
-                   style="-fx-background-color: rgba(255,255,255,0.75);">
+                   styleClass="processing-overlay">
             <ProgressIndicator prefWidth="48" prefHeight="48"/>
         </StackPane>
     </StackPane>

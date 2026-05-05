@@ -3,6 +3,8 @@ package com.ticketsync;
 import atlantafx.base.theme.PrimerLight;
 import com.ticketsync.util.DatabaseConfig;
 import com.ticketsync.util.DatabaseHealthMonitor;
+import com.ticketsync.util.DialogThemeHelper;
+import com.ticketsync.util.AppTheme;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -29,10 +31,14 @@ public class App extends Application {
     public void start(Stage stage) throws IOException {
         logStartupInformation();
 
+        // Install AtlantaFX before any Alert/Dialog is shown so even early startup errors are themed.
+        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+
         // Check for missing TICKETSYNC_MASTER_KEY before class initialization fires
         try {
             if (!DatabaseConfig.testConnection()) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
+                DialogThemeHelper.apply(alert);
                 alert.setTitle("Database Connection Error");
                 alert.setHeaderText("Cannot connect to the database");
                 alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
@@ -43,6 +49,7 @@ public class App extends Application {
         } catch (ExceptionInInitializerError e) {
             Throwable cause = e.getCause();
             Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
             if (cause instanceof IllegalStateException && cause.getMessage() != null
                     && cause.getMessage().contains("TICKETSYNC_MASTER_KEY")) {
                 alert.setTitle("Missing Environment Variable");
@@ -61,8 +68,8 @@ public class App extends Application {
 
         DatabaseHealthMonitor.getInstance().start();
         dbStarted = true;
-        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         scene = new Scene(loadFXML("LoginView"), 640, 480);
+        AppTheme.apply(scene);
         stage.setTitle("TicketSync");
         stage.setScene(scene);
         stage.show();

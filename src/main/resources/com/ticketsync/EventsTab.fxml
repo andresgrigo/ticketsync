@@ -19,7 +19,7 @@
             <Button fx:id="deleteEventButton" text="Delete Event" onAction="#handleDeleteEvent" disable="true"/>
             <Button fx:id="toggleActivateButton" text="Activate" onAction="#handleToggleActivate" disable="true"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="eventsStatusLabel" style="-fx-text-fill: #666;"/>
+            <Label fx:id="eventsStatusLabel" styleClass="muted-status-label"/>
         </ToolBar>
     </top>
     <center>

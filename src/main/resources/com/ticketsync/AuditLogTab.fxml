@@ -31,7 +31,7 @@
                 <Button fx:id="refreshButton" text="Refresh" onAction="#handleRefresh"/>
             </HBox>
             <Label text="Read-only audit history from the database-backed audit_log trail."
-                   style="-fx-text-fill: #616161;"/>
+                   styleClass="muted-help-text"/>
         </VBox>
     </top>
 

@@ -142,7 +142,8 @@ final class SeatMapLayoutHelper {
         return switch (seat.getStatus()) {
             case AVAILABLE -> SeatVisualState.AVAILABLE;
             case SOLD -> SeatVisualState.SOLD;
-            case DISABLED, RESERVED -> SeatVisualState.DISABLED;
+            case RESERVED -> SeatVisualState.RESERVED;
+            case DISABLED -> SeatVisualState.DISABLED;
         };
     }
 
@@ -256,6 +257,7 @@ final class SeatMapLayoutHelper {
     enum SeatVisualState {
         AVAILABLE,
         SELECTED,
+        RESERVED,
         SOLD,
         DISABLED
     }

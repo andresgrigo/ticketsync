@@ -15,6 +15,8 @@ import com.ticketsync.service.SeatSyncService;
 import com.ticketsync.service.SessionContext;
 import com.ticketsync.service.TicketGenerator;
 import com.ticketsync.service.TransactionService;
+import com.ticketsync.util.DialogThemeHelper;
+import com.ticketsync.util.ThemeStyleHelper;
 import com.ticketsync.viewmodel.PosViewModel;
 import com.ticketsync.viewmodel.SeatMapViewModel;
 import com.ticketsync.viewmodel.SelectionPanelViewModel;
@@ -64,22 +66,6 @@ public class PosController {
 
     private static final Logger LOGGER = LogManager.getLogger(PosController.class);
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-    private static final String HEALTHY_BADGE_STYLE =
-            "-fx-background-color: #E8F5E9; -fx-text-fill: #2E7D32; -fx-background-radius: 16; "
-                    + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
-    private static final String RECONNECTING_BADGE_STYLE =
-            "-fx-background-color: #FFF3E0; -fx-text-fill: #8A4B08; -fx-background-radius: 16; "
-                    + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
-    private static final String FAIL_SAFE_BADGE_STYLE =
-            "-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-background-radius: 16; "
-                    + "-fx-padding: 6 12 6 12; -fx-font-weight: bold;";
-    private static final String HEALTHY_BANNER_STYLE =
-            "-fx-background-color: #E8F5E9; -fx-border-color: #81C784; -fx-border-width: 1 0 1 0;";
-    private static final String RECONNECTING_BANNER_STYLE =
-            "-fx-background-color: #FFF3E0; -fx-border-color: #FFB74D; -fx-border-width: 1 0 1 0;";
-    private static final String FAIL_SAFE_BANNER_STYLE =
-            "-fx-background-color: #FFEBEE; -fx-border-color: #EF9A9A; -fx-border-width: 1 0 1 0;";
-
     @FXML private BorderPane root;
     @FXML private TextField eventSearchField;
     @FXML private ComboBox<Event> eventComboBox;
@@ -586,6 +572,7 @@ public class PosController {
 
         LOGGER.error("Unexpected failure in purchase flow", cause);
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        DialogThemeHelper.apply(alert);
         alert.setTitle("Purchase Unavailable");
         alert.setHeaderText("Purchase could not be completed");
         alert.setContentText("Please try the purchase again.");
@@ -598,6 +585,7 @@ public class PosController {
         ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        DialogThemeHelper.apply(alert);
         alert.setTitle("Purchase Confirmed");
         alert.setHeaderText("Purchase Confirmed");
         alert.getButtonTypes().setAll(saveButton, closeButton);
@@ -679,6 +667,7 @@ public class PosController {
 
     private void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
         Alert alert = new Alert(alertType);
+        DialogThemeHelper.apply(alert);
         alert.setTitle(title);
         alert.setHeaderText(headerText);
         alert.setContentText(contentText);
@@ -690,6 +679,7 @@ public class PosController {
         ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        DialogThemeHelper.apply(alert);
         alert.setTitle("Seat No Longer Available");
         alert.setHeaderText("Seat No Longer Available");
         alert.getButtonTypes().setAll(filterButton, closeButton);
@@ -709,25 +699,21 @@ public class PosController {
     }
 
     private void applySystemHealthBadgeStyle(PosViewModel.SystemHealthState state) {
-        PosViewModel.SystemHealthState effectiveState =
-                state != null ? state : PosViewModel.SystemHealthState.HEALTHY;
-        String style = switch (effectiveState) {
-            case HEALTHY, RESTORED -> HEALTHY_BADGE_STYLE;
-            case RECONNECTING -> RECONNECTING_BADGE_STYLE;
-            case FAIL_SAFE -> FAIL_SAFE_BADGE_STYLE;
-        };
-        systemHealthBadgeLabel.setStyle(style);
+        ThemeStyleHelper.applyManagedStateClass(
+                systemHealthBadgeLabel.getStyleClass(),
+                "system-health-badge",
+                ThemeStyleHelper.HEALTH_STATE_CLASSES,
+                ThemeStyleHelper.healthStateClass(state)
+        );
     }
 
     private void applySystemHealthBannerStyle(PosViewModel.SystemHealthState state) {
-        PosViewModel.SystemHealthState effectiveState =
-                state != null ? state : PosViewModel.SystemHealthState.HEALTHY;
-        String bannerStyle = switch (effectiveState) {
-            case HEALTHY, RESTORED -> HEALTHY_BANNER_STYLE;
-            case RECONNECTING -> RECONNECTING_BANNER_STYLE;
-            case FAIL_SAFE -> FAIL_SAFE_BANNER_STYLE;
-        };
-        systemHealthBanner.setStyle(bannerStyle);
+        ThemeStyleHelper.applyManagedStateClass(
+                systemHealthBanner.getStyleClass(),
+                "system-health-banner",
+                ThemeStyleHelper.HEALTH_STATE_CLASSES,
+                ThemeStyleHelper.healthStateClass(state)
+        );
     }
 
     private void submitTask(Task<?> task) {

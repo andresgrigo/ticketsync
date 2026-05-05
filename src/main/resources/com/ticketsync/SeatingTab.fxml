@@ -25,7 +25,7 @@
             <Button fx:id="zonesEditButton" text="Edit Zone" onAction="#handleEditZone" disable="true"/>
             <Button fx:id="zonesDeleteButton" text="Delete Zone" onAction="#handleDeleteZone" disable="true"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="zonesStatusLabel" style="-fx-text-fill: #666;"/>
+            <Label fx:id="zonesStatusLabel" styleClass="muted-status-label"/>
         </ToolBar>
     </top>
     <center>
@@ -61,7 +61,7 @@
                                 disable="true" onAction="#handleMarkUnavailable"/>
                         <Button fx:id="seatsMarkAvailableButton" text="Mark Available"
                                 disable="true" onAction="#handleMarkAvailable"/>
-                        <Label fx:id="seatsStatusLabel" style="-fx-text-fill: #666; -fx-padding: 0 0 0 8;"/>
+                        <Label fx:id="seatsStatusLabel" styleClass="toolbar-status-label"/>
                     </ToolBar>
                 </top>
                 <center>
@@ -82,7 +82,7 @@
                                         hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
                                 <Canvas fx:id="seatMapCanvas" width="600" height="400"/>
                             </ScrollPane>
-                            <Label fx:id="seatMapHoverLabel" style="-fx-padding: 4;"/>
+                            <Label fx:id="seatMapHoverLabel" styleClass="canvas-hover-label"/>
                         </VBox>
                     </SplitPane>
                 </center>

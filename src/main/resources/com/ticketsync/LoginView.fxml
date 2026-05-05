@@ -17,7 +17,7 @@
         <Insets top="40" right="40" bottom="40" left="40"/>
     </padding>
 
-    <Label text="TicketSync" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+    <Label text="TicketSync" styleClass="app-login-title"/>
 
     <TextField fx:id="usernameField" promptText="Username"/>
 
@@ -27,5 +27,5 @@
             defaultButton="true" maxWidth="Infinity"/>
 
     <Label fx:id="errorLabel" text="" visible="false" managed="false"
-           style="-fx-text-fill: #F44336; -fx-font-size: 13px;"/>
+           styleClass="app-error-text"/>
 </VBox>

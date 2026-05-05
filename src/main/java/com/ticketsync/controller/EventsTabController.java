@@ -5,6 +5,8 @@ import com.ticketsync.model.Event;
 import com.ticketsync.model.User;
 import com.ticketsync.service.EventService;
 import com.ticketsync.service.SessionContext;
+import com.ticketsync.util.DialogThemeHelper;
+import com.ticketsync.util.ThemeStyleHelper;
 import com.ticketsync.viewmodel.EventManagementViewModel;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
@@ -74,15 +76,23 @@ public class EventsTabController {
             @Override
             protected void updateItem(String val, boolean empty) {
                 super.updateItem(val, empty);
+                ThemeStyleHelper.applyManagedStateClass(
+                        getStyleClass(),
+                        "status-table-cell",
+                        ThemeStyleHelper.STATUS_STATE_CLASSES,
+                        null
+                );
                 if (empty || val == null) {
                     setText(null);
-                    setStyle("");
-                } else if ("Active".equals(val)) {
-                    setText("Active");
-                    setStyle("-fx-text-fill: #2E7D32; -fx-font-weight: bold;");
                 } else {
-                    setText("Inactive");
-                    setStyle("-fx-text-fill: #757575;");
+                    boolean active = "Active".equals(val);
+                    setText(active ? "Active" : "Inactive");
+                    ThemeStyleHelper.applyManagedStateClass(
+                            getStyleClass(),
+                            "status-table-cell",
+                            ThemeStyleHelper.STATUS_STATE_CLASSES,
+                            ThemeStyleHelper.eventStatusClass(active)
+                    );
                 }
             }
         });
@@ -230,6 +240,7 @@ public class EventsTabController {
         if (selectedEvent == null) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        DialogThemeHelper.apply(confirm);
         confirm.setTitle("Delete Event");
         confirm.setHeaderText(null);
         String eventName = selectedEvent.getName() != null ? selectedEvent.getName() : "(unnamed)";
@@ -316,6 +327,7 @@ public class EventsTabController {
         dialog.setTitle(title);
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        DialogThemeHelper.apply(dialog);
         return dialog;
     }
 
@@ -329,6 +341,7 @@ public class EventsTabController {
     private void showErrorAlert(String title, String message) {
         javafx.application.Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
             alert.setTitle(title);
             alert.setHeaderText(null);
             alert.setContentText(message);

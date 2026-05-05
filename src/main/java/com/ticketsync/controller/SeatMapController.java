@@ -3,6 +3,7 @@ package com.ticketsync.controller;
 import com.ticketsync.model.Seat;
 import com.ticketsync.model.Zone;
 import com.ticketsync.viewmodel.SeatMapViewModel;
+import com.ticketsync.util.ThemePalette;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -36,13 +37,6 @@ public class SeatMapController {
 
     private static final double FOCUS_RING_INSET = 2.0;
     private static final double PAN_THRESHOLD = 4.0;
-    private static final Color AVAILABLE_COLOR = Color.web("#4CAF50");
-    private static final Color SELECTED_COLOR = Color.web("#FDD835");
-    private static final Color SOLD_COLOR = Color.web("#F44336");
-    private static final Color DISABLED_COLOR = Color.web("#9E9E9E");
-    private static final Color FOCUS_RING_COLOR = Color.web("#1565C0");
-    private static final Color SEAT_BORDER_COLOR = Color.web("#37474F");
-
     @FXML private ScrollPane seatMapScrollPane;
     @FXML private Canvas seatMapCanvas;
 
@@ -211,12 +205,12 @@ public class SeatMapController {
         gc.scale(viewport.zoom(), viewport.zoom());
 
         for (SeatMapLayoutHelper.ZoneLayout zoneLayout : currentLayout.zoneLayouts()) {
-            gc.setFill(Color.web("#212121"));
+            gc.setFill(ThemePalette.headingText());
             gc.setFont(Font.font(null, FontWeight.BOLD, 16));
             gc.fillText(zoneLayout.zoneLabel(), SeatMapLayoutHelper.PADDING, zoneLayout.headerY() + 16);
 
             for (SeatMapLayoutHelper.RowLayout rowLayout : zoneLayout.rows()) {
-                gc.setFill(Color.web("#616161"));
+                gc.setFill(ThemePalette.metaText());
                 gc.setFont(Font.font(11));
                 gc.fillText(
                         rowLayout.rowLabel() != null ? rowLayout.rowLabel() : "",
@@ -237,7 +231,10 @@ public class SeatMapController {
         boolean selected = viewModel.isSeatSelected(cell.seat().getSeatId());
         boolean focused = Objects.equals(viewModel.focusedSeatIdProperty().get(), cell.seat().getSeatId());
 
-        gc.setFill(colorFor(SeatMapLayoutHelper.resolveVisualState(cell.seat(), selected)));
+        gc.setFill(ThemePalette.seatFill(
+                ThemePalette.SeatVisualTone.valueOf(
+                        SeatMapLayoutHelper.resolveVisualState(cell.seat(), selected).name()
+                )));
         gc.fillRoundRect(
                 cell.worldX(),
                 cell.worldY(),
@@ -247,7 +244,7 @@ public class SeatMapController {
                 SeatMapLayoutHelper.SEAT_ARC
         );
 
-        gc.setStroke(SEAT_BORDER_COLOR);
+        gc.setStroke(ThemePalette.seatBorder());
         gc.setLineWidth(1.0);
         gc.strokeRoundRect(
                 cell.worldX(),
@@ -259,7 +256,7 @@ public class SeatMapController {
         );
 
         if (focused) {
-            gc.setStroke(FOCUS_RING_COLOR);
+            gc.setStroke(ThemePalette.focusRing());
             gc.setLineWidth(2.0);
             gc.strokeRoundRect(
                     cell.worldX() + FOCUS_RING_INSET,
@@ -275,7 +272,7 @@ public class SeatMapController {
         textMeasurer.setFont(Font.font(11));
         textMeasurer.setText(label);
         double textWidth = textMeasurer.getBoundsInLocal().getWidth();
-        gc.setFill(Color.WHITE);
+        gc.setFill(ThemePalette.seatLabelText());
         gc.setFont(Font.font(11));
         gc.fillText(
                 label,
@@ -294,7 +291,7 @@ public class SeatMapController {
 
         GraphicsContext gc = seatMapCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, seatMapCanvas.getWidth(), seatMapCanvas.getHeight());
-        gc.setFill(Color.GRAY);
+        gc.setFill(ThemePalette.placeholderText());
         gc.setFont(Font.font(13));
         String message = viewModel.loadingProperty().get()
                 ? "Loading seat map..."
@@ -438,12 +435,4 @@ public class SeatMapController {
         viewport = new SeatMapLayoutHelper.ViewportTransform(1.0, 0, 0);
     }
 
-    private static Color colorFor(SeatMapLayoutHelper.SeatVisualState visualState) {
-        return switch (visualState) {
-            case AVAILABLE -> AVAILABLE_COLOR;
-            case SELECTED -> SELECTED_COLOR;
-            case SOLD -> SOLD_COLOR;
-            case DISABLED -> DISABLED_COLOR;
-        };
-    }
 }

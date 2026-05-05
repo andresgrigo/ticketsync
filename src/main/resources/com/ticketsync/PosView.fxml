@@ -33,7 +33,7 @@
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="systemHealthBadgeLabel"
                        text="DB Connected"
-                       style="-fx-background-color: #E8F5E9; -fx-text-fill: #2E7D32; -fx-background-radius: 16; -fx-padding: 6 12 6 12; -fx-font-weight: bold;"/>
+                       styleClass="system-health-badge"/>
                 <Label fx:id="vendorInfoLabel"/>
                 <MenuButton text="Help">
                     <items>
@@ -50,17 +50,17 @@
                   alignment="CENTER_LEFT"
                   visible="false"
                   managed="false"
-                  style="-fx-background-color: #FFF3E0; -fx-border-color: #FFB74D; -fx-border-width: 1 0 1 0;">
+                  styleClass="system-health-banner">
                 <padding>
                     <Insets top="10" right="12" bottom="10" left="12"/>
                 </padding>
                 <Label fx:id="systemHealthBannerLabel"
                        wrapText="true"
-                       style="-fx-font-weight: bold; -fx-text-fill: #8A4B08;"/>
+                       styleClass="system-health-banner-label"/>
             </HBox>
 
             <HBox spacing="18" alignment="CENTER_LEFT"
-                  style="-fx-background-color: #FAFAFA; -fx-border-color: #E0E0E0; -fx-border-width: 1 0 1 0;">
+                  styleClass="pos-context-bar">
                 <padding>
                     <Insets top="10" right="12" bottom="10" left="12"/>
                 </padding>
@@ -80,7 +80,7 @@
             </padding>
             <Label fx:id="noEventsLabel"
                    text="No active events. Contact an administrator to activate an event."
-                   style="-fx-text-fill: #757575;"
+                   styleClass="muted-help-text"
                    visible="false" managed="false"/>
 
             <SplitPane dividerPositions="0.70" VBox.vgrow="ALWAYS">

@@ -8,6 +8,8 @@ import com.ticketsync.service.EventService;
 import com.ticketsync.service.SeatService;
 import com.ticketsync.service.SessionContext;
 import com.ticketsync.service.ZoneService;
+import com.ticketsync.util.DialogThemeHelper;
+import com.ticketsync.util.ThemePalette;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -242,7 +244,7 @@ public class LayoutViewTabController {
         if (w > 0 && h > 0) {
             GraphicsContext gc = layoutCanvas.getGraphicsContext2D();
             gc.clearRect(0, 0, w, h);
-            gc.setFill(Color.GRAY);
+            gc.setFill(ThemePalette.placeholderText());
             gc.setFont(Font.font(13));
             gc.fillText("Select an event above", LAYOUT_PADDING, 30);
         }
@@ -265,7 +267,7 @@ public class LayoutViewTabController {
         if (allSeats.isEmpty()) {
             GraphicsContext gc = layoutCanvas.getGraphicsContext2D();
             gc.clearRect(0, 0, canvasW, canvasH);
-            gc.setFill(Color.GRAY);
+            gc.setFill(ThemePalette.placeholderText());
             gc.setFont(Font.font(13));
             gc.fillText("No seats configured for this event", LAYOUT_PADDING, 30);
             return;
@@ -327,7 +329,7 @@ public class LayoutViewTabController {
             Zone zone = zoneMap.get(zoneEntry.getKey());
             String zoneName = (zone != null) ? zone.getName() : "Zone " + zoneEntry.getKey();
 
-            gc.setFill(Color.web("#212121"));
+            gc.setFill(ThemePalette.headingText());
             gc.setFont(Font.font(null, FontWeight.BOLD, 16));
             gc.fillText(zoneName, LAYOUT_PADDING, yOffset + 16);
             yOffset += 24 + 8;
@@ -340,7 +342,7 @@ public class LayoutViewTabController {
 
             for (Map.Entry<String, List<Seat>> rowEntry : byRow.entrySet()) {
                 double xOffset = LAYOUT_PADDING;
-                gc.setFill(Color.web("#616161"));
+                gc.setFill(ThemePalette.metaText());
                 gc.setFont(Font.font(11));
                 gc.fillText(rowEntry.getKey(), xOffset, yOffset + LAYOUT_CELL_SIZE / 2.0 + 4);
                 xOffset += LAYOUT_ROW_LABEL_WIDTH;
@@ -349,15 +351,10 @@ public class LayoutViewTabController {
                 rowSeats.sort((a, b) ->
                         numericStringCompare(a.getSeatNumber(), b.getSeatNumber()));
                 for (Seat seat : rowSeats) {
-                    Color fill = switch (seat.getStatus()) {
-                        case AVAILABLE -> Color.web("#4CAF50");
-                        case SOLD      -> Color.web("#F44336");
-                        case DISABLED  -> Color.web("#9E9E9E");
-                        default        -> Color.web("#9E9E9E");
-                    };
+                    Color fill = ThemePalette.seatFill(seat.getStatus());
                     gc.setFill(fill);
                     gc.fillRoundRect(xOffset, yOffset, LAYOUT_CELL_SIZE, LAYOUT_CELL_SIZE, 6, 6);
-                    gc.setFill(Color.WHITE);
+                    gc.setFill(ThemePalette.seatLabelText());
                     gc.setFont(Font.font(11));
                     String label = seat.getSeatNumber() != null ? seat.getSeatNumber() : "";
                     measurer.setText(label);
@@ -466,6 +463,7 @@ public class LayoutViewTabController {
             layoutExportButton.setDisable(false);
             LOGGER.error("Failed to export layout PDF", exportTask.getException());
             Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
             alert.setTitle("Export Failed");
             alert.setHeaderText(null);
             alert.setContentText(

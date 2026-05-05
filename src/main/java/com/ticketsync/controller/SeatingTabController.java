@@ -10,6 +10,9 @@ import com.ticketsync.service.EventService;
 import com.ticketsync.service.SeatService;
 import com.ticketsync.service.SessionContext;
 import com.ticketsync.service.ZoneService;
+import com.ticketsync.util.DialogThemeHelper;
+import com.ticketsync.util.ThemePalette;
+import com.ticketsync.util.ThemeStyleHelper;
 import com.ticketsync.viewmodel.SeatManagementViewModel;
 import com.ticketsync.viewmodel.ZoneManagementViewModel;
 import javafx.application.Platform;
@@ -181,17 +184,22 @@ public class SeatingTabController {
             @Override
             protected void updateItem(String val, boolean empty) {
                 super.updateItem(val, empty);
+                ThemeStyleHelper.applyManagedStateClass(
+                        getStyleClass(),
+                        "status-table-cell",
+                        ThemeStyleHelper.STATUS_STATE_CLASSES,
+                        null
+                );
                 if (empty || val == null) {
                     setText(null);
-                    setStyle("");
                 } else {
                     setText(val);
-                    switch (val) {
-                        case "AVAILABLE" -> setStyle("-fx-text-fill: #2E7D32; -fx-font-weight: bold;");
-                        case "SOLD"      -> setStyle("-fx-text-fill: #C62828; -fx-font-weight: bold;");
-                        case "DISABLED"  -> setStyle("-fx-text-fill: #757575;");
-                        default          -> setStyle("");
-                    }
+                    ThemeStyleHelper.applyManagedStateClass(
+                            getStyleClass(),
+                            "status-table-cell",
+                            ThemeStyleHelper.STATUS_STATE_CLASSES,
+                            ThemeStyleHelper.seatStatusClass(val)
+                    );
                 }
             }
         });
@@ -451,6 +459,7 @@ public class SeatingTabController {
         if (selectedZone == null) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        DialogThemeHelper.apply(confirm);
         confirm.setTitle("Delete Zone");
         confirm.setHeaderText(null);
         String zoneName = selectedZone.getName() != null ? selectedZone.getName() : "(unnamed)";
@@ -577,6 +586,7 @@ public class SeatingTabController {
                 msg = "Error generating seats. Please try again.";
             }
             Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
             alert.setTitle("Generate Seats Failed");
             alert.setHeaderText(null);
             alert.setContentText(msg);
@@ -717,6 +727,7 @@ public class SeatingTabController {
         if (selected.isEmpty()) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        DialogThemeHelper.apply(confirm);
         confirm.setTitle("Delete Seats");
         confirm.setHeaderText(null);
         confirm.setContentText("Delete " + selected.size() + " seat(s)? This cannot be undone.");
@@ -748,6 +759,7 @@ public class SeatingTabController {
             task.setOnFailed(e -> {
                 LOGGER.error("Delete seats failed", task.getException());
                 Alert errAlert = new Alert(Alert.AlertType.ERROR);
+                DialogThemeHelper.apply(errAlert);
                 errAlert.setTitle("Delete Seats Failed");
                 errAlert.setHeaderText(null);
                 errAlert.setContentText("Error deleting seats. Please try again.");
@@ -775,7 +787,7 @@ public class SeatingTabController {
             seatMapScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
             GraphicsContext gc = seatMapCanvas.getGraphicsContext2D();
             gc.clearRect(0, 0, canvasWidth, canvasHeight);
-            gc.setFill(Color.GRAY);
+            gc.setFill(ThemePalette.placeholderText());
             gc.setFont(Font.font(13));
             if (seatsZoneSelector.getSelectionModel().getSelectedItem() == null) {
                 gc.fillText("Select a zone above", PADDING, 30);
@@ -822,15 +834,10 @@ public class SeatingTabController {
         for (Map.Entry<String, List<Seat>> entry : byRow.entrySet()) {
             double xOffset = PADDING;
             for (Seat seat : entry.getValue()) {
-                Color fill = switch (seat.getStatus()) {
-                    case AVAILABLE -> Color.web("#4CAF50");
-                    case SOLD      -> Color.web("#F44336");
-                    case DISABLED  -> Color.web("#9E9E9E");
-                    default        -> Color.web("#9E9E9E");
-                };
+                Color fill = ThemePalette.seatFill(seat.getStatus());
                 gc.setFill(fill);
                 gc.fillRoundRect(xOffset, yOffset, CELL_SIZE, CELL_SIZE, 4, 4);
-                gc.setFill(Color.WHITE);
+                gc.setFill(ThemePalette.seatLabelText());
                 gc.setFont(Font.font(10));
                 String label = seat.getSeatNumber() != null ? seat.getSeatNumber() : "";
                 textMeasurer.setText(label);
@@ -840,7 +847,7 @@ public class SeatingTabController {
                         yOffset + CELL_SIZE / 2.0 + 4);
                 seatCells.add(new SeatCell(seat, xOffset, yOffset));
                 if (seatsTable.getSelectionModel().getSelectedItems().contains(seat)) {
-                    gc.setStroke(Color.WHITE);
+                    gc.setStroke(ThemePalette.selectionOutline());
                     gc.setLineWidth(2.0);
                     gc.strokeRoundRect(xOffset + 1, yOffset + 1, CELL_SIZE - 2, CELL_SIZE - 2, 4, 4);
                 }
@@ -915,11 +922,13 @@ public class SeatingTabController {
         dialog.setTitle(title);
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        DialogThemeHelper.apply(dialog);
         return dialog;
     }
 
     private void showGenerateError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        DialogThemeHelper.apply(alert);
         alert.setTitle("Generate Seats Failed");
         alert.setHeaderText(null);
         alert.setContentText(message);
@@ -966,6 +975,7 @@ public class SeatingTabController {
     private void showErrorAlert(String title, String message) {
         javafx.application.Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
             alert.setTitle(title);
             alert.setHeaderText(null);
             alert.setContentText(message);

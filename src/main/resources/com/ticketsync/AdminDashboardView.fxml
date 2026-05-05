@@ -17,15 +17,15 @@
     <!-- TOP — Header bar -->
     <top>
         <HBox alignment="CENTER_LEFT" spacing="16"
-              style="-fx-background-color: #1565C0;">
+              styleClass="admin-header-bar">
             <padding>
                 <Insets top="12" right="12" bottom="12" left="12"/>
             </padding>
             <Label text="TicketSync Admin"
-                   style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                   styleClass="admin-header-title"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="loggedInUserLabel"
-                   style="-fx-text-fill: #BBDEFB; -fx-font-size: 13px;"/>
+                   styleClass="admin-header-meta"/>
             <Button fx:id="logoutButton" text="Logout" onAction="#handleLogout"/>
         </HBox>
     </top>

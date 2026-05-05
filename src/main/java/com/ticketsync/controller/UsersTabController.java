@@ -3,6 +3,7 @@ package com.ticketsync.controller;
 import com.ticketsync.App;
 import com.ticketsync.model.User;
 import com.ticketsync.service.UserManagementService;
+import com.ticketsync.util.DialogThemeHelper;
 import com.ticketsync.viewmodel.UserManagementViewModel;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -192,6 +193,7 @@ public class UsersTabController {
         if (selectedUser == null) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        DialogThemeHelper.apply(confirm);
         confirm.setTitle("Delete User");
         confirm.setHeaderText(null);
         confirm.setContentText(
@@ -239,6 +241,7 @@ public class UsersTabController {
         dialog.setTitle(title);
         dialog.getDialogPane().setContent(formContent);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        DialogThemeHelper.apply(dialog);
         Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         okBtn.addEventFilter(ActionEvent.ACTION,
                 event -> { if (!formController.validate()) event.consume(); });
@@ -248,6 +251,7 @@ public class UsersTabController {
     private void showErrorAlert(String title, String message) {
         javafx.application.Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
             alert.setTitle(title);
             alert.setHeaderText(null);
             alert.setContentText(message);

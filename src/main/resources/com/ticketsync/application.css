@@ -1,0 +1,205 @@
+.root {
+    -ticket-primary-surface: #1565c0;
+    -ticket-primary-on-surface: #ffffff;
+    -ticket-primary-muted: #bbdefb;
+    -ticket-surface-card: #ffffff;
+    -ticket-surface-subtle: #f6f8fa;
+    -ticket-border-subtle: #d8dee9;
+    -ticket-muted-text: #616161;
+    -ticket-subtle-text: #757575;
+    -ticket-success-surface: #e8f5e9;
+    -ticket-success-text: #2e7d32;
+    -ticket-success-border: #81c784;
+    -ticket-warning-surface: #fff3e0;
+    -ticket-warning-text: #8a4b08;
+    -ticket-warning-border: #ffb74d;
+    -ticket-danger-surface: #ffebee;
+    -ticket-danger-text: #c62828;
+    -ticket-danger-border: #ef9a9a;
+    -ticket-canvas-heading: #212121;
+    -ticket-canvas-meta: #616161;
+    -ticket-overlay-scrim: rgba(255, 255, 255, 0.78);
+}
+
+.app-login-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.app-error-text,
+.form-error-label {
+    -fx-text-fill: -ticket-danger-text;
+}
+
+.app-error-text {
+    -fx-font-size: 13px;
+}
+
+.form-error-label {
+    -fx-font-size: 12px;
+}
+
+.muted-status-label,
+.muted-help-text,
+.countdown-label,
+.canvas-hover-label {
+    -fx-text-fill: -ticket-muted-text;
+}
+
+.toolbar-status-label {
+    -fx-text-fill: -ticket-muted-text;
+    -fx-padding: 0 0 0 8;
+}
+
+.admin-header-bar {
+    -fx-background-color: -ticket-primary-surface;
+}
+
+.admin-header-title {
+    -fx-text-fill: -ticket-primary-on-surface;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.admin-header-meta {
+    -fx-text-fill: -ticket-primary-muted;
+    -fx-font-size: 13px;
+}
+
+.selection-panel {
+    -fx-background-color: -ticket-surface-card;
+    -fx-border-color: -ticket-border-subtle;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.selection-panel-title,
+.layout-summary-title,
+.system-health-banner-label {
+    -fx-font-weight: bold;
+}
+
+.selection-panel-title {
+    -fx-font-size: 16px;
+}
+
+.selection-panel-total {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.processing-overlay {
+    -fx-background-color: -ticket-overlay-scrim;
+}
+
+.system-health-badge {
+    -fx-background-radius: 16;
+    -fx-padding: 6 12 6 12;
+    -fx-font-weight: bold;
+}
+
+.system-health-badge.health-healthy {
+    -fx-background-color: -ticket-success-surface;
+    -fx-text-fill: -ticket-success-text;
+}
+
+.system-health-badge.health-reconnecting {
+    -fx-background-color: -ticket-warning-surface;
+    -fx-text-fill: -ticket-warning-text;
+}
+
+.system-health-badge.health-fail-safe {
+    -fx-background-color: -ticket-danger-surface;
+    -fx-text-fill: -ticket-danger-text;
+}
+
+.system-health-banner {
+    -fx-border-width: 1 0 1 0;
+}
+
+.system-health-banner.health-healthy {
+    -fx-background-color: -ticket-success-surface;
+    -fx-border-color: -ticket-success-border;
+}
+
+.system-health-banner.health-reconnecting {
+    -fx-background-color: -ticket-warning-surface;
+    -fx-border-color: -ticket-warning-border;
+}
+
+.system-health-banner.health-fail-safe {
+    -fx-background-color: -ticket-danger-surface;
+    -fx-border-color: -ticket-danger-border;
+}
+
+.system-health-banner.health-healthy .system-health-banner-label {
+    -fx-text-fill: -ticket-success-text;
+}
+
+.system-health-banner.health-reconnecting .system-health-banner-label {
+    -fx-text-fill: -ticket-warning-text;
+}
+
+.system-health-banner.health-fail-safe .system-health-banner-label {
+    -fx-text-fill: -ticket-danger-text;
+}
+
+.pos-context-bar,
+.layout-summary-bar {
+    -fx-background-color: -ticket-surface-subtle;
+    -fx-border-color: -ticket-border-subtle;
+    -fx-border-width: 1 0 1 0;
+}
+
+.layout-summary-bar {
+    -fx-padding: 6 12 6 12;
+}
+
+.layout-summary-available,
+.status-table-cell.status-active,
+.status-table-cell.status-available {
+    -fx-text-fill: -ticket-success-text;
+    -fx-font-weight: bold;
+}
+
+.layout-summary-sold,
+.status-table-cell.status-sold {
+    -fx-text-fill: -ticket-danger-text;
+    -fx-font-weight: bold;
+}
+
+.status-table-cell.status-reserved {
+    -fx-text-fill: -ticket-warning-text;
+    -fx-font-weight: bold;
+}
+
+.layout-summary-disabled,
+.status-table-cell.status-disabled,
+.status-table-cell.status-inactive {
+    -fx-text-fill: -ticket-subtle-text;
+}
+
+.countdown-label.countdown-warning {
+    -fx-text-fill: -ticket-warning-text;
+    -fx-font-weight: bold;
+}
+
+.canvas-hover-label {
+    -fx-padding: 4;
+}
+
+.app-dialog-pane {
+    -fx-background-color: -ticket-surface-card;
+}
+
+.app-dialog-pane:header .header-panel {
+    -fx-background-color: -ticket-surface-subtle;
+}
+
+.app-dialog-pane:header .header-panel .label {
+    -fx-font-weight: bold;
+}
+
+.app-dialog-pane .content.label {
+    -fx-text-fill: -ticket-muted-text;
+}

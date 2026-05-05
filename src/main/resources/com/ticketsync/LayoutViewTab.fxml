@@ -25,14 +25,14 @@
                         disable="true" onAction="#handleExportLayout"/>
             </ToolBar>
             <!-- Stats context panel -->
-            <HBox spacing="24" style="-fx-background-color: #F5F5F5; -fx-padding: 6 12 6 12;">
+            <HBox spacing="24" styleClass="layout-summary-bar">
                 <Label fx:id="layoutEventNameLabel" text="No event selected"
-                       style="-fx-font-weight: bold;"/>
+                       styleClass="layout-summary-title"/>
                 <Separator orientation="VERTICAL"/>
                 <Label fx:id="layoutTotalLabel" text="Total: —"/>
-                <Label fx:id="layoutAvailableLabel" text="Available: —" style="-fx-text-fill: #388E3C;"/>
-                <Label fx:id="layoutSoldLabel" text="Sold: —" style="-fx-text-fill: #D32F2F;"/>
-                <Label fx:id="layoutDisabledLabel" text="Disabled: —" style="-fx-text-fill: #757575;"/>
+                <Label fx:id="layoutAvailableLabel" text="Available: —" styleClass="layout-summary-available"/>
+                <Label fx:id="layoutSoldLabel" text="Sold: —" styleClass="layout-summary-sold"/>
+                <Label fx:id="layoutDisabledLabel" text="Disabled: —" styleClass="layout-summary-disabled"/>
             </HBox>
         </VBox>
     </top>
@@ -43,6 +43,6 @@
         </ScrollPane>
     </center>
     <bottom>
-        <Label fx:id="layoutHoverLabel" style="-fx-padding: 4;"/>
+        <Label fx:id="layoutHoverLabel" styleClass="canvas-hover-label"/>
     </bottom>
 </BorderPane>

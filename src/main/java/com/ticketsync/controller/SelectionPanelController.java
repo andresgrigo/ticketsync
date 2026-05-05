@@ -3,7 +3,6 @@ package com.ticketsync.controller;
 import com.ticketsync.viewmodel.SelectionPanelViewModel;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableStringValue;
-import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -13,12 +12,10 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+import com.ticketsync.util.ThemeStyleHelper;
 import java.util.Objects;
 
 public class SelectionPanelController {
-
-    private static final String NORMAL_COUNTDOWN_STYLE = "-fx-text-fill: #616161;";
-    private static final String WARNING_COUNTDOWN_STYLE = "-fx-text-fill: #F9A825; -fx-font-weight: bold;";
 
     @FXML private VBox rootContainer;
     @FXML private Label headerLabel;
@@ -35,6 +32,8 @@ public class SelectionPanelController {
     private final Tooltip confirmPurchaseTooltip = new Tooltip();
     private final ChangeListener<String> confirmPurchaseTooltipListener =
             (obs, oldValue, newValue) -> applyConfirmPurchaseTooltip(newValue);
+    private final ChangeListener<Boolean> countdownWarningListener =
+            (obs, oldValue, newValue) -> applyCountdownWarningState(Boolean.TRUE.equals(newValue));
 
     private SelectionPanelViewModel viewModel;
     private ObservableStringValue confirmPurchaseTooltipSource;
@@ -52,10 +51,8 @@ public class SelectionPanelController {
         headerLabel.textProperty().bind(newViewModel.headerTextProperty());
         totalPriceLabel.textProperty().bind(newViewModel.totalPriceTextProperty());
         countdownLabel.textProperty().bind(newViewModel.countdownTextProperty());
-        countdownLabel.styleProperty().bind(Bindings.createStringBinding(
-                () -> newViewModel.warningStateProperty().get() ? WARNING_COUNTDOWN_STYLE : NORMAL_COUNTDOWN_STYLE,
-                newViewModel.warningStateProperty()
-        ));
+        newViewModel.warningStateProperty().addListener(countdownWarningListener);
+        applyCountdownWarningState(newViewModel.warningStateProperty().get());
 
         emptyStateLabel.visibleProperty().bind(newViewModel.emptyStateVisibleProperty());
         emptyStateLabel.managedProperty().bind(newViewModel.emptyStateVisibleProperty());
@@ -112,7 +109,10 @@ public class SelectionPanelController {
         headerLabel.textProperty().unbind();
         totalPriceLabel.textProperty().unbind();
         countdownLabel.textProperty().unbind();
-        countdownLabel.styleProperty().unbind();
+        if (viewModel != null) {
+            viewModel.warningStateProperty().removeListener(countdownWarningListener);
+        }
+        applyCountdownWarningState(false);
         emptyStateLabel.visibleProperty().unbind();
         emptyStateLabel.managedProperty().unbind();
         selectionContent.visibleProperty().unbind();
@@ -132,5 +132,14 @@ public class SelectionPanelController {
         } else {
             Tooltip.install(confirmPurchaseHelpTarget, confirmPurchaseTooltip);
         }
+    }
+
+    private void applyCountdownWarningState(boolean warning) {
+        ThemeStyleHelper.applyManagedStateClass(
+                countdownLabel.getStyleClass(),
+                "countdown-label",
+                ThemeStyleHelper.COUNTDOWN_STATE_CLASSES,
+                ThemeStyleHelper.countdownStateClass(warning)
+        );
     }
 }
