@@ -4,6 +4,8 @@ import com.ticketsync.model.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -29,6 +31,26 @@ class SessionContextTest {
     // -----------------------------------------------------------------------
 
     @Test
+    void getCurrentUser_whenNoUserLoggedIn_returnsEmpty() {
+        SessionContext.clearCurrentUser();
+
+        assertTrue(SessionContext.getCurrentUser().isEmpty());
+    }
+
+    @Test
+    void getCurrentUser_returnsCurrentAdminUser() {
+        User adminUser = new User(1, "admin", "hash", "ADMIN", null);
+        SessionContext.setCurrentUser(adminUser);
+
+        assertEquals(Optional.of(adminUser), SessionContext.getCurrentUser());
+    }
+
+    @Test
+    void setCurrentUser_withNullUser_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> SessionContext.setCurrentUser(null));
+    }
+
+    @Test
     void hasRole_whenNoUserLoggedIn_returnsFalse() {
         SessionContext.clearCurrentUser();
         assertFalse(SessionContext.hasRole("ADMIN"),
@@ -45,6 +67,14 @@ class SessionContextTest {
     // -----------------------------------------------------------------------
     // VENDOR role — positive case
     // -----------------------------------------------------------------------
+
+    @Test
+    void hasRole_adminUser_returnsTrueForAdmin() {
+        User adminUser = new User(1, "admin", "hash", "ADMIN", null);
+        SessionContext.setCurrentUser(adminUser);
+
+        assertTrue(SessionContext.hasRole("ADMIN"), "hasRole('ADMIN') must be true for ADMIN user");
+    }
 
     @Test
     void hasRole_vendorUser_returnsTrueForVendor() {
