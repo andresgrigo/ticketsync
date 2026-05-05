@@ -1,6 +1,7 @@
 package com.ticketsync.service;
 
 import com.ticketsync.model.Sale;
+import com.ticketsync.util.FilePathUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,7 +22,7 @@ public class FilesystemTicketSaver {
     private final Path ticketsRootDirectory;
 
     public FilesystemTicketSaver() {
-        this(Path.of("tickets"));
+        this(FilePathUtil.getTicketsDirectory());
     }
 
     public FilesystemTicketSaver(Path ticketsRootDirectory) {
@@ -43,8 +44,9 @@ public class FilesystemTicketSaver {
 
         LocalDateTime saleTimestamp = Objects.requireNonNull(sale.getSaleTimestamp(), "saleTimestamp must not be null");
         String transactionId = PurchaseReceiptDetails.formatTransactionId(sale);
-        Path datedDirectory = ticketsRootDirectory.resolve(saleTimestamp.toLocalDate().toString());
-        Files.createDirectories(datedDirectory);
+        Path datedDirectory = FilePathUtil.ensureDirectoryExists(
+                ticketsRootDirectory.resolve(saleTimestamp.toLocalDate().toString())
+        );
 
         Path targetPath = datedDirectory.resolve(transactionId + ".pdf").normalize();
         Files.write(targetPath, pdfData, StandardOpenOption.CREATE_NEW);

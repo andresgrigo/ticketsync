@@ -2,8 +2,8 @@
 <Configuration status="WARN">
     <Appenders>
         <!-- Rolling File Appender for Production Audit Trail -->
-        <RollingFile name="AppLog" fileName="logs/ticketsync.log"
-                     filePattern="logs/ticketsync-%d{yyyy-MM-dd}-%i.log.gz"
+        <RollingFile name="AppLog" fileName="${sys:ticketsync.log.file}"
+                     filePattern="${sys:ticketsync.log.pattern}"
                      createOnDemand="true">
             <PatternLayout charset="UTF-8">
                 <!-- Uses JVM default timezone; configure JVM with -Duser.timezone=UTC if needed -->

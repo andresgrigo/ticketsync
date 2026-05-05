@@ -5,7 +5,14 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jasypt.properties.EncryptableProperties;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -64,14 +71,7 @@ public final class DatabaseConfig {
             }
 
             // Step 2 — Create encryptor and load EncryptableProperties
-            EncryptableProperties props = new EncryptableProperties(EncryptionUtil.createEncryptor(masterKey));
-            try (InputStream in = DatabaseConfig.class.getClassLoader()
-                    .getResourceAsStream("jdbc.properties")) {
-                if (in == null) {
-                    throw new IllegalStateException("jdbc.properties not found on classpath");
-                }
-                props.load(in);
-            }
+            EncryptableProperties props = loadJdbcProperties(masterKey);
 
             // Step 3 — Configure HikariCP from decrypted properties
             String jdbcUrl = props.getProperty("jdbc.url");
@@ -125,6 +125,35 @@ public final class DatabaseConfig {
      */
     private DatabaseConfig() {
         throw new UnsupportedOperationException("DatabaseConfig is a utility class and cannot be instantiated");
+    }
+
+    private static EncryptableProperties loadJdbcProperties(String masterKey) throws IOException {
+        EncryptableProperties props = loadBundledJdbcProperties(masterKey);
+        Path externalJdbcProperties = FilePathUtil.getJdbcPropertiesPath();
+        if (Files.exists(externalJdbcProperties)) {
+            byte[] configBytes = Files.readAllBytes(externalJdbcProperties);
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(configBytes);
+                 InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                props.load(reader);
+            }
+            LOGGER.info("Loaded database configuration defaults from classpath and overrides from {}", externalJdbcProperties);
+        } else {
+            LOGGER.info("Loaded database configuration from bundled classpath defaults");
+        }
+        return props;
+    }
+
+    private static EncryptableProperties loadBundledJdbcProperties(String masterKey) throws IOException {
+        EncryptableProperties props = new EncryptableProperties(EncryptionUtil.createEncryptor(masterKey));
+        try (InputStream inputStream = DatabaseConfig.class.getClassLoader().getResourceAsStream("jdbc.properties")) {
+            if (inputStream == null) {
+                throw new IllegalStateException("jdbc.properties not found on classpath");
+            }
+            try (InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                props.load(reader);
+            }
+        }
+        return props;
     }
     
     /**
@@ -186,7 +215,7 @@ public final class DatabaseConfig {
      * <p><strong>Note:</strong> Call this method from {@code App.stop()} or
      * similar shutdown hooks.</p>
      */
-public static synchronized void shutdown() {
+    public static synchronized void shutdown() {
         if (dataSource != null && !dataSource.isClosed()) {
             LOGGER.info("Shutting down HikariCP connection pool");
             try {

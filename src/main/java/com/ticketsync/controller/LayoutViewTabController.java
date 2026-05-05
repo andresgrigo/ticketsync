@@ -1,4 +1,5 @@
 package com.ticketsync.controller;
+
 import com.ticketsync.model.Event;
 import com.ticketsync.model.Seat;
 import com.ticketsync.model.SeatStatus;
@@ -9,6 +10,7 @@ import com.ticketsync.service.SeatService;
 import com.ticketsync.service.SessionContext;
 import com.ticketsync.service.ZoneService;
 import com.ticketsync.util.DialogThemeHelper;
+import com.ticketsync.util.FilePathUtil;
 import com.ticketsync.util.ThemePalette;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -31,6 +33,8 @@ import javafx.util.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -438,10 +442,11 @@ public class LayoutViewTabController {
         fileChooser.setInitialFileName(safeName + "-layout.pdf");
         fileChooser.getExtensionFilters().add(
                 new javafx.stage.FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
-        fileChooser.setInitialDirectory(new java.io.File(System.getProperty("user.home")));
+        fileChooser.setInitialDirectory(FilePathUtil.getUserHomeDirectory().toFile());
 
-        java.io.File file = fileChooser.showSaveDialog(layoutCanvas.getScene().getWindow());
-        if (file == null) return;
+        File selectedFile = fileChooser.showSaveDialog(layoutCanvas.getScene().getWindow());
+        if (selectedFile == null) return;
+        Path exportPath = selectedFile.toPath().toAbsolutePath().normalize();
 
         List<Seat> seatSnapshot = new ArrayList<>(layoutCurrentSeats);
         Map<Integer, Zone> zoneSnapshot = new HashMap<>(layoutCurrentZoneMap);
@@ -451,13 +456,13 @@ public class LayoutViewTabController {
         Task<Void> exportTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                exportLayoutToPdf(file, selectedEvent, seatSnapshot, zoneSnapshot);
+                exportLayoutToPdf(exportPath, selectedEvent, seatSnapshot, zoneSnapshot);
                 return null;
             }
         };
         exportTask.setOnSucceeded(e -> {
             layoutExportButton.setDisable(false);
-            layoutHoverLabel.setText("Layout exported: " + file.getAbsolutePath());
+            layoutHoverLabel.setText("Layout exported: " + exportPath);
         });
         exportTask.setOnFailed(e -> {
             layoutExportButton.setDisable(false);
@@ -476,7 +481,7 @@ public class LayoutViewTabController {
         t.start();
     }
 
-    private void exportLayoutToPdf(java.io.File file, Event event,
+    private void exportLayoutToPdf(Path file, Event event,
             List<Seat> seats, Map<Integer, Zone> zoneMap) throws Exception {
         float pageW    = org.apache.pdfbox.pdmodel.common.PDRectangle.A4.getWidth();
         float pageH    = org.apache.pdfbox.pdmodel.common.PDRectangle.A4.getHeight();
@@ -610,7 +615,7 @@ public class LayoutViewTabController {
             } finally {
                 if (cs != null) cs.close();
             }
-            doc.save(file);
+            doc.save(file.toFile());
         }
     }
 

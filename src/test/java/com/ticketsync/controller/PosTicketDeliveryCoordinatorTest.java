@@ -69,6 +69,31 @@ class PosTicketDeliveryCoordinatorTest {
     }
 
     @Test
+    void execute_normalizesSavedPathShownToOperators() throws Exception {
+        StubSaleItemsLookup saleItemsLookup = new StubSaleItemsLookup();
+        Path unnormalizedPath = Path.of("tickets", "2026-04-13", "..", "2026-04-13", "TXN-20260413-194637-B9.pdf");
+        StubTicketSaver ticketSaver = new StubTicketSaver(unnormalizedPath);
+        PosTicketDeliveryCoordinator coordinator = new PosTicketDeliveryCoordinator(
+                saleItemsLookup,
+                new StubTicketPdfGenerator(new byte[]{1, 2, 3}),
+                ticketSaver
+        );
+
+        PosTicketDeliveryCoordinator.DeliveryOutcome outcome = coordinator.execute(success());
+
+        PosTicketDeliveryCoordinator.TicketSavedToFile saved =
+                assertInstanceOf(PosTicketDeliveryCoordinator.TicketSavedToFile.class, outcome);
+        Path expectedSavedPath = unnormalizedPath.toAbsolutePath().normalize();
+        assertEquals(expectedSavedPath, saved.savedPath());
+        assertEquals(
+                "Ticket saved to: "
+                        + expectedSavedPath
+                        + ". Please print manually and hand to customer.",
+                saved.operatorMessage()
+        );
+    }
+
+    @Test
     void execute_returnsSaveFailedWhenNoSaleItemsFound() throws Exception {
         PosTicketDeliveryCoordinator coordinator = new PosTicketDeliveryCoordinator(
                 saleId -> List.of(),

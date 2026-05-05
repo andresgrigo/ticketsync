@@ -1,6 +1,7 @@
 package com.ticketsync.service;
 
 import com.ticketsync.model.Sale;
+import com.ticketsync.util.FilePathUtil;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -22,6 +23,21 @@ class FilesystemTicketSaverTest {
 
     @TempDir
     Path tempDir;
+
+    @Test
+    void defaultConstructor_usesConfiguredTicketsDirectory() {
+        Path configuredTicketsDirectory = tempDir.resolve("runtime").resolve("..").resolve("tickets-output");
+        String originalProperty = System.getProperty(FilePathUtil.TICKETS_DIRECTORY_PROPERTY);
+        try {
+            System.setProperty(FilePathUtil.TICKETS_DIRECTORY_PROPERTY, configuredTicketsDirectory.toString());
+
+            FilesystemTicketSaver saver = new FilesystemTicketSaver();
+
+            assertEquals(configuredTicketsDirectory.toAbsolutePath().normalize(), saver.getTicketsRootDirectory());
+        } finally {
+            restoreSystemProperty(FilePathUtil.TICKETS_DIRECTORY_PROPERTY, originalProperty);
+        }
+    }
 
     @Test
     void saveTicket_createsDatedDirectoryAndPreservesPdfBytes() throws Exception {
@@ -65,6 +81,14 @@ class FilesystemTicketSaverTest {
             document.addPage(new PDPage());
             document.save(output);
             return output.toByteArray();
+        }
+    }
+
+    private static void restoreSystemProperty(String key, String value) {
+        if (value == null) {
+            System.clearProperty(key);
+        } else {
+            System.setProperty(key, value);
         }
     }
 }

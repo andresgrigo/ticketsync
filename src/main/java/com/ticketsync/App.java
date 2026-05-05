@@ -1,10 +1,11 @@
 package com.ticketsync;
 
 import atlantafx.base.theme.PrimerLight;
+import com.ticketsync.util.AppTheme;
 import com.ticketsync.util.DatabaseConfig;
 import com.ticketsync.util.DatabaseHealthMonitor;
 import com.ticketsync.util.DialogThemeHelper;
-import com.ticketsync.util.AppTheme;
+import com.ticketsync.util.FilePathUtil;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -13,9 +14,9 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.net.URL;
 
 import java.io.IOException;
+import java.net.URL;
 import javafx.scene.control.Alert;
 
 /**
@@ -23,16 +24,22 @@ import javafx.scene.control.Alert;
  */
 public class App extends Application {
 
+    static {
+        FilePathUtil.initializeRuntimeProperties();
+    }
+
     private static final Logger LOGGER = LogManager.getLogger(App.class);
     private static Scene scene;
     private volatile boolean dbStarted = false;
 
     @Override
     public void start(Stage stage) throws IOException {
-        logStartupInformation();
-
         // Install AtlantaFX before any Alert/Dialog is shown so even early startup errors are themed.
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+        if (!ensureApplicationDirectories()) {
+            return;
+        }
+        logStartupInformation();
 
         // Check for missing TICKETSYNC_MASTER_KEY before class initialization fires
         try {
@@ -73,6 +80,22 @@ public class App extends Application {
         stage.setTitle("TicketSync");
         stage.setScene(scene);
         stage.show();
+    }
+
+    private boolean ensureApplicationDirectories() {
+        try {
+            FilePathUtil.ensureApplicationDirectories();
+            return true;
+        } catch (IOException ex) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
+            alert.setTitle("Application Directory Error");
+            alert.setHeaderText("Cannot prepare TicketSync directories");
+            alert.setContentText("TicketSync could not prepare its logs/config directories. Check filesystem permissions and try again.");
+            alert.showAndWait();
+            Platform.exit();
+            return false;
+        }
     }
 
     private void logStartupInformation() {
