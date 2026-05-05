@@ -13,8 +13,6 @@ import com.ticketsync.model.Seat;
 import com.ticketsync.model.User;
 import com.ticketsync.util.PasswordHasher;
 import org.flywaydb.core.Flyway;
-import org.flywaydb.core.api.ResourceProvider;
-import org.flywaydb.core.api.resource.LoadableResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,21 +24,13 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -63,21 +53,9 @@ class PurchaseFlowIntegrationTest {
 
     private static final String PURCHASE_TOTAL = "90.00";
     private static final String BOOTH_ID = "Booth-7";
-    private static final String MIGRATION_PATH_PREFIX = "db/migration/";
-    private static final List<String> MIGRATION_FILENAMES = List.of(
-            "V001__create_users_table.sql",
-            "V002__create_events_table.sql",
-            "V003__create_zones_seats_tables.sql",
-            "V004__create_sales_audit_tables.sql",
-            "V005__create_seat_notification_trigger.sql"
-    );
-
     @Container
     private static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:16-alpine")
-                    .withDatabaseName("ticketsync")
-                    .withUsername("ticketsync")
-                    .withPassword("ticketsync");
+            ContainerBackedPostgresHarness.createPostgresContainer();
 
     private static ConnectionFactory connFactory;
     private static Flyway flyway;
@@ -100,17 +78,8 @@ class PurchaseFlowIntegrationTest {
 
     @BeforeAll
     static void setUpClass() {
-        connFactory = () -> DriverManager.getConnection(
-                POSTGRES.getJdbcUrl(),
-                POSTGRES.getUsername(),
-                POSTGRES.getPassword()
-        );
-
-        flyway = Flyway.configure(PurchaseFlowIntegrationTest.class.getClassLoader())
-                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-                .locations("classpath:db/migration")
-                .resourceProvider(new ClasspathMigrationResourceProvider())
-                .load();
+        connFactory = ContainerBackedPostgresHarness.createConnectionFactory(POSTGRES);
+        flyway = ContainerBackedPostgresHarness.createFlyway(POSTGRES);
         flyway.migrate();
 
         userDAO = new UserDAOImpl();
@@ -429,115 +398,4 @@ class PurchaseFlowIntegrationTest {
     private record PurchaseAuditSnapshot(String boothId, BigDecimal total, List<Integer> seatIds) {
     }
 
-    private static final class ClasspathMigrationResourceProvider implements ResourceProvider {
-
-        @Override
-        public LoadableResource getResource(String name) {
-            String filename = resolveFilename(name);
-            return MIGRATION_FILENAMES.contains(filename)
-                    ? new ClasspathLoadableMigrationResource(MIGRATION_PATH_PREFIX + filename)
-                    : null;
-        }
-
-        @Override
-        public Collection<LoadableResource> getResources(String prefix, String[] suffixes) {
-            return MIGRATION_FILENAMES.stream()
-                    .filter(filename -> filename.startsWith(prefix))
-                    .filter(filename -> hasMatchingSuffix(filename, suffixes))
-                    .map(filename -> new ClasspathLoadableMigrationResource(MIGRATION_PATH_PREFIX + filename))
-                    .map(LoadableResource.class::cast)
-                    .toList();
-        }
-
-        private static String resolveFilename(String name) {
-            int lastSlash = name.lastIndexOf('/');
-            return lastSlash >= 0 ? name.substring(lastSlash + 1) : name;
-        }
-
-        private static boolean hasMatchingSuffix(String path, String[] suffixes) {
-            for (String suffix : suffixes) {
-                if (path.endsWith(suffix)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    private static final class ClasspathLoadableMigrationResource extends LoadableResource {
-        private final String path;
-
-        private ClasspathLoadableMigrationResource(String path) {
-            this.path = path;
-        }
-
-        @Override
-        public Reader read() {
-            InputStream stream = openResourceStream(path);
-            if (stream == null) {
-                throw new IllegalStateException("Missing migration resource: " + path);
-            }
-            return new InputStreamReader(stream, StandardCharsets.UTF_8);
-        }
-
-        @Override
-        public String getAbsolutePath() {
-            return path;
-        }
-
-        @Override
-        public String getAbsolutePathOnDisk() {
-            return path;
-        }
-
-        @Override
-        public String getFilename() {
-            int lastSlash = path.lastIndexOf('/');
-            return lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
-        }
-
-        @Override
-        public String getRelativePath() {
-            return path;
-        }
-
-        private static InputStream openResourceStream(String path) {
-            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-            if (contextClassLoader != null) {
-                InputStream stream = contextClassLoader.getResourceAsStream(path);
-                if (stream != null) {
-                    return stream;
-                }
-            }
-
-            ClassLoader classLoader = PurchaseFlowIntegrationTest.class.getClassLoader();
-            if (classLoader != null) {
-                InputStream stream = classLoader.getResourceAsStream(path);
-                if (stream != null) {
-                    return stream;
-                }
-            }
-
-            InputStream systemStream = ClassLoader.getSystemResourceAsStream(path);
-            if (systemStream != null) {
-                return systemStream;
-            }
-
-            try {
-                Path sourcePath = Path.of("src", "main", "resources").resolve(path);
-                if (Files.exists(sourcePath)) {
-                    return Files.newInputStream(sourcePath);
-                }
-
-                Path compiledPath = Path.of("target", "classes").resolve(path);
-                if (Files.exists(compiledPath)) {
-                    return Files.newInputStream(compiledPath);
-                }
-            } catch (Exception ignored) {
-                return null;
-            }
-
-            return null;
-        }
-    }
 }
