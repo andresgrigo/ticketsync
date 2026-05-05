@@ -43,9 +43,20 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/**
+ * FXML controller for the venue layout view tab within the Admin Dashboard.
+ *
+ * <p>Renders an interactive seat-map canvas for a selected event, showing
+ * each seat's availability status colour-coded by zone. Supports zoom/pan
+ * interactions and PDF export of the current layout view.
+ */
 public class LayoutViewTabController {
 
-    private static final Logger LOGGER = LogManager.getLogger(LayoutViewTabController.class);
+    /** Creates a new {@code LayoutViewTabController} instance (invoked by FXMLLoader via reflection). */
+    public LayoutViewTabController() {
+    }
+
+    private static final Logger LOGGER= LogManager.getLogger(LayoutViewTabController.class);
 
     private static final int LAYOUT_CELL_SIZE       = 48;
     private static final int LAYOUT_CELL_GAP        = 6;
@@ -91,6 +102,12 @@ public class LayoutViewTabController {
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
+    /**
+     * Initialises the controller after FXML injection.
+     *
+     * <p>Configures the event selector converter, canvas mouse/scroll event
+     * handlers, and wires the export button state to the event selection.
+     */
     @FXML
     public void initialize() {
         layoutEventSelector.setConverter(new javafx.util.StringConverter<Event>() {
@@ -122,7 +139,11 @@ public class LayoutViewTabController {
         layoutCanvas.setOnMouseMoved(this::handleLayoutMouseMoved);
     }
 
-    /** Called by the shell controller once the admin identity is known. */
+    /**
+     * Called by the shell controller once the admin identity is known.
+     *
+     * @param admin the authenticated administrator user; must not be {@code null}
+     */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;
         loadLayoutEventsAsync();
@@ -131,6 +152,8 @@ public class LayoutViewTabController {
     /**
      * Provides a lambda the controller uses to guard canvas renders to the
      * layout tab's active state, preventing Prism RTTexture NPEs.
+     *
+     * @param isActive supplier that returns {@code true} when the layout tab is currently active
      */
     public void setTabActiveCheck(Supplier<Boolean> isActive) {
         this.isTabActive = isActive;

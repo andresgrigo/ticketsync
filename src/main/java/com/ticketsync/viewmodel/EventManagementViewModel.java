@@ -25,7 +25,11 @@ import java.util.List;
  */
 public class EventManagementViewModel {
 
-    private final ObservableList<Event> events = FXCollections.observableArrayList();
+    /** Creates a new {@code EventManagementViewModel} with an empty events list. */
+    public EventManagementViewModel() {
+    }
+
+    private final ObservableList<Event> events= FXCollections.observableArrayList();
     private final ObjectProperty<Event> selectedEvent = new SimpleObjectProperty<>(null);
     private final BooleanProperty loading = new SimpleBooleanProperty(false);
     private final StringProperty statusMessage = new SimpleStringProperty("");

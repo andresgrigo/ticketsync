@@ -27,6 +27,9 @@ import java.util.List;
  */
 public class UserFormController {
 
+    /** Creates a new UserFormController; instantiated by FXMLLoader. */
+    public UserFormController() { }
+
     /** Operational mode that determines which fields are active and what is validated. */
     public enum Mode {
         /** All fields are active; both username and password must be supplied. */

@@ -67,27 +67,58 @@ public class Seat {
     }
     
     // Getters and Setters
-    
+
+    /**
+     * Returns the seat ID.
+     *
+     * @return the seat ID
+     */
     public int getSeatId() {
         return seatId;
     }
-    
+
+    /**
+     * Sets the seat ID.
+     *
+     * @param seatId the seat ID
+     */
     public void setSeatId(int seatId) {
         this.seatId = seatId;
     }
-    
+
+    /**
+     * Returns the zone ID this seat belongs to.
+     *
+     * @return the zone ID
+     */
     public int getZoneId() {
         return zoneId;
     }
-    
+
+    /**
+     * Sets the zone ID this seat belongs to.
+     *
+     * @param zoneId the zone ID
+     */
     public void setZoneId(int zoneId) {
         this.zoneId = zoneId;
     }
-    
+
+    /**
+     * Returns the row label for this seat.
+     *
+     * @return the row label; never {@code null}
+     */
     public String getRowNumber() {
         return rowNumber;
     }
-    
+
+    /**
+     * Sets the row label for this seat.
+     *
+     * @param rowNumber the row label; must not be {@code null} or blank
+     * @throws IllegalArgumentException if {@code rowNumber} is {@code null} or blank
+     */
     public void setRowNumber(String rowNumber) {
         if (rowNumber == null || rowNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("rowNumber cannot be null or empty");
@@ -95,10 +126,21 @@ public class Seat {
         this.rowNumber = rowNumber;
     }
     
+    /**
+     * Returns the seat number within its row.
+     *
+     * @return the seat number; never {@code null}
+     */
     public String getSeatNumber() {
         return seatNumber;
     }
-    
+
+    /**
+     * Sets the seat number within its row.
+     *
+     * @param seatNumber the seat number; must not be {@code null} or blank
+     * @throws IllegalArgumentException if {@code seatNumber} is {@code null} or blank
+     */
     public void setSeatNumber(String seatNumber) {
         if (seatNumber == null || seatNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("seatNumber cannot be null or empty");
@@ -106,10 +148,21 @@ public class Seat {
         this.seatNumber = seatNumber;
     }
     
+    /**
+     * Returns the current booking status of the seat.
+     *
+     * @return the seat status; never {@code null}
+     */
     public SeatStatus getStatus() {
         return status;
     }
-    
+
+    /**
+     * Sets the booking status of the seat.
+     *
+     * @param status the new status; must not be {@code null}
+     * @throws IllegalArgumentException if {@code status} is {@code null}
+     */
     public void setStatus(SeatStatus status) {
         if (status == null) {
             throw new IllegalArgumentException("status cannot be null");
@@ -117,10 +170,20 @@ public class Seat {
         this.status = status;
     }
     
+    /**
+     * Returns the sale ID associated with this seat, or {@code null} if not sold.
+     *
+     * @return the sale ID; may be {@code null}
+     */
     public Integer getSaleId() {
         return saleId;
     }
-    
+
+    /**
+     * Sets the sale ID associated with this seat.
+     *
+     * @param saleId the sale ID; may be {@code null} to indicate the seat is not sold
+     */
     public void setSaleId(Integer saleId) {
         this.saleId = saleId;
     }

@@ -75,6 +75,15 @@ public class SelectionPanelViewModel implements AutoCloseable {
     private Runnable onConfirmAction;
     private Runnable onReleaseAction;
 
+    /**
+     * Creates a production-ready view-model wired to the given {@link SeatMapViewModel}.
+     *
+     * <p>Uses {@link Platform#runLater(Runnable)} for UI-thread dispatch and an
+     * internal scheduled executor for the lock-countdown timer.
+     *
+     * @param seatMapViewModel the source of seat selection state; must not be {@code null}
+     * @throws NullPointerException if {@code seatMapViewModel} is {@code null}
+     */
     public SelectionPanelViewModel(SeatMapViewModel seatMapViewModel) {
         this(
                 seatMapViewModel,
@@ -113,76 +122,174 @@ public class SelectionPanelViewModel implements AutoCloseable {
         refreshFromSeatMap(false);
     }
 
+    /**
+     * Returns the read-only list of formatted display rows for the currently selected seats.
+     *
+     * @return unmodifiable observable list; never {@code null}
+     */
     public ObservableList<String> selectedSeatRowsProperty() {
         return readOnlySelectedSeatRows;
     }
 
+    /**
+     * Returns the read-only property holding the number of currently selected seats.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyIntegerProperty seatCountProperty() {
         return seatCount.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property holding the sum price of all selected seats.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyObjectProperty<BigDecimal> totalPriceProperty() {
         return totalPrice.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property holding the number of seconds remaining before
+     * the local seat-lock expires.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyIntegerProperty remainingLockSecondsProperty() {
         return remainingLockSeconds.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property that is {@code true} when the lock is active
+     * and fewer than 10 seconds remain, triggering a visual warning.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyBooleanProperty warningStateProperty() {
         return warningState.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property that is {@code true} while the local seat-lock countdown is running.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyBooleanProperty lockActiveProperty() {
         return lockActive.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property that is {@code true} when no seats are selected,
+     * indicating the panel should show its empty-state placeholder.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyBooleanProperty emptyStateVisibleProperty() {
         return emptyStateVisible.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property that is {@code true} while a purchase submission is in progress.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyBooleanProperty processingProperty() {
         return processing.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property that is {@code true} when the confirm-purchase action is available.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyBooleanProperty confirmEnabledProperty() {
         return confirmEnabled.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property that is {@code true} when the release-lock action is available.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyBooleanProperty releaseEnabledProperty() {
         return releaseEnabled.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property containing the selection-panel header text,
+     * e.g. {@code "Selected Seats (3 seats)"}.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyStringProperty headerTextProperty() {
         return headerText.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property containing the formatted total price string,
+     * e.g. {@code "Total: EUR25.00"}.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyStringProperty totalPriceTextProperty() {
         return totalPriceText.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property containing the formatted countdown text,
+     * e.g. {@code "Lock expires in: 42"}.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyStringProperty countdownTextProperty() {
         return countdownText.getReadOnlyProperty();
     }
 
+    /**
+     * Binds the confirm-purchase availability to an external observable gate,
+     * e.g. a database-health monitor's connected property.
+     *
+     * @param purchaseEnabledGate observable controlling purchase availability; must not be {@code null}
+     * @throws NullPointerException if {@code purchaseEnabledGate} is {@code null}
+     */
     public void bindPurchaseEnabled(ObservableBooleanValue purchaseEnabledGate) {
         Objects.requireNonNull(purchaseEnabledGate, "purchaseEnabledGate must not be null");
         purchaseEnabled.unbind();
         purchaseEnabled.bind(purchaseEnabledGate);
     }
 
+    /**
+     * Sets whether a purchase submission is currently in progress.
+     *
+     * @param processing {@code true} to show the processing overlay; {@code false} to hide it
+     */
     public void setProcessing(boolean processing) {
         uiRunner.accept(() -> this.processing.set(processing));
     }
 
+    /**
+     * Registers the action to invoke when the user confirms a purchase.
+     *
+     * @param onConfirmAction runnable invoked on the UI thread; may be {@code null} to clear
+     */
     public void setOnConfirmAction(Runnable onConfirmAction) {
         this.onConfirmAction = onConfirmAction;
     }
 
+    /**
+     * Registers the action to invoke when the user releases the seat lock.
+     *
+     * @param onReleaseAction runnable invoked on the UI thread; may be {@code null} to clear
+     */
     public void setOnReleaseAction(Runnable onReleaseAction) {
         this.onReleaseAction = onReleaseAction;
     }
 
+    /**
+     * Triggers the confirm-purchase action if the confirm button is currently enabled.
+     *
+     * <p>No-ops silently if confirm is disabled or no confirm action has been registered.
+     */
     public void confirmSelection() {
         if (!confirmEnabled.get()) {
             return;
@@ -192,6 +299,12 @@ public class SelectionPanelViewModel implements AutoCloseable {
         }
     }
 
+    /**
+     * Triggers the release action if the release button is currently enabled.
+     *
+     * <p>Clears the seat selection on the underlying {@link SeatMapViewModel} and invokes
+     * the registered release action (if any). No-ops silently when release is disabled.
+     */
     public void releaseSelection() {
         if (!releaseEnabled.get()) {
             return;
@@ -202,11 +315,22 @@ public class SelectionPanelViewModel implements AutoCloseable {
         }
     }
 
+    /**
+     * Clears the processing flag and seat selection, returning the panel to the ready state.
+     *
+     * <p>Typically called after a failed or cancelled purchase attempt.
+     */
     public void resetToReadyState() {
         setProcessing(false);
         seatMapViewModel.clearSelection();
     }
 
+    /**
+     * Detaches listeners from the source view-model and stops the countdown timer.
+     *
+     * <p>Must be called when this view-model is no longer needed to prevent memory leaks.
+     * Implements {@link AutoCloseable} so this view-model can be used in try-with-resources.
+     */
     public void dispose() {
         disposed = true;
         seatMapViewModel.selectedSeatIdsProperty().removeListener(selectedSeatListener);

@@ -30,6 +30,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Admin tab controller for the user management section of the Admin Dashboard.
+ *
+ * <p>Displays the full user list in a {@link javafx.scene.control.TableView}, and
+ * wires the create, edit, and delete toolbar actions to {@link UserManagementService}
+ * operations via {@link UserManagementViewModel}.
+ */
 public class UsersTabController {
 
     private static final Logger LOGGER = LogManager.getLogger(UsersTabController.class);
@@ -48,6 +55,13 @@ public class UsersTabController {
     @FXML private Button deleteUserButton;
     @FXML private Label statusLabel;
 
+    /** Creates a new UsersTabController; instantiated by FXMLLoader. */
+    public UsersTabController() { }
+
+    /**
+     * FXML lifecycle method; configures table columns and binds them to the view model.
+     * Invoked by FXMLLoader after all {@code @FXML} fields are injected.
+     */
     @FXML
     public void initialize() {
         viewModel = new UserManagementViewModel();
@@ -66,7 +80,12 @@ public class UsersTabController {
                 usersTable.getSelectionModel().selectedItemProperty());
     }
 
-    /** Called by the shell controller once the admin identity is known. */
+    /**
+     * Sets the authenticated admin user and loads the initial user list.
+     * Called by the parent shell controller once the admin identity is known.
+     *
+     * @param admin the currently authenticated admin user; must have ADMIN role
+     */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;
 

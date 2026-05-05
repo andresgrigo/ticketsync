@@ -20,9 +20,27 @@ import java.net.URL;
 import javafx.scene.control.Alert;
 
 /**
- * JavaFX App
+ * JavaFX application entry point for TicketSync.
+ *
+ * <p>Startup sequence:
+ * <ol>
+ *   <li>Initialise application directories (logs, tickets) via {@link FilePathUtil}</li>
+ *   <li>Test the database connection; show an error dialog and exit if it fails</li>
+ *   <li>Start the {@link DatabaseHealthMonitor} background scheduler</li>
+ *   <li>Load and display the Login scene</li>
+ * </ol>
+ *
+ * <p>Shutdown sequence (via {@link #stop()}): stops the health monitor and
+ * closes the HikariCP connection pool before the JVM exits.
+ *
+
+ * @since 1.0
  */
 public class App extends Application {
+
+    /** Creates a new {@code App} instance (invoked by the JavaFX runtime via reflection). */
+    public App() {
+    }
 
     static {
         FilePathUtil.initializeRuntimeProperties();
@@ -124,6 +142,12 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Replaces the root node of the main application scene.
+     *
+     * @param fxml FXML file name (without extension) relative to the com/ticketsync resource path
+     * @throws IOException if the FXML resource cannot be found or loaded
+     */
     public static void setRoot(String fxml) throws IOException {
         scene.setRoot(loadFXML(fxml));
     }
@@ -137,6 +161,11 @@ public class App extends Application {
         return fxmlLoader.load();
     }
 
+    /**
+     * Application entry point — delegates to {@link Application#launch(String...)}.
+     *
+     * @param args command-line arguments (currently unused)
+     */
     public static void main(String[] args) {
         launch();
     }

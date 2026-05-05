@@ -21,6 +21,9 @@ public class AuditDAOImpl implements AuditDAO {
 
     private static final Logger LOGGER = LogManager.getLogger(AuditDAOImpl.class);
 
+    /** Creates a new AuditDAOImpl using the production connection factory. */
+    public AuditDAOImpl() { }
+
     private static final String SQL_INSERT =
             "INSERT INTO audit_log (timestamp, username, action, entity_type, entity_id, details, ip_address, session_id) "
                     + "VALUES (?, ?, ?, ?, ?, CAST(? AS jsonb), CAST(? AS inet), ?)";

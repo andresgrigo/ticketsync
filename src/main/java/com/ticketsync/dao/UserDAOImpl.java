@@ -28,7 +28,9 @@ import java.util.Optional;
  */
 public class UserDAOImpl implements UserDAO {
 
-    // -------------------------------------------------------------------------
+    /** Creates a new UserDAOImpl using the production connection factory. */
+    public UserDAOImpl() { }
+
     // SQL constants
     // -------------------------------------------------------------------------
 

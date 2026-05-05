@@ -10,6 +10,7 @@ import java.util.List;
  */
 public class SeatUnavailableException extends Exception {
 
+    /** Seat IDs that were unavailable or caused the serialization conflict. */
     private final List<Integer> unavailableSeatIds;
 
     /**
@@ -41,6 +42,8 @@ public class SeatUnavailableException extends Exception {
 
     /**
      * Returns the seat IDs that were unavailable or involved in the conflict.
+     *
+     * @return unmodifiable list of seat IDs; never {@code null}
      */
     public List<Integer> getUnavailableSeatIds() {
         return unavailableSeatIds;

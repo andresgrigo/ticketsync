@@ -71,7 +71,7 @@ public interface SeatDAO {
      * <p><strong>CRITICAL METHOD:</strong> This is the most important method for preventing oversells.
      * It MUST be called first in any seat purchase transaction to prevent race conditions.
      * 
-     * <h2>Implementation Pattern</h2>
+     * <h4>Implementation Pattern</h4>
      * <pre>{@code
      * String sql = "SELECT * FROM seats WHERE seat_id = ANY(?) FOR UPDATE";
      * PreparedStatement stmt = conn.prepareStatement(sql);
@@ -80,7 +80,7 @@ public interface SeatDAO {
      * return mapResultSet(rs);
      * }</pre>
      * 
-     * <h2>Locking Behavior</h2>
+     * <h4>Locking Behavior</h4>
      * <ul>
      *   <li>Other transactions attempting to SELECT FOR UPDATE same seats will WAIT</li>
      *   <li>SERIALIZABLE isolation + FOR UPDATE = Zero oversells guaranteed</li>

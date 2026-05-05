@@ -25,7 +25,9 @@ import java.util.Optional;
  */
 public class ZoneDAOImpl implements ZoneDAO {
 
-    // -------------------------------------------------------------------------
+    /** Creates a new ZoneDAOImpl using the production connection factory. */
+    public ZoneDAOImpl() { }
+
     // SQL constants
     // -------------------------------------------------------------------------
 

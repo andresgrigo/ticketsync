@@ -33,7 +33,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * FXML controller for the interactive seat-map canvas widget.
+ *
+ * <p>Renders zone and seat layouts obtained from a {@link SeatMapViewModel},
+ * and handles pointer/keyboard interaction for seat selection, panning, and zooming.
+ */
 public class SeatMapController {
+
+    /** Creates a new {@code SeatMapController} (invoked by FXMLLoader via reflection). */
+    public SeatMapController() {
+    }
 
     private static final double FOCUS_RING_INSET = 2.0;
     private static final double PAN_THRESHOLD = 4.0;
@@ -65,6 +75,12 @@ public class SeatMapController {
     private boolean panning;
     private Integer pressedSeatId;
 
+    /**
+     * Initialises the controller after FXML injection.
+     *
+     * <p>Installs mouse, scroll, and keyboard handlers on the canvas
+     * and registers listeners on the default {@link SeatMapViewModel}.
+     */
     @FXML
     public void initialize() {
         initialized = true;
@@ -86,6 +102,15 @@ public class SeatMapController {
         requestRender();
     }
 
+    /**
+     * Replaces the view-model backing this canvas.
+     *
+     * <p>Detaches listeners from the old view-model, attaches them to {@code seatMapViewModel},
+     * resets the pan/zoom viewport, and schedules a re-render.
+     *
+     * @param seatMapViewModel the new view-model; must not be {@code null}
+     * @throws NullPointerException if {@code seatMapViewModel} is {@code null}
+     */
     public void setViewModel(SeatMapViewModel seatMapViewModel) {
         SeatMapViewModel newViewModel = Objects.requireNonNull(seatMapViewModel, "seatMapViewModel must not be null");
         if (initialized) {
@@ -99,24 +124,52 @@ public class SeatMapController {
         }
     }
 
+    /**
+     * Returns the view-model currently backing this canvas.
+     *
+     * @return the current {@link SeatMapViewModel}; never {@code null}
+     */
     public SeatMapViewModel getViewModel() {
         return viewModel;
     }
 
+    /**
+     * Directly sets whether the user can select seats on the canvas.
+     *
+     * @param enabled {@code true} to allow seat selection; {@code false} to prevent it
+     */
     public void setInteractionEnabled(boolean enabled) {
         interactionEnabled.unbind();
         interactionEnabled.set(enabled);
     }
 
+    /**
+     * Binds whether the user can select seats to an observable boolean value.
+     *
+     * @param enabledValue observable whose value controls interaction; must not be {@code null}
+     */
     public void bindInteractionEnabled(ObservableBooleanValue enabledValue) {
         interactionEnabled.unbind();
         interactionEnabled.bind(enabledValue);
     }
 
+    /**
+     * Supplies a guard that prevents canvas renders when the hosting tab or view is not visible.
+     *
+     * @param isActive supplier returning {@code true} when this view is currently active;
+     *                 must not be {@code null}
+     * @throws NullPointerException if {@code isActive} is {@code null}
+     */
     public void setViewActiveCheck(Supplier<Boolean> isActive) {
         isViewActive = Objects.requireNonNull(isActive, "isActive must not be null");
     }
 
+    /**
+     * Called by the parent view when this seat-map tab/panel becomes the active view.
+     *
+     * <p>Schedules a canvas re-render so any state changes that occurred while
+     * the view was hidden are reflected immediately on activation.
+     */
     public void onViewActivated() {
         requestRender();
     }

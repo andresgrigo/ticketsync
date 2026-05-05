@@ -74,6 +74,10 @@ public class AuditLogTabController {
     @FXML private TableColumn<AuditLog, String> entityColumn;
     @FXML private TableColumn<AuditLog, String> detailsColumn;
 
+    /**
+     * Creates a new AuditLogTabController using the production {@link AuditService}.
+     * Instantiated by FXMLLoader via reflection.
+     */
     public AuditLogTabController() {
         this(new AuditService());
     }
@@ -82,6 +86,10 @@ public class AuditLogTabController {
         this.auditService = Objects.requireNonNull(auditService, "auditService");
     }
 
+    /**
+     * FXML lifecycle method; binds table columns and loads initial audit data.
+     * Invoked by FXMLLoader after all {@code @FXML} fields are injected.
+     */
     @FXML
     public void initialize() {
         if (timeWindowCombo != null) {
@@ -137,6 +145,12 @@ public class AuditLogTabController {
         }
     }
 
+    /**
+     * Sets the authenticated admin user and triggers an initial data load.
+     *
+     * @param admin currently logged-in user; must have ADMIN role
+     * @throws SecurityException if the user is null or does not have ADMIN role
+     */
     public void setAdminUser(User admin) {
         if (admin == null || !"ADMIN".equalsIgnoreCase(admin.getRole())) {
             throw new SecurityException("Access denied: ADMIN role required");
@@ -147,10 +161,20 @@ public class AuditLogTabController {
         }
     }
 
+    /**
+     * Registers a supplier that indicates whether this tab is currently active.
+     * Used to defer data loading when the tab is not visible.
+     *
+     * @param isActive supplier returning {@code true} when this tab is selected; must not be null
+     */
     public void setTabActiveCheck(Supplier<Boolean> isActive) {
         this.isTabActive = isActive != null ? isActive : () -> true;
     }
 
+    /**
+     * Called by the parent dashboard controller when this tab becomes the selected tab.
+     * Refreshes audit log data if an admin user has been set.
+     */
     public void onTabActivated() {
         if (currentAdminUser != null && isTabActive.get()) {
             refreshAuditLogsAsync();
@@ -162,6 +186,16 @@ public class AuditLogTabController {
         refreshAuditLogsAsync();
     }
 
+    /**
+     * Loads audit log entries filtered by the given parameters.
+     * Package-private to allow direct invocation from unit tests.
+     *
+     * @param window        time window to query; defaults to {@code LAST_7_DAYS} when null
+     * @param actionFilter  action name to filter by, or {@code null} / "All Actions" for no filter
+     * @param usernameFilter username to filter by (case-insensitive), or null for no filter
+     * @return filtered list of audit log entries, sorted by timestamp descending
+     * @throws SQLException if the database query fails
+     */
     List<AuditLog> loadAuditEntries(TimeWindow window, String actionFilter, String usernameFilter)
             throws SQLException {
         ensureAdminUser();
@@ -172,6 +206,13 @@ public class AuditLogTabController {
         return auditService.getAuditLogs(from, to, normalizedAction, usernameFilter, DEFAULT_LIMIT);
     }
 
+    /**
+     * Builds a human-readable status message for the given list of audit entries.
+     * Package-private to allow unit testing without a JavaFX runtime.
+     *
+     * @param entries list of loaded audit log entries; may be null or empty
+     * @return status message describing the number of entries loaded
+     */
     String buildStatusMessage(List<AuditLog> entries) {
         if (entries == null || entries.isEmpty()) {
             return "No audit entries found.";

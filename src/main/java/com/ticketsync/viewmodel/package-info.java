@@ -22,7 +22,6 @@
  *   <li>ViewModels are unit testable without JavaFX runtime</li>
  * </ul>
  * 
- * @see com.ticketsync.view
  * @see com.ticketsync.service
  * @see com.ticketsync.model
  */

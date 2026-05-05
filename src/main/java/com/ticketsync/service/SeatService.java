@@ -183,6 +183,10 @@ public class SeatService {
     /**
      * Returns all seats for a given event across all zones, ordered by zone_id, row, seat.
      * Uses READ_COMMITTED isolation (read-only, no locking needed).
+     *
+     * @param eventId the event identifier; must be positive
+     * @return list of all seats for the event; never {@code null}
+     * @throws java.sql.SQLException if a database error occurs
      */
     public List<Seat> getSeatsForEvent(int eventId) throws SQLException {
         try (Connection conn = connFactory.get()) {

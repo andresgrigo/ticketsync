@@ -32,6 +32,10 @@ import java.util.Optional;
  */
 public class SeatDAOImpl implements SeatDAO {
 
+    /** Creates a new {@code SeatDAOImpl} using the default connection factory. */
+    public SeatDAOImpl() {
+    }
+
     // -------------------------------------------------------------------------
     // SQL constants
     // -------------------------------------------------------------------------

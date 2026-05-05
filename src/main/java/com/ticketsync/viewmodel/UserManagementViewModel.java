@@ -25,6 +25,9 @@ import java.util.List;
  */
 public class UserManagementViewModel {
 
+    /** Creates a new UserManagementViewModel with an empty user list. */
+    public UserManagementViewModel() { }
+
     private final ObservableList<User> users = FXCollections.observableArrayList();
     private final BooleanProperty loading = new SimpleBooleanProperty(false);
     private final StringProperty statusMessage = new SimpleStringProperty("");

@@ -34,6 +34,13 @@ public class AdminDashboardController {
     @FXML private LayoutViewTabController layoutViewTabContentController;
     @FXML private AuditLogTabController auditLogTabContentController;
 
+    /** Creates a new AdminDashboardController; instantiated by FXMLLoader. */
+    public AdminDashboardController() { }
+
+    /**
+     * FXML lifecycle method — invoked by FXMLLoader after all @FXML fields are injected.
+     * Validates the current session has ADMIN role, then bootstraps sub-controllers.
+     */
     @FXML
     public void initialize() {
         Optional<User> opt = SessionContext.getCurrentUser();

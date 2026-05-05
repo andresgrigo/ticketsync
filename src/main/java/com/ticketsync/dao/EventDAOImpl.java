@@ -30,6 +30,10 @@ import java.util.Optional;
  */
 public class EventDAOImpl implements EventDAO {
 
+    /** Creates a new {@code EventDAOImpl} using the default connection factory. */
+    public EventDAOImpl() {
+    }
+
     // -------------------------------------------------------------------------
     // SQL constants
     // -------------------------------------------------------------------------

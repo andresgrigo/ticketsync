@@ -94,6 +94,22 @@ public class TransactionService {
         return purchaseSeats(eventId, seatIds, total, null);
     }
 
+    /**
+     * Purchases the specified seats for an event, recording the vendor booth ID.
+     *
+     * <p>This overload accepts an optional booth identifier that is stored on the
+     * sale record for reporting purposes. The purchase is identical in behaviour
+     * to {@link #purchaseSeats(int, List, BigDecimal)}.
+     *
+     * @param eventId  event for which seats are being purchased; must be positive
+     * @param seatIds  non-empty list of distinct seat IDs to purchase; must not be null
+     * @param total    total charge amount; must be positive
+     * @param boothId  optional vendor booth identifier; may be null
+     * @return the persisted {@link Sale} record for the completed transaction
+     * @throws SeatUnavailableException if any seat is no longer available or a concurrency conflict occurs
+     * @throws IllegalArgumentException if any parameter fails validation
+     * @throws IllegalStateException    if no user is logged in via {@link SessionContext}
+     */
     public Sale purchaseSeats(int eventId, List<Integer> seatIds, BigDecimal total, String boothId)
             throws SeatUnavailableException {
         if (eventId <= 0) throw new IllegalArgumentException("eventId must be positive");

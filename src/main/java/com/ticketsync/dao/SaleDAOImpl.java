@@ -33,6 +33,10 @@ import org.apache.logging.log4j.Logger;
  */
 public class SaleDAOImpl implements SaleDAO {
 
+    /** Creates a new {@code SaleDAOImpl} using the default connection factory. */
+    public SaleDAOImpl() {
+    }
+
     // -------------------------------------------------------------------------
     // SQL constants
     // -------------------------------------------------------------------------

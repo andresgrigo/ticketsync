@@ -49,9 +49,15 @@ public class DatabaseHealthMonitor {
     /** Eager static singleton — initialized once at class-load time. */
     private static final DatabaseHealthMonitor INSTANCE = new DatabaseHealthMonitor();
 
+    /**
+     * Represents the current runtime health state of the database connection.
+     */
     public enum RuntimeStatus {
+        /** Normal operating state; all database heartbeats are succeeding. */
         HEALTHY,
+        /** Database unreachable; application is in read-only/no-sell fail-safe mode. */
         FAIL_SAFE,
+        /** Previous heartbeat failed; actively retrying connection at reduced interval. */
         RECONNECTING
     }
 
@@ -90,7 +96,11 @@ public class DatabaseHealthMonitor {
         this.uiRunner    = uiRunner;
     }
 
-    /** Returns the shared singleton instance. */
+    /**
+     * Returns the shared singleton instance.
+     *
+     * @return the application-wide {@code DatabaseHealthMonitor} instance
+     */
     public static DatabaseHealthMonitor getInstance() {
         return INSTANCE;
     }
@@ -120,24 +130,47 @@ public class DatabaseHealthMonitor {
     /**
      * Returns a read-only view of the database-connected property.
      * External callers may observe the value but cannot mutate it via this handle.
+     *
+     * @return read-only boolean property; {@code true} when the database is reachable
      */
     public ReadOnlyBooleanProperty connectedProperty() {
         return databaseConnected.getReadOnlyProperty();
     }
 
-    /** Convenience boolean accessor — equivalent to {@code connectedProperty().get()}. */
+    /**
+     * Convenience boolean accessor — equivalent to {@code connectedProperty().get()}.
+     *
+     * @return {@code true} if the last database health check succeeded
+     */
     public boolean isConnected() {
         return databaseConnected.get();
     }
 
+    /**
+     * Returns the current runtime status property.
+     * Reflects whether the monitor is healthy, in fail-safe mode, or reconnecting.
+     *
+     * @return read-only property holding the current {@link RuntimeStatus}
+     */
     public ReadOnlyObjectProperty<RuntimeStatus> runtimeStatusProperty() {
         return runtimeStatus.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the number of consecutive failed reconnect attempts since the last failure began.
+     *
+     * @return read-only integer property; resets to 0 once connectivity is restored
+     */
     public ReadOnlyIntegerProperty retryAttemptCountProperty() {
         return retryAttemptCount.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the current health-check interval in seconds.
+     * Switches between 30 s (healthy) and 10 s (retry) depending on connection state.
+     *
+     * @return read-only long property representing the active polling interval in seconds
+     */
     public ReadOnlyLongProperty currentCheckIntervalSecondsProperty() {
         return currentCheckIntervalSeconds.getReadOnlyProperty();
     }

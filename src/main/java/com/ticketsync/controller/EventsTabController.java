@@ -32,9 +32,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * FXML controller for the events management tab within the Admin Dashboard.
+ *
+ * <p>Displays a {@link javafx.scene.control.TableView} of {@link Event} objects and
+ * provides actions to create, edit, delete, and toggle the active state of events.
+ * Delegates all event CRUD operations to {@link EventService} and uses
+ * {@link EventManagementViewModel} to manage observable state.
+ */
 public class EventsTabController {
 
-    private static final Logger LOGGER = LogManager.getLogger(EventsTabController.class);
+    /** Creates a new {@code EventsTabController} instance (invoked by FXMLLoader via reflection). */
+    public EventsTabController() {
+    }
+
+    private static final Logger LOGGER= LogManager.getLogger(EventsTabController.class);
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final EventService eventService = new EventService();
@@ -53,6 +65,13 @@ public class EventsTabController {
     @FXML private Button toggleActivateButton;
     @FXML private Label eventsStatusLabel;
 
+    /**
+     * Initialises the controller after FXML injection.
+     *
+     * <p>Configures table column cell-value factories, status cell styling,
+     * binds the events table to the view-model observable list, and wires
+     * button enabled states to the table selection.
+     */
     @FXML
     public void initialize() {
         eventsViewModel = new EventManagementViewModel();
@@ -117,7 +136,11 @@ public class EventsTabController {
                         eventsTable.getSelectionModel().selectedItemProperty()));
     }
 
-    /** Called by the shell controller once the admin identity is known. */
+    /**
+     * Called by the shell controller once the admin identity is known.
+     *
+     * @param admin the authenticated administrator user; must not be {@code null}
+     */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;
         loadEventsAsync();

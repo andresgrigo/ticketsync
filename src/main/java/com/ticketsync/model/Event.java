@@ -70,67 +70,147 @@ public class Event {
     }
     
     // Getters and Setters
-    
+
+    /**
+     * Returns the event ID.
+     *
+     * @return the event ID
+     */
     public int getEventId() {
         return eventId;
     }
-    
+
+    /**
+     * Sets the event ID.
+     *
+     * @param eventId the event ID
+     */
     public void setEventId(int eventId) {
         this.eventId = eventId;
     }
-    
+
+    /**
+     * Returns the event name.
+     *
+     * @return the event name
+     */
     public String getName() {
         return name;
     }
-    
+
+    /**
+     * Sets the event name.
+     *
+     * @param name the event name
+     */
     public void setName(String name) {
         this.name = name;
     }
-    
+
+    /**
+     * Returns the event date and time.
+     *
+     * @return the event date and time; may be {@code null}
+     */
     public LocalDateTime getEventDate() {
         return eventDate;
     }
-    
+
+    /**
+     * Sets the event date and time.
+     *
+     * @param eventDate the event date and time
+     */
     public void setEventDate(LocalDateTime eventDate) {
         this.eventDate = eventDate;
     }
-    
+
+    /**
+     * Returns the venue name.
+     *
+     * @return the venue name; may be {@code null}
+     */
     public String getVenue() {
         return venue;
     }
-    
+
+    /**
+     * Sets the venue name.
+     *
+     * @param venue the venue name
+     */
     public void setVenue(String venue) {
         this.venue = venue;
     }
-    
+
+    /**
+     * Returns the event description.
+     *
+     * @return the event description; may be {@code null}
+     */
     public String getDescription() {
         return description;
     }
-    
+
+    /**
+     * Sets the event description.
+     *
+     * @param description the event description
+     */
     public void setDescription(String description) {
         this.description = description;
     }
-    
+
+    /**
+     * Returns whether the event is active.
+     *
+     * @return {@code true} if active, {@code false} otherwise
+     */
     public boolean isActive() {
         return isActive;
     }
-    
+
+    /**
+     * Sets the active state of the event.
+     *
+     * @param isActive {@code true} to activate the event, {@code false} to deactivate
+     */
     public void setActive(boolean isActive) {
         this.isActive = isActive;
     }
-    
+
+    /**
+     * Returns the ID of the user who created the event.
+     *
+     * @return the creator user ID
+     */
     public int getCreatedBy() {
         return createdBy;
     }
-    
+
+    /**
+     * Sets the ID of the user who created the event.
+     *
+     * @param createdBy the creator user ID
+     */
     public void setCreatedBy(int createdBy) {
         this.createdBy = createdBy;
     }
-    
+
+    /**
+     * Returns the timestamp when the event was created.
+     *
+     * @return the creation timestamp; may be {@code null}
+     */
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-    
+
+    /**
+     * Sets the creation timestamp.
+     *
+     * @param createdAt the creation timestamp
+     */
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }

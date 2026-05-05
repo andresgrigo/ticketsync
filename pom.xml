@@ -123,6 +123,16 @@
                     </dependency>
                 </dependencies>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <configuration>
+                    <source>21</source>
+                    <failOnError>false</failOnError>
+                    <failOnWarnings>true</failOnWarnings>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

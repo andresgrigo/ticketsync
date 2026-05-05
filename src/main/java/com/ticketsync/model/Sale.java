@@ -71,35 +71,76 @@ public class Sale {
     }
     
     // Getters and Setters
-    
+
+    /**
+     * Returns the sale ID.
+     *
+     * @return the sale ID
+     */
     public int getSaleId() {
         return saleId;
     }
-    
+
+    /**
+     * Sets the sale ID.
+     *
+     * @param saleId the sale ID
+     */
     public void setSaleId(int saleId) {
         this.saleId = saleId;
     }
-    
+
+    /**
+     * Returns the event ID associated with this sale.
+     *
+     * @return the event ID
+     */
     public int getEventId() {
         return eventId;
     }
-    
+
+    /**
+     * Sets the event ID associated with this sale.
+     *
+     * @param eventId the event ID
+     */
     public void setEventId(int eventId) {
         this.eventId = eventId;
     }
-    
+
+    /**
+     * Returns the vendor user ID who recorded this sale.
+     *
+     * @return the vendor user ID
+     */
     public int getVendorId() {
         return vendorId;
     }
-    
+
+    /**
+     * Sets the vendor user ID who recorded this sale.
+     *
+     * @param vendorId the vendor user ID
+     */
     public void setVendorId(int vendorId) {
         this.vendorId = vendorId;
     }
-    
+
+    /**
+     * Returns the total sale amount.
+     *
+     * @return the total amount; never {@code null}
+     */
     public BigDecimal getTotalAmount() {
         return totalAmount;
     }
-    
+
+    /**
+     * Sets the total sale amount.
+     *
+     * @param totalAmount the total amount; must not be {@code null}
+     * @throws IllegalArgumentException if {@code totalAmount} is {@code null}
+     */
     public void setTotalAmount(BigDecimal totalAmount) {
         if (totalAmount == null) {
             throw new IllegalArgumentException("totalAmount cannot be null");
@@ -107,18 +148,38 @@ public class Sale {
         this.totalAmount = totalAmount;
     }
     
+    /**
+     * Returns the timestamp when the sale was recorded.
+     *
+     * @return the sale timestamp; may be {@code null}
+     */
     public LocalDateTime getSaleTimestamp() {
         return saleTimestamp;
     }
-    
+
+    /**
+     * Sets the timestamp when the sale was recorded.
+     *
+     * @param saleTimestamp the sale timestamp
+     */
     public void setSaleTimestamp(LocalDateTime saleTimestamp) {
         this.saleTimestamp = saleTimestamp;
     }
-    
+
+    /**
+     * Returns the booth ID where the sale was recorded.
+     *
+     * @return the booth ID; may be {@code null}
+     */
     public String getBoothId() {
         return boothId;
     }
-    
+
+    /**
+     * Sets the booth ID where the sale was recorded.
+     *
+     * @param boothId the booth ID
+     */
     public void setBoothId(String boothId) {
         this.boothId = boothId;
     }

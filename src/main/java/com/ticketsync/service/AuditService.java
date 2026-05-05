@@ -32,22 +32,39 @@ public class AuditService {
      * Stable audit action names used across service-layer business events.
      */
     public enum Action {
+        /** Seats successfully purchased in a single atomic transaction. */
         PURCHASE_SEATS,
+        /** User authenticated successfully. */
         LOGIN_SUCCESS,
+        /** Login attempt failed (wrong credentials or unknown user). */
         LOGIN_FAILURE,
+        /** New user account created by an administrator. */
         USER_CREATED,
+        /** Existing user role or credentials updated by an administrator. */
         USER_ROLE_UPDATED,
+        /** User account deleted by an administrator. */
         USER_DELETED,
+        /** New event created by an administrator. */
         EVENT_CREATED,
+        /** Existing event details edited by an administrator. */
         EVENT_UPDATED,
+        /** Event deleted by an administrator. */
         EVENT_DELETED,
+        /** Event enabled for ticket sales by an administrator. */
         EVENT_ACTIVATED,
+        /** Event disabled from ticket sales by an administrator. */
         EVENT_DEACTIVATED,
+        /** New pricing zone created for an event. */
         ZONE_CREATED,
+        /** Existing zone details edited. */
         ZONE_UPDATED,
+        /** Zone deleted from an event. */
         ZONE_DELETED,
+        /** Seat layout generated (rows and seats assigned to a zone). */
         SEATS_GENERATED,
+        /** Seat layout deleted for a zone. */
         SEATS_DELETED,
+        /** Individual seat availability toggled by an administrator. */
         SEAT_STATUS_UPDATED
     }
 
@@ -74,6 +91,12 @@ public class AuditService {
         this.connFactory = Objects.requireNonNull(connFactory, "connFactory");
     }
 
+    /**
+     * Returns a no-op {@code AuditService} that silently discards all writes and returns empty results.
+     * Useful for testing contexts where database interaction must be avoided.
+     *
+     * @return no-op AuditService instance
+     */
     static AuditService noop() {
         return new AuditService(new AuditDAOImpl(), DatabaseConfig::getConnection) {
             @Override
@@ -92,11 +115,20 @@ public class AuditService {
 
     /**
      * Returns supported action names for read-only filtering surfaces.
+     *
+     * @return sorted, unmodifiable list of supported action names; never {@code null}
      */
     public static List<String> supportedActionNames() {
         return SUPPORTED_ACTIONS.stream().sorted().toList();
     }
 
+    /**
+     * Records a completed seat purchase.
+     *
+     * @param sale    the completed sale; must not be null
+     * @param seatIds list of purchased seat IDs; must not be null or empty
+     * @throws IllegalArgumentException if {@code sale} or {@code seatIds} is null or empty
+     */
     public void logPurchaseCompleted(Sale sale, List<Integer> seatIds) {
         if (sale == null) {
             throw new IllegalArgumentException("sale must not be null");
@@ -117,6 +149,11 @@ public class AuditService {
         );
     }
 
+    /**
+     * Records a successful login attempt.
+     *
+     * @param attemptedUsername the username that successfully authenticated; must not be blank
+     */
     public void logLoginSuccess(String attemptedUsername) {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("outcome", "success");
@@ -124,6 +161,11 @@ public class AuditService {
                 "AUTHENTICATION", null, details);
     }
 
+    /**
+     * Records a failed login attempt.
+     *
+     * @param attemptedUsername the username that failed to authenticate; must not be blank
+     */
     public void logLoginFailure(String attemptedUsername) {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("outcome", "failure");
@@ -131,6 +173,14 @@ public class AuditService {
                 "AUTHENTICATION", null, details);
     }
 
+    /**
+     * Records a new user account creation.
+     *
+     * @param adminUsername   username of the administrator who created the account; must not be blank
+     * @param userId          primary key of the newly created user
+     * @param createdUsername username of the newly created user; must not be blank
+     * @param role            role assigned to the new user; may be null
+     */
     public void logUserCreated(String adminUsername, int userId, String createdUsername, String role) {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("username", normalizeRequiredUsername(createdUsername));
@@ -139,6 +189,14 @@ public class AuditService {
                 "USER", userId, details);
     }
 
+    /**
+     * Records a user role or credential update.
+     *
+     * @param adminUsername administrator who performed the update; must not be blank
+     * @param existingUser  user whose role was changed; must not be null
+     * @param newRole       new role assigned to the user; may be null
+     * @throws IllegalArgumentException if {@code existingUser} is null
+     */
     public void logUserRoleUpdated(String adminUsername, User existingUser, String newRole) {
         if (existingUser == null) {
             throw new IllegalArgumentException("existingUser must not be null");
@@ -151,6 +209,13 @@ public class AuditService {
                 "USER", existingUser.getUserId(), details);
     }
 
+    /**
+     * Records a user account deletion.
+     *
+     * @param adminUsername   administrator who deleted the account; must not be blank
+     * @param userId          primary key of the deleted user
+     * @param deletedUsername username of the deleted user; must not be blank
+     */
     public void logUserDeleted(String adminUsername, int userId, String deletedUsername) {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("username", normalizeRequiredUsername(deletedUsername));
@@ -158,46 +223,94 @@ public class AuditService {
                 "USER", userId, details);
     }
 
+    /**
+     * Records a new event creation.
+     *
+     * @param event the created event; must not be null
+     */
     public void logEventCreated(Event event) {
         writeSafely(currentSessionUsername(), Action.EVENT_CREATED, "EVENT",
                 event.getEventId(), eventDetails(event));
     }
 
+    /**
+     * Records an event detail update.
+     *
+     * @param event the updated event; must not be null
+     */
     public void logEventUpdated(Event event) {
         writeSafely(currentSessionUsername(), Action.EVENT_UPDATED, "EVENT",
                 event.getEventId(), eventDetails(event));
     }
 
+    /**
+     * Records an event deletion.
+     *
+     * @param event the deleted event; must not be null
+     */
     public void logEventDeleted(Event event) {
         writeSafely(currentSessionUsername(), Action.EVENT_DELETED, "EVENT",
                 event.getEventId(), eventDetails(event));
     }
 
+    /**
+     * Records an event being activated for ticket sales.
+     *
+     * @param event the activated event; must not be null
+     */
     public void logEventActivated(Event event) {
         writeSafely(currentSessionUsername(), Action.EVENT_ACTIVATED, "EVENT",
                 event.getEventId(), eventDetails(event));
     }
 
+    /**
+     * Records an event being deactivated from ticket sales.
+     *
+     * @param event the deactivated event; must not be null
+     */
     public void logEventDeactivated(Event event) {
         writeSafely(currentSessionUsername(), Action.EVENT_DEACTIVATED, "EVENT",
                 event.getEventId(), eventDetails(event));
     }
 
+    /**
+     * Records a new pricing zone creation.
+     *
+     * @param zone the created zone; must not be null
+     */
     public void logZoneCreated(Zone zone) {
         writeSafely(currentSessionUsername(), Action.ZONE_CREATED, "ZONE",
                 zone.getZoneId(), zoneDetails(zone));
     }
 
+    /**
+     * Records a zone detail update.
+     *
+     * @param zone the updated zone; must not be null
+     */
     public void logZoneUpdated(Zone zone) {
         writeSafely(currentSessionUsername(), Action.ZONE_UPDATED, "ZONE",
                 zone.getZoneId(), zoneDetails(zone));
     }
 
+    /**
+     * Records a zone deletion.
+     *
+     * @param zone the deleted zone; must not be null
+     */
     public void logZoneDeleted(Zone zone) {
         writeSafely(currentSessionUsername(), Action.ZONE_DELETED, "ZONE",
                 zone.getZoneId(), zoneDetails(zone));
     }
 
+    /**
+     * Records a seat layout generation event.
+     *
+     * @param zoneId    ID of the zone where seats were generated
+     * @param rowNumber row identifier (e.g. "A"); may be null
+     * @param fromSeat  first seat number in the generated range (inclusive)
+     * @param toSeat    last seat number in the generated range (inclusive)
+     */
     public void logSeatsGenerated(int zoneId, String rowNumber, int fromSeat, int toSeat) {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("rowNumber", normalizeNullableString(rowNumber));
@@ -208,6 +321,11 @@ public class AuditService {
                 zoneId, details);
     }
 
+    /**
+     * Records a seat layout deletion.
+     *
+     * @param seatIds list of seat IDs that were deleted; must not be null or empty
+     */
     public void logSeatsDeleted(List<Integer> seatIds) {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("seatIds", List.copyOf(seatIds));
@@ -216,6 +334,12 @@ public class AuditService {
                 null, details);
     }
 
+    /**
+     * Records a seat availability status change.
+     *
+     * @param seatIds      list of seat IDs whose status was toggled; must not be null or empty
+     * @param targetStatus the new seat status applied to all listed seats; may be null
+     */
     public void logSeatStatusUpdated(List<Integer> seatIds, SeatStatus targetStatus) {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("seatIds", List.copyOf(seatIds));
@@ -227,6 +351,15 @@ public class AuditService {
 
     /**
      * Returns read-only audit data for the admin reporting surface.
+     *
+     * @param fromInclusive start of the time range (inclusive); must not be null
+     * @param toExclusive   end of the time range (exclusive); must not be null and must be after {@code fromInclusive}
+     * @param actionFilter  action name to filter by, or null for no filter
+     * @param usernameFilter username to filter by (case-insensitive), or null for no filter
+     * @param limit         maximum number of records to return; must be positive
+     * @return list of matching audit log entries, sorted by timestamp descending
+     * @throws SQLException     if the database query fails
+     * @throws SecurityException if the current session user does not have ADMIN role
      */
     public List<AuditLog> getAuditLogs(LocalDateTime fromInclusive, LocalDateTime toExclusive,
                                        String actionFilter, String usernameFilter, int limit)
@@ -245,12 +378,30 @@ public class AuditService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Persists an audit log entry to the database.
+     * Overridden by the no-op variant to suppress writes in test contexts.
+     *
+     * @param auditLog the audit entry to persist; must not be null
+     * @throws SQLException if the database insert fails
+     */
     protected void persistAuditLog(AuditLog auditLog) throws SQLException {
         try (Connection conn = connFactory.get()) {
             auditDAO.insert(conn, auditLog);
         }
     }
 
+    /**
+     * Queries audit log entries from the database.
+     * Overridden by the no-op variant to return empty results in test contexts.
+     *
+     * @param fromInclusive start of the time range (inclusive)
+     * @param toExclusive   end of the time range (exclusive)
+     * @param actionFilter  action name to filter by, or null for all actions
+     * @param limit         maximum number of records to return
+     * @return list of matching audit log entries
+     * @throws SQLException if the database query fails
+     */
     protected List<AuditLog> queryAuditLogs(LocalDateTime fromInclusive,
                                             LocalDateTime toExclusive,
                                             String actionFilter,

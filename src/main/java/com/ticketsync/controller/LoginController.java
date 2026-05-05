@@ -31,7 +31,11 @@ import java.util.Optional;
  */
 public class LoginController {
 
-    private static final Logger LOGGER = LogManager.getLogger(LoginController.class);
+    /** Creates a new {@code LoginController} instance (invoked by FXMLLoader via reflection). */
+    public LoginController() {
+    }
+
+    private static final Logger LOGGER= LogManager.getLogger(LoginController.class);
 
     @FXML
     private TextField usernameField;

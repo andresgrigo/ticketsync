@@ -56,6 +56,11 @@ public class SeatMapViewModel {
     private final Consumer<Runnable> uiRunner;
     private Integer recoveryFilterZoneId;
 
+    /**
+     * Creates a production-ready view-model wired to {@link SeatService} and {@link ZoneService}.
+     *
+     * <p>Loaded data is delivered to the FX thread via {@link Platform#runLater(Runnable)}.
+     */
     public SeatMapViewModel() {
         this(
                 new SeatService()::getSeatsForEvent,
@@ -70,48 +75,115 @@ public class SeatMapViewModel {
         );
     }
 
+    /**
+     * Creates a view-model with explicitly injected collaborators (primarily for testing).
+     *
+     * @param seatLoader strategy for loading seats given an event ID; must not be {@code null}
+     * @param zoneLoader strategy for loading zones given an event ID; must not be {@code null}
+     * @param uiRunner   runnable dispatcher that executes tasks on the UI thread; must not be {@code null}
+     * @throws NullPointerException if any argument is {@code null}
+     */
     public SeatMapViewModel(SeatLoader seatLoader, ZoneLoader zoneLoader, Consumer<Runnable> uiRunner) {
         this.seatLoader = Objects.requireNonNull(seatLoader, "seatLoader must not be null");
         this.zoneLoader = Objects.requireNonNull(zoneLoader, "zoneLoader must not be null");
         this.uiRunner = Objects.requireNonNull(uiRunner, "uiRunner must not be null");
     }
 
+    /**
+     * Returns a read-only view of all seats loaded from the database for the current event.
+     *
+     * @return unmodifiable observable list; never {@code null}
+     */
     public ObservableList<Seat> seatsProperty() {
         return readOnlySeats;
     }
 
+    /**
+     * Returns the subset of seats currently visible on the canvas (may be filtered by zone).
+     *
+     * @return unmodifiable observable list; never {@code null}
+     */
     public ObservableList<Seat> renderedSeatsProperty() {
         return readOnlyRenderedSeats;
     }
 
+    /**
+     * Returns a read-only view of all zones loaded for the current event.
+     *
+     * @return unmodifiable observable list; never {@code null}
+     */
     public ObservableList<Zone> zonesProperty() {
         return readOnlyZones;
     }
 
+    /**
+     * Returns the set of seat IDs currently selected (highlighted yellow) on the canvas.
+     *
+     * @return unmodifiable observable set; never {@code null}
+     */
     public ObservableSet<Integer> selectedSeatIdsProperty() {
         return readOnlySelectedSeatIds;
     }
 
+    /**
+     * Returns the read-only property holding the seat ID that currently has keyboard focus,
+     * or {@code null} when no seat is focused.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyObjectProperty<Integer> focusedSeatIdProperty() {
         return focusedSeatId.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property holding the list index of the currently focused seat,
+     * or {@code -1} when no seat is focused.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyIntegerProperty focusedSeatIndexProperty() {
         return focusedSeatIndex.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the read-only property that is {@code true} while a background load is in progress.
+     *
+     * @return read-only property; never {@code null}
+     */
     public ReadOnlyBooleanProperty loadingProperty() {
         return loading.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the zone with the given ID from the cached zone map.
+     *
+     * @param zoneId the zone ID to look up
+     * @return the {@link Zone}, or {@code null} if not found
+     */
     public Zone getZone(int zoneId) {
         return zoneById.get(zoneId);
     }
 
+    /**
+     * Returns whether the seat with the given ID is currently selected.
+     *
+     * @param seatId the seat ID to query
+     * @return {@code true} if selected; {@code false} otherwise
+     */
     public boolean isSeatSelected(int seatId) {
         return selectedSeatIds.contains(seatId);
     }
 
+    /**
+     * Loads seats and zones for the given event from the database.
+     *
+     * <p>Sets {@link #loadingProperty()} to {@code true} during the load and
+     * delivers results to the UI thread via the configured {@code uiRunner}.
+     *
+     * @param eventId positive event identifier
+     * @throws IllegalArgumentException if {@code eventId} is not positive
+     * @throws java.sql.SQLException    if a database error occurs
+     */
     public void loadEventData(int eventId) throws SQLException {
         if (eventId <= 0) {
             throw new IllegalArgumentException("eventId must be positive");
@@ -131,6 +203,7 @@ public class SeatMapViewModel {
     /**
      * Toggles the local selection state for an AVAILABLE seat.
      *
+     * @param seatId the seat ID to toggle
      * @return {@code true} if the seat is selected after the operation,
      *         {@code false} if it is deselected or not selectable
      */
@@ -155,6 +228,16 @@ public class SeatMapViewModel {
         return selectedAfterToggle;
     }
 
+    /**
+     * Replaces the cached seat record with an updated snapshot from the caller.
+     *
+     * <p>Useful for propagating status changes (e.g., RESERVED → SOLD) received
+     * from the server without a full reload.
+     *
+     * @param updatedSeat the updated seat; must not be {@code null}
+     * @return {@code true} if the seat was found and replaced; {@code false} if not present
+     * @throws NullPointerException if {@code updatedSeat} is {@code null}
+     */
     public boolean replaceSeat(Seat updatedSeat) {
         Objects.requireNonNull(updatedSeat, "updatedSeat must not be null");
         int index = indexOfSeat(updatedSeat.getSeatId());
@@ -172,6 +255,14 @@ public class SeatMapViewModel {
         return true;
     }
 
+    /**
+     * Convenience shortcut to update only the status of a cached seat.
+     *
+     * @param seatId seat to update
+     * @param status the new booking status; must not be {@code null}
+     * @return {@code true} if the seat was found and updated; {@code false} if not present
+     * @throws NullPointerException if {@code status} is {@code null}
+     */
     public boolean updateSeatStatus(int seatId, SeatStatus status) {
         Objects.requireNonNull(status, "status must not be null");
         int index = indexOfSeat(seatId);
@@ -191,10 +282,19 @@ public class SeatMapViewModel {
         return replaceSeat(replacement);
     }
 
+    /** Clears all locally selected seat IDs and updates the canvas. */
     public void clearSelection() {
         uiRunner.accept(selectedSeatIds::clear);
     }
 
+    /**
+     * Applies a recovery filter that limits the rendered seats to AVAILABLE seats in the given zone.
+     *
+     * <p>The filter is automatically cleared when the user selects a seat.
+     *
+     * @param zoneId the zone to filter by; must be positive
+     * @throws IllegalArgumentException if {@code zoneId} is not positive
+     */
     public void showAvailableSeatsInZone(int zoneId) {
         if (zoneId <= 0) {
             throw new IllegalArgumentException("zoneId must be positive");
@@ -205,6 +305,7 @@ public class SeatMapViewModel {
         });
     }
 
+    /** Removes the recovery zone filter and re-renders all seats for the event. */
     public void clearRecoveryFilter() {
         uiRunner.accept(() -> {
             recoveryFilterZoneId = null;
@@ -212,6 +313,11 @@ public class SeatMapViewModel {
         });
     }
 
+    /**
+     * Moves keyboard focus to the seat with the given ID.
+     *
+     * @param seatId the seat to focus; {@code null} clears focus
+     */
     public void setFocusedSeatId(Integer seatId) {
         uiRunner.accept(() -> updateFocus(seatId));
     }
@@ -362,13 +468,33 @@ public class SeatMapViewModel {
         }
     }
 
+    /**
+     * Strategy for loading seats for an event from the persistence layer.
+     */
     @FunctionalInterface
     public interface SeatLoader {
+        /**
+         * Loads all seats for the given event.
+         *
+         * @param eventId the event identifier
+         * @return list of seats; never {@code null}
+         * @throws java.sql.SQLException if a database error occurs
+         */
         List<Seat> load(int eventId) throws SQLException;
     }
 
+    /**
+     * Strategy for loading zones for an event from the persistence layer.
+     */
     @FunctionalInterface
     public interface ZoneLoader {
+        /**
+         * Loads all zones for the given event.
+         *
+         * @param eventId the event identifier
+         * @return list of zones; never {@code null}
+         * @throws java.sql.SQLException if a database error occurs
+         */
         List<Zone> load(int eventId) throws SQLException;
     }
 }

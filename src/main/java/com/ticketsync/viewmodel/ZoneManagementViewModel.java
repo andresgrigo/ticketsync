@@ -25,6 +25,9 @@ import java.util.List;
  */
 public class ZoneManagementViewModel {
 
+    /** Creates a new ZoneManagementViewModel with an empty zone list. */
+    public ZoneManagementViewModel() { }
+
     private final ObservableList<Zone> zones = FXCollections.observableArrayList();
     private final ObjectProperty<Zone> selectedZone = new SimpleObjectProperty<>(null);
     private final BooleanProperty loading = new SimpleBooleanProperty(false);

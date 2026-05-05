@@ -57,35 +57,75 @@ public class Zone {
     }
     
     // Getters and Setters
-    
+
+    /**
+     * Returns the zone identifier.
+     *
+     * @return database-generated primary key
+     */
     public int getZoneId() {
         return zoneId;
     }
-    
+
+    /**
+     * Sets the zone identifier.
+     *
+     * @param zoneId database-generated primary key
+     */
     public void setZoneId(int zoneId) {
         this.zoneId = zoneId;
     }
-    
+
+    /**
+     * Returns the event this zone belongs to.
+     *
+     * @return foreign key referencing the parent event
+     */
     public int getEventId() {
         return eventId;
     }
-    
+
+    /**
+     * Sets the event this zone belongs to.
+     *
+     * @param eventId foreign key referencing the parent event
+     */
     public void setEventId(int eventId) {
         this.eventId = eventId;
     }
-    
+
+    /**
+     * Returns the zone name.
+     *
+     * @return zone name string (e.g., {@code "Floor"}, {@code "VIP"})
+     */
     public String getName() {
         return name;
     }
-    
+
+    /**
+     * Sets the zone name.
+     *
+     * @param name zone name; must not be null
+     */
     public void setName(String name) {
         this.name = name;
     }
-    
+
+    /**
+     * Returns the ticket price for this zone.
+     *
+     * @return ticket price; all seats in the zone share this price
+     */
     public BigDecimal getPrice() {
         return price;
     }
     
+    /**
+     * Sets the ticket price for this zone.
+     *
+     * @param price ticket price; must not be null
+     */
     public void setPrice(BigDecimal price) {
         if (price == null) {
             throw new IllegalArgumentException("price cannot be null");

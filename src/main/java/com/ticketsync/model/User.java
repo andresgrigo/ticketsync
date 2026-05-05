@@ -59,27 +59,57 @@ public class User {
     }
     
     // Getters and Setters
-    
+
+    /**
+     * Returns the user identifier.
+     *
+     * @return database-generated primary key
+     */
     public int getUserId() {
         return userId;
     }
-    
+
+    /**
+     * Sets the user identifier.
+     *
+     * @param userId database-generated primary key
+     */
     public void setUserId(int userId) {
         this.userId = userId;
     }
-    
+
+    /**
+     * Returns the login username.
+     *
+     * @return unique username string
+     */
     public String getUsername() {
         return username;
     }
-    
+
+    /**
+     * Sets the login username.
+     *
+     * @param username unique username; must not be null
+     */
     public void setUsername(String username) {
         this.username = username;
     }
-    
+
+    /**
+     * Returns the BCrypt password hash.
+     *
+     * @return BCrypt-hashed password string; never plaintext
+     */
     public String getPasswordHash() {
         return passwordHash;
     }
     
+    /**
+     * Sets the BCrypt password hash.
+     *
+     * @param passwordHash BCrypt-hashed password; must not be null or empty
+     */
     public void setPasswordHash(String passwordHash) {
         if (passwordHash == null || passwordHash.isEmpty()) {
             throw new IllegalArgumentException("passwordHash cannot be null or empty");
@@ -87,18 +117,38 @@ public class User {
         this.passwordHash = passwordHash;
     }
     
+    /**
+     * Returns the user role.
+     *
+     * @return role string, either {@code "ADMIN"} or {@code "VENDOR"}
+     */
     public String getRole() {
         return role;
     }
-    
+
+    /**
+     * Sets the user role.
+     *
+     * @param role role string; expected to be {@code "ADMIN"} or {@code "VENDOR"}
+     */
     public void setRole(String role) {
         this.role = role;
     }
-    
+
+    /**
+     * Returns the account creation timestamp.
+     *
+     * @return date and time when the user account was created
+     */
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-    
+
+    /**
+     * Sets the account creation timestamp.
+     *
+     * @param createdAt date and time of account creation; may be null
+     */
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }

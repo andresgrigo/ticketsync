@@ -64,7 +64,11 @@ import java.util.concurrent.Executors;
  */
 public class PosController {
 
-    private static final Logger LOGGER = LogManager.getLogger(PosController.class);
+    /** Creates a new {@code PosController} instance (invoked by FXMLLoader via reflection). */
+    public PosController() {
+    }
+
+    private static final Logger LOGGER= LogManager.getLogger(PosController.class);
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     @FXML private BorderPane root;
     @FXML private TextField eventSearchField;
@@ -412,6 +416,13 @@ public class PosController {
         return viewModel;
     }
 
+    /**
+     * Releases background resources held by this controller.
+     *
+     * <p>Stops the seat-sync coordinator, disposes the selection-panel
+     * controller, and shuts down the background executor. Safe to call
+     * multiple times; subsequent calls after the first are no-ops.
+     */
     public void dispose() {
         if (disposed) {
             return;

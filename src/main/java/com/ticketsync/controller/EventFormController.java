@@ -32,6 +32,10 @@ import java.time.format.DateTimeParseException;
  */
 public class EventFormController {
 
+    /** Creates a new {@code EventFormController} instance (invoked by FXMLLoader via reflection). */
+    public EventFormController() {
+    }
+
     /** Operational mode that determines pre-population behaviour. */
     public enum Mode {
         /** All fields empty; a new event will be constructed from form values. */

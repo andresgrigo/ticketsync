@@ -1,3 +1,9 @@
+/**
+ * Main application module for the TicketSync point-of-sale system.
+ *
+ * <p>Declares all module dependencies and controls which packages are
+ * exported or opened to the JavaFX runtime for reflection.
+ */
 module com.ticketsync {
     requires javafx.controls;
     requires javafx.fxml;

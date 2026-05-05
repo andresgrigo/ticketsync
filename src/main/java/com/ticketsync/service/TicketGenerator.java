@@ -69,6 +69,9 @@ public class TicketGenerator {
     private final ZoneDAO zoneDAO;
     private final ConnectionFactory connFactory;
 
+    /**
+     * Creates a new TicketGenerator using production DAO and database connection.
+     */
     public TicketGenerator() {
         this(new EventDAOImpl(), new SeatDAOImpl(), new ZoneDAOImpl(), DatabaseConfig::getConnection);
     }
@@ -80,6 +83,14 @@ public class TicketGenerator {
         this.connFactory = Objects.requireNonNull(connFactory, "connFactory must not be null");
     }
 
+    /**
+     * Generates a ticket PDF as in-memory bytes for the given sale and its line items.
+     *
+     * @param sale  the completed sale record; must not be null
+     * @param items the list of seat line items included in the sale; must not be null or empty
+     * @return raw PDF bytes ready for printing or file persistence
+     * @throws TicketGenerationException if data cannot be loaded or the PDF cannot be rendered
+     */
     public byte[] generateTicket(Sale sale, List<SaleItem> items) throws TicketGenerationException {
         Sale validatedSale = validateSale(sale);
         List<SaleItem> validatedItems = validateItems(items);

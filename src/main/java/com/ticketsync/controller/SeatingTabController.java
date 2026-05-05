@@ -59,7 +59,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * FXML controller for the seating and zone management tab within the Admin Dashboard.
+ *
+ * <p>Provides a combined interface to create, edit, and delete zones for an event
+ * and to generate, delete, and toggle the status of individual seats within each zone.
+ * Also renders a mini seat-map canvas showing current seat availability.
+ */
 public class SeatingTabController {
+
+    /** Creates a new {@code SeatingTabController} instance (invoked by FXMLLoader via reflection). */
+    public SeatingTabController() {
+    }
 
     private static final Logger LOGGER = LogManager.getLogger(SeatingTabController.class);
 
@@ -116,6 +127,13 @@ public class SeatingTabController {
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
+    /**
+     * Initialises the controller after FXML injection.
+     *
+     * <p>Configures zone and seat table columns, binds observable lists,
+     * sets up the seat-map canvas listeners, and wires button states
+     * to table selections and zone selectors.
+     */
     @FXML
     public void initialize() {
         // Zone table setup
@@ -275,7 +293,11 @@ public class SeatingTabController {
         seatMapCanvas.setOnMouseDragged(this::handleCanvasMouseDragged);
     }
 
-    /** Called by the shell controller once the admin identity is known. */
+    /**
+     * Called by the shell controller once the admin identity is known.
+     *
+     * @param admin the authenticated administrator user; must not be {@code null}
+     */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;
         loadZonesEventSelectorAsync();
@@ -284,6 +306,8 @@ public class SeatingTabController {
     /**
      * Provides a lambda the controller uses to guard canvas renders to the
      * seating tab's active state, preventing Prism RTTexture NPEs.
+     *
+     * @param isActive supplier that returns {@code true} when the seating tab is currently active
      */
     public void setTabActiveCheck(Supplier<Boolean> isActive) {
         this.isTabActive = isActive;

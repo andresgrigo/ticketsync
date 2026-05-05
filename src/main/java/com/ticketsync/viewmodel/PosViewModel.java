@@ -53,10 +53,21 @@ public class PosViewModel {
 
     private static final DateTimeFormatter SYNC_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /**
+     * Represents the overall system health visible to the POS operator.
+     *
+     * <p>Mirrors {@link com.ticketsync.util.DatabaseHealthMonitor.RuntimeStatus} but
+     * adds the transient {@link #RESTORED} state used to drive the "connection restored"
+     * notification banner.
+     */
     public enum SystemHealthState {
+        /** Normal operating state; the database is reachable and purchases are allowed. */
         HEALTHY,
+        /** Database unreachable; the POS is in read-only / no-sell fail-safe mode. */
         FAIL_SAFE,
+        /** Previous heartbeat failed; the monitor is actively retrying the connection. */
         RECONNECTING,
+        /** Transient state signalling that connectivity was just restored; transitions to {@link #HEALTHY}. */
         RESTORED
     }
 
@@ -79,6 +90,10 @@ public class PosViewModel {
     private final ReadOnlyStringWrapper lastSyncTimestampText = new ReadOnlyStringWrapper("Last Sync: Pending");
     private final Supplier<LocalDateTime> timestampSupplier;
 
+    /**
+     * Creates a production {@code PosViewModel} wired to the singleton
+     * {@link com.ticketsync.util.DatabaseHealthMonitor} and the system clock.
+     */
     public PosViewModel() {
         this(
                 DatabaseHealthMonitor.getInstance().connectedProperty(),
@@ -89,6 +104,15 @@ public class PosViewModel {
         );
     }
 
+    /**
+     * Creates a {@code PosViewModel} with a custom database-connected observable and timestamp supplier.
+     *
+     * <p>Used in tests to supply a controlled {@code ObservableBooleanValue} without starting the
+     * real {@link com.ticketsync.util.DatabaseHealthMonitor}.
+     *
+     * @param databaseConnected observable boolean that is {@code true} when the DB is reachable
+     * @param timestampSupplier supplier used to generate "last sync" timestamp strings
+     */
     public PosViewModel(ObservableBooleanValue databaseConnected, Supplier<LocalDateTime> timestampSupplier) {
         this(
                 databaseConnected,
@@ -99,6 +123,15 @@ public class PosViewModel {
         );
     }
 
+    /**
+     * Full-control constructor used in unit tests.
+     *
+     * @param databaseConnected    observable boolean; {@code true} when DB is reachable
+     * @param runtimeStatus        observable runtime status from the health monitor
+     * @param retryAttemptCount    observable retry counter exposed by the health monitor
+     * @param retryIntervalSeconds observable current check interval in seconds
+     * @param timestampSupplier    supplier used to generate "last sync" timestamp strings
+     */
     public PosViewModel(
             ObservableBooleanValue databaseConnected,
             ObservableObjectValue<DatabaseHealthMonitor.RuntimeStatus> runtimeStatus,
@@ -212,52 +245,121 @@ public class PosViewModel {
         return purchaseEnabled.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property indicating whether the database is healthy.
+     *
+     * @return the databaseHealthy property; never {@code null}
+     */
     public ReadOnlyBooleanProperty databaseHealthyProperty() {
         return databaseHealthy.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the number of available seats for the selected event.
+     *
+     * @return the availableSeatCount property; never {@code null}
+     */
     public ReadOnlyIntegerProperty availableSeatCountProperty() {
         return availableSeatCount.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the current system health state.
+     *
+     * @return the systemHealthState property; never {@code null}
+     */
     public ReadOnlyObjectProperty<SystemHealthState> systemHealthStateProperty() {
         return systemHealthState.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the display text for the selected event.
+     *
+     * @return the selectedEventText property; never {@code null}
+     */
     public ReadOnlyStringProperty selectedEventTextProperty() {
         return selectedEventText.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the formatted available-seat count text.
+     *
+     * @return the availableSeatCountText property; never {@code null}
+     */
     public ReadOnlyStringProperty availableSeatCountTextProperty() {
         return availableSeatCountText.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the formatted booth ID text.
+     *
+     * @return the boothIdText property; never {@code null}
+     */
     public ReadOnlyStringProperty boothIdTextProperty() {
         return boothIdText.getReadOnlyProperty();
     }
+
+    /**
+     * Returns a read-only property holding the database connection status text.
+     *
+     * @return the databaseStatusText property; never {@code null}
+     */
     public ReadOnlyStringProperty databaseStatusTextProperty() {
         return databaseStatusText.getReadOnlyProperty();
     }
+    /**
+     * Returns a read-only property holding the health badge display text (e.g. "HEALTHY").
+     *
+     * @return the systemHealthBadgeText property; never {@code null}
+     */
     public ReadOnlyStringProperty systemHealthBadgeTextProperty() {
         return systemHealthBadgeText.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the system health banner text shown to the operator.
+     *
+     * @return the systemHealthBannerText property; never {@code null}
+     */
     public ReadOnlyStringProperty systemHealthBannerTextProperty() {
         return systemHealthBannerText.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property indicating whether the system health banner should be shown.
+     *
+     * @return the systemHealthBannerVisible property; never {@code null}
+     */
     public ReadOnlyBooleanProperty systemHealthBannerVisibleProperty() {
         return systemHealthBannerVisible.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the human-readable reason why purchases are blocked,
+     * or an empty string when purchases are allowed.
+     *
+     * @return the purchaseBlockedReasonText property; never {@code null}
+     */
     public ReadOnlyStringProperty purchaseBlockedReasonTextProperty() {
         return purchaseBlockedReasonText.getReadOnlyProperty();
     }
 
+    /**
+     * Returns a read-only property holding the formatted timestamp of the last successful seat sync.
+     *
+     * @return the lastSyncTimestampText property; never {@code null}
+     */
     public ReadOnlyStringProperty lastSyncTimestampTextProperty() {
         return lastSyncTimestampText.getReadOnlyProperty();
     }
 
+    /**
+     * Updates the booth ID displayed in the header bar.
+     *
+     * <p>If {@code boothId} is {@code null} or blank the display reverts to "Booth: Unassigned".
+     *
+     * @param boothId the booth identifier string; may be {@code null}
+     */
     public void setBoothId(String boothId) {
         if (boothId == null || boothId.isBlank()) {
             boothIdText.set("Booth: Unassigned");
@@ -266,6 +368,14 @@ public class PosViewModel {
         boothIdText.set("Booth: " + boothId.strip());
     }
 
+    /**
+     * Updates the available-seat count from a freshly loaded seat list.
+     *
+     * <p>Counts only seats with status {@link com.ticketsync.model.SeatStatus#AVAILABLE}.
+     * A {@code null} list is treated as zero available seats.
+     *
+     * @param seats the current seat list for the selected event; may be {@code null}
+     */
     public void updateAvailableSeatCount(List<Seat> seats) {
         long availableCount = seats == null
                 ? 0
@@ -273,10 +383,20 @@ public class PosViewModel {
         availableSeatCount.set((int) availableCount);
     }
 
+    /**
+     * Updates the "last sync" timestamp text to the current instant provided by the
+     * configured timestamp supplier.
+     */
     public void markLastSyncNow() {
         lastSyncTimestampText.set("Last Sync: " + timestampSupplier.get().format(SYNC_TIMESTAMP_FORMATTER));
     }
 
+    /**
+     * Transitions the health state from {@link SystemHealthState#RESTORED} back to
+     * {@link SystemHealthState#HEALTHY} once the caller has displayed the restoration notice.
+     *
+     * <p>If the current state is not {@code RESTORED} this method is a no-op.
+     */
     public void acknowledgeRestoredState() {
         if (systemHealthState.get() == SystemHealthState.RESTORED) {
             systemHealthState.set(SystemHealthState.HEALTHY);

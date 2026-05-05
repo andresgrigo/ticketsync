@@ -18,7 +18,11 @@ import javafx.beans.property.StringProperty;
  */
 public class LoginViewModel {
 
-    private final StringProperty username = new SimpleStringProperty("");
+    /** Creates a new {@code LoginViewModel} with empty property values. */
+    public LoginViewModel() {
+    }
+
+    private final StringProperty username= new SimpleStringProperty("");
     private final StringProperty password = new SimpleStringProperty("");
     private final BooleanProperty loginInProgress = new SimpleBooleanProperty(false);
     private final StringProperty errorMessage = new SimpleStringProperty("");

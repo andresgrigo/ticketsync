@@ -22,7 +22,11 @@ import java.util.List;
  */
 public class SeatManagementViewModel {
 
-    private final ObservableList<Seat> seats = FXCollections.observableArrayList();
+    /** Creates a new {@code SeatManagementViewModel} with an empty seat list. */
+    public SeatManagementViewModel() {
+    }
+
+    private final ObservableList<Seat> seats= FXCollections.observableArrayList();
     private final BooleanProperty loading = new SimpleBooleanProperty(false);
 
     /**

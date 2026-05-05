@@ -54,35 +54,75 @@ public class SaleItem {
     }
     
     // Getters and Setters
-    
+
+    /**
+     * Returns the sale item ID.
+     *
+     * @return the sale item ID
+     */
     public int getSaleItemId() {
         return saleItemId;
     }
-    
+
+    /**
+     * Sets the sale item ID.
+     *
+     * @param saleItemId the sale item ID
+     */
     public void setSaleItemId(int saleItemId) {
         this.saleItemId = saleItemId;
     }
-    
+
+    /**
+     * Returns the sale ID this item belongs to.
+     *
+     * @return the sale ID
+     */
     public int getSaleId() {
         return saleId;
     }
-    
+
+    /**
+     * Sets the sale ID this item belongs to.
+     *
+     * @param saleId the sale ID
+     */
     public void setSaleId(int saleId) {
         this.saleId = saleId;
     }
-    
+
+    /**
+     * Returns the seat ID associated with this sale item.
+     *
+     * @return the seat ID
+     */
     public int getSeatId() {
         return seatId;
     }
-    
+
+    /**
+     * Sets the seat ID associated with this sale item.
+     *
+     * @param seatId the seat ID
+     */
     public void setSeatId(int seatId) {
         this.seatId = seatId;
     }
-    
+
+    /**
+     * Returns the price paid for this seat.
+     *
+     * @return the price paid; never {@code null}
+     */
     public BigDecimal getPricePaid() {
         return pricePaid;
     }
-    
+
+    /**
+     * Sets the price paid for this seat.
+     *
+     * @param pricePaid the price paid
+     */
     public void setPricePaid(BigDecimal pricePaid) {
         this.pricePaid = pricePaid;
     }

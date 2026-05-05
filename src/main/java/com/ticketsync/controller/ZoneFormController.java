@@ -21,6 +21,9 @@ import java.math.RoundingMode;
  */
 public class ZoneFormController {
 
+    /** Creates a new ZoneFormController; instantiated by FXMLLoader. */
+    public ZoneFormController() { }
+
     /** Operational mode that determines pre-population behaviour. */
     public enum Mode {
         /** All fields empty; a new zone will be constructed from form values. */
