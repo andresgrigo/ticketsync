@@ -1,17 +1,17 @@
 /**
- * Data Access Object (DAO) interfaces for database operations.
+ * Interfaces de Objeto de Acceso a Datos (DAO) para operaciones de base de datos.
  * 
- * <h2>Architecture Pattern</h2>
- * Interface-based design enables service layer unit testing with Mockito mocks.
- * All DAO methods accept Connection parameter for transaction participation.
+ * <h2>Patrón de Arquitectura</h2>
+ * El diseño basado en interfaces permite pruebas unitarias de la capa de servicio con mocks de Mockito.
+ * Todos los métodos DAO aceptan un parámetro Connection para participar en transacciones.
  * 
- * <h2>Transaction Participation</h2>
- * DAOs do NOT manage transactions. Service layer controls transaction boundaries
- * by creating connections, setting isolation levels, calling DAO methods with the
- * connection, and handling commit or rollback.
+ * <h2>Participación en Transacciones</h2>
+ * Los DAOs NO gestionan transacciones. La capa de servicio controla los límites de transacción
+ * creando conexiones, estableciendo niveles de aislamiento, llamando a métodos DAO con la
+ * conexión, y manejando commit o rollback.
  * 
- * <h2>Implementations</h2>
- * JDBC implementations:
+ * <h2>Implementaciones</h2>
+ * Implementaciones JDBC:
  * <ul>
  *   <li>UserDAOImpl</li>
  *   <li>EventDAOImpl</li>
@@ -19,32 +19,31 @@
  *   <li>SaleDAOImpl</li>
  * </ul>
  * 
- * <h2>Connection Contract</h2>
+ * <h2>Contrato de Conexión</h2>
  * <ul>
- *   <li>The Connection parameter must be non-null and open</li>
- *   <li>The <strong>caller owns the Connection lifecycle</strong> — DAOs never close it</li>
- *   <li>For {@link com.ticketsync.dao.SeatDAO#selectForUpdate}, the Connection
- *       must have isolation level {@code TRANSACTION_SERIALIZABLE} set before calling</li>
+ *   <li>El parámetro Connection debe ser no-null y estar abierto</li>
+ *   <li>El <strong>llamador es dueño del ciclo de vida de la Connection</strong> — los DAOs nunca la cierran</li>
+ *   <li>Para {@link com.ticketsync.dao.SeatDAO#selectForUpdate}, la Connection
+ *       debe tener el nivel de aislamiento {@code TRANSACTION_SERIALIZABLE} establecido antes de llamar</li>
  * </ul>
  *
- * <h2>Design Principles</h2>
+ * <h2>Principios de Diseño</h2>
  * <ul>
- *   <li>All methods accept Connection as first parameter</li>
- *   <li>Use PreparedStatement for SQL injection prevention</li>
- *   <li>Return domain Model objects, never raw JDBC ResultSets</li>
- *   <li>Primary keys returned as int (PostgreSQL SERIAL type)</li>
- *   <li>Throw SQLException for database errors (Service layer handles translation)</li>
- *   <li>Throw IllegalArgumentException for invalid arguments (null entities, invalid IDs)</li>
+ *   <li>Todos los métodos aceptan Connection como primer parámetro</li>
+ *   <li>Usar PreparedStatement para prevención de inyección SQL</li>
+ *   <li>Devolver objetos del modelo de dominio, nunca ResultSets JDBC directos</li>
+ *   <li>Claves primarias devueltas como int (tipo PostgreSQL SERIAL)</li>
+ *   <li>Lanzar SQLException para errores de base de datos (la capa de servicio maneja la traducción)</li>
+ *   <li>Lanzar IllegalArgumentException para argumentos inválidos (entidades null, IDs inválidos)</li>
  * </ul>
- * 
- * <h2>Naming Conventions</h2>
+ *
+ * <h2>Convenciones de Nomenclatura</h2>
  * <ul>
- *   <li>Interface naming: EntityDAO (e.g., UserDAO)</li>
- *   <li>Implementation naming: EntityDAOImpl (e.g., UserDAOImpl)</li>
- *   <li>CRUD methods: findById, findAll, insert, update, delete</li>
- *   <li>Query variations: findByUsername, findByEventId, findActive</li>
- *   <li>Special operations: selectForUpdate, insertSaleItems, updateStatus</li>
- * </ul>
+ *   <li>Nomenclatura de interfaz: EntidadDAO (ej., UserDAO)</li>
+ *   <li>Nomenclatura de implementación: EntidadDAOImpl (ej., UserDAOImpl)</li>
+ *   <li>Métodos CRUD: findById, findAll, insert, update, delete</li>
+ *   <li>Variaciones de consulta: findByUsername, findByEventId, findActive</li>       
+ *   <li>Operaciones especiales: selectForUpdate, insertSaleItems, updateStatus</li>
  * 
  * @see com.ticketsync.service
  * @see com.ticketsync.model

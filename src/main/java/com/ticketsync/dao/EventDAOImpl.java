@@ -13,29 +13,29 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * JDBC implementation of {@link EventDAO} for the {@code events} table.
+ * Implementación JDBC de {@link EventDAO} para la tabla {@code events}.
  *
- * <p>All SQL is executed via {@link PreparedStatement} using {@code ?} placeholders.
- * No SQL is ever built by string concatenation, preventing SQL injection (OWASP A03).
+ * <p>Todo el SQL se ejecuta vía {@link PreparedStatement} usando marcadores {@code ?}.
+ * Nunca se construye SQL por concatenación de cadenas, previniendo inyección SQL (OWASP A03).
  *
- * <p>Callers are responsible for managing the {@link Connection} lifecycle (open,
- * commit/rollback, close). This class never closes the supplied connection.
+ * <p>Los llamadores son responsables de gestionar el ciclo de vida de {@link Connection} (abrir,
+ * commit/rollback, cerrar). Esta clase nunca cierra la conexión suministrada.
  *
- * <p>The {@code created_by} column is a nullable FK to {@code users.user_id}.
- * When the Java field {@code createdBy == 0} (unset), {@code NULL} is written to
- * the database via {@link PreparedStatement#setNull}.
+ * <p>La columna {@code created_by} es una FK nullable a {@code users.user_id}.
+ * Cuando el campo Java {@code createdBy == 0} (no establecido), se escribe {@code NULL} en
+ * la base de datos vía {@link PreparedStatement#setNull}.
  *
  * @see EventDAO
  * @see com.ticketsync.model.Event
  */
 public class EventDAOImpl implements EventDAO {
 
-    /** Creates a new {@code EventDAOImpl} using the default connection factory. */
+    /** Crea un nuevo {@code EventDAOImpl} usando la fábrica de conexiones predeterminada. */
     public EventDAOImpl() {
     }
 
     // -------------------------------------------------------------------------
-    // SQL constants
+    // Constantes SQL
     // -------------------------------------------------------------------------
 
     private static final String SQL_FIND_BY_ID =
@@ -62,7 +62,7 @@ public class EventDAOImpl implements EventDAO {
             "DELETE FROM events WHERE event_id = ?";
 
     // -------------------------------------------------------------------------
-    // Public interface methods
+    // Métodos públicos de interfaz
     // -------------------------------------------------------------------------
 
     /**
@@ -89,7 +89,7 @@ public class EventDAOImpl implements EventDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>Results are ordered by {@code event_date DESC}.
+     * <p>Los resultados se ordenan por {@code event_date DESC}.
      */
     @Override
     public List<Event> findAll(Connection conn) throws SQLException {
@@ -106,7 +106,7 @@ public class EventDAOImpl implements EventDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>Returns only events where {@code is_active = true}, ordered by {@code event_date DESC}.
+     * <p>Devuelve solo eventos donde {@code is_active = true}, ordenados por {@code event_date DESC}.
      */
     @Override
     public List<Event> findActive(Connection conn) throws SQLException {
@@ -123,12 +123,12 @@ public class EventDAOImpl implements EventDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>The {@code eventId} field of {@code event} is ignored; the database-generated
-     * {@code event_id} is returned. The {@code created_at} column is omitted from the
-     * INSERT so {@code DEFAULT NOW()} applies. When {@code event.getCreatedBy() == 0},
-     * {@code NULL} is stored for the {@code created_by} FK column.
+     * <p>El campo {@code eventId} de {@code event} se ignora; el {@code event_id} generado por la
+     * base de datos es devuelto. La columna {@code created_at} se omite del
+     * INSERT para que aplique {@code DEFAULT NOW()}. Cuando {@code event.getCreatedBy() == 0},
+     * se almacena {@code NULL} para la columna FK {@code created_by}.
      *
-     * @throws IllegalArgumentException if {@code event} is null
+     * @throws IllegalArgumentException si {@code event} es null
      */
     @Override
     public int insert(Connection conn, Event event) throws SQLException {
@@ -162,13 +162,13 @@ public class EventDAOImpl implements EventDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>Updates {@code name}, {@code event_date}, {@code venue}, {@code description},
-     * and {@code is_active} for the event identified by {@code event.getEventId()}.
-     * The {@code created_by} and {@code created_at} columns are immutable after creation
-     * and are excluded from the UPDATE.
+     * <p>Actualiza {@code name}, {@code event_date}, {@code venue}, {@code description},
+     * y {@code is_active} para el evento identificado por {@code event.getEventId()}.
+     * Las columnas {@code created_by} y {@code created_at} son inmutables después de la creación
+     * y se excluyen del UPDATE.
      *
-     * @throws IllegalArgumentException if {@code event} is null or {@code event.getEventId()} is zero or negative
-     * @throws SQLException             if no row matches the given {@code eventId}
+     * @throws IllegalArgumentException si {@code event} es null o {@code event.getEventId()} es cero o negativo
+     * @throws SQLException             si ninguna fila coincide con el {@code eventId} dado
      */
     @Override
     public void update(Connection conn, Event event) throws SQLException {
@@ -197,7 +197,7 @@ public class EventDAOImpl implements EventDAO {
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalArgumentException if {@code eventId} is zero or negative
+     * @throws IllegalArgumentException si {@code eventId} es cero o negativo
      */
     @Override
     public void delete(Connection conn, int eventId) throws SQLException {
@@ -211,20 +211,20 @@ public class EventDAOImpl implements EventDAO {
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Ayudantes privados
     // -------------------------------------------------------------------------
 
     /**
-     * Maps the current row of a {@link ResultSet} to an {@link Event} object.
+     * Mapea la fila actual de un {@link ResultSet} a un objeto {@link Event}.
      *
-     * <p>The nullable {@code created_by} FK column is mapped using {@link ResultSet#wasNull()}
-     * — when the column is {@code NULL}, {@code createdBy} is left at {@code 0}.
-     * The nullable {@code venue} and {@code description} columns are handled by
-     * {@link ResultSet#getString} which returns {@code null} directly.
+     * <p>La columna FK nullable {@code created_by} se mapea usando {@link ResultSet#wasNull()}
+     * — cuando la columna es {@code NULL}, {@code createdBy} se deja en {@code 0}.
+     * Las columnas nullable {@code venue} y {@code description} son manejadas por
+     * {@link ResultSet#getString} que devuelve {@code null} directamente.
      *
-     * @param rs ResultSet positioned on the current row
-     * @return populated {@link Event} instance
-     * @throws SQLException if a column cannot be read
+     * @param rs ResultSet posicionado en la fila actual
+     * @return instancia de {@link Event} poblada
+     * @throws SQLException si una columna no puede ser leída
      */
     private Event mapRow(ResultSet rs) throws SQLException {
         Event event = new Event();

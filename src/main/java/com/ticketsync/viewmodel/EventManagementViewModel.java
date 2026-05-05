@@ -13,19 +13,19 @@ import javafx.collections.ObservableList;
 import java.util.List;
 
 /**
- * Presentation-layer state for the event management table within the Admin Dashboard.
+ * Estado de la capa de presentación para la tabla de gestión de eventos del Panel de Administración.
  *
- * <p>Holds an {@link ObservableList} of {@link Event} objects that the
- * {@code AdminDashboardController} binds to its events {@code TableView}.
- * Changes to the list are automatically reflected in the UI through JavaFX
- * property bindings.
+ * <p>Mantiene una {@link ObservableList} de objetos {@link Event} que el
+ * {@code AdminDashboardController} enlaza a su {@code TableView} de eventos.
+ * Los cambios en la lista se reflejan automáticamente en la UI mediante
+ * los enlaces de propiedades de JavaFX.
  *
- * <p>This class has no reference to JavaFX UI controls and can therefore be
- * tested without initialising the JavaFX toolkit.
+ * <p>Esta clase no tiene referencia a controles de la UI de JavaFX y por tanto puede ser
+ * probada sin inicializar el toolkit de JavaFX.
  */
 public class EventManagementViewModel {
 
-    /** Creates a new {@code EventManagementViewModel} with an empty events list. */
+    /** Crea un nuevo {@code EventManagementViewModel} con una lista de eventos vacía. */
     public EventManagementViewModel() {
     }
 
@@ -35,54 +35,54 @@ public class EventManagementViewModel {
     private final StringProperty statusMessage = new SimpleStringProperty("");
 
     /**
-     * Returns the observable list of events displayed in the table.
+     * Retorna la lista observable de eventos mostrados en la tabla.
      *
-     * @return the observable events list; never {@code null}
+     * @return la lista observable de eventos; nunca {@code null}
      */
     public ObservableList<Event> eventsProperty() {
         return events;
     }
 
     /**
-     * Returns the currently selected event property.
+     * Retorna la propiedad del evento actualmente seleccionado.
      *
-     * <p>Bound to the {@code TableView} selection model so that controller
-     * action handlers can retrieve the selected row without querying the
-     * table directly.
+     * <p>Enlazada al modelo de selección del {@code TableView} para que los manejadores
+     * de acciones del controlador puedan recuperar la fila seleccionada sin consultar
+     * la tabla directamente.
      *
-     * @return the selectedEvent property
+     * @return la propiedad selectedEvent
      */
     public ObjectProperty<Event> selectedEventProperty() {
         return selectedEvent;
     }
 
     /**
-     * Returns the loading flag property.
+     * Retorna la propiedad indicadora de carga.
      *
-     * <p>When {@code true}, a background data-loading operation is in progress.
+     * <p>Cuando es {@code true}, una operación de carga de datos en segundo plano está en progreso.
      *
-     * @return the loading property
+     * @return la propiedad loading
      */
     public BooleanProperty loadingProperty() {
         return loading;
     }
 
     /**
-     * Returns the status message property used to display loading or error text.
+     * Retorna la propiedad de mensaje de estado utilizada para mostrar texto de carga o error.
      *
-     * @return the statusMessage property
+     * @return la propiedad statusMessage
      */
     public StringProperty statusMessageProperty() {
         return statusMessage;
     }
 
     /**
-     * Replaces the contents of the events list with the supplied list.
+     * Reemplaza el contenido de la lista de eventos con la lista proporcionada.
      *
-     * <p>The existing list is cleared first so that any previously loaded
-     * data is discarded before repopulating.
+     * <p>La lista existente se limpia primero para que los datos previamente cargados
+     * sean descartados antes de repoblar.
      *
-     * @param list the new list of events to display; must not be {@code null}
+     * @param list la nueva lista de eventos a mostrar; no debe ser {@code null}
      */
     public void setEvents(List<Event> list) {
         events.clear();
@@ -92,28 +92,28 @@ public class EventManagementViewModel {
     }
 
     /**
-     * Appends a single event to the end of the observable list.
+     * Agrega un único evento al final de la lista observable.
      *
-     * @param event the event to add; must not be {@code null}
+     * @param event el evento a agregar; no debe ser {@code null}
      */
     public void addEvent(Event event) {
         events.add(event);
     }
 
     /**
-     * Removes the event whose {@code eventId} matches the supplied event.
+     * Elimina el evento cuyo {@code eventId} coincide con el evento proporcionado.
      *
-     * @param event the event to remove; matched by {@code eventId}
+     * @param event el evento a eliminar; igualado por {@code eventId}
      */
     public void removeEvent(Event event) {
         events.removeIf(e -> e.getEventId() == event.getEventId());
     }
 
     /**
-     * Replaces the list entry whose {@code eventId} matches that of the
-     * supplied event with the new event object.
+     * Reemplaza la entrada de la lista cuyo {@code eventId} coincide con el del
+     * evento proporcionado con el nuevo objeto de evento.
      *
-     * @param updated the updated event; matched and replaced by {@code eventId}
+     * @param updated el evento actualizado; igualado y reemplazado por {@code eventId}
      */
     public void updateEvent(Event updated) {
         for (int i = 0; i < events.size(); i++) {

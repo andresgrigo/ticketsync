@@ -12,26 +12,26 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * JDBC implementation of {@link UserDAO} for the {@code users} table.
+ * Implementación JDBC de {@link UserDAO} para la tabla {@code users}.
  *
- * <p>All SQL is executed via {@link PreparedStatement} using {@code ?} placeholders.
- * No SQL is ever built by string concatenation, preventing SQL injection (OWASP A03).
+ * <p>Todo el SQL se ejecuta vía {@link PreparedStatement} usando marcadores {@code ?}.
+ * Nunca se construye SQL por concatenación de cadenas, previniendo inyección SQL (OWASP A03).
  *
- * <p>Callers are responsible for managing the {@link Connection} lifecycle (open,
- * commit/rollback, close). This class never closes the supplied connection.
+ * <p>Los llamadores son responsables de gestionar el ciclo de vida de {@link Connection} (abrir,
+ * commit/rollback, cerrar). Esta clase nunca cierra la conexión suministrada.
  *
- * <p>Password hash values are treated as opaque strings — this class never hashes
- * or logs password-related fields.
+ * <p>Los valores de hash de contraseña se tratan como cadenas opacas — esta clase nunca hashea
+ * ni registra campos relacionados con contraseñas.
  *
  * @see UserDAO
  * @see com.ticketsync.model.User
  */
 public class UserDAOImpl implements UserDAO {
 
-    /** Creates a new UserDAOImpl using the production connection factory. */
+    /** Crea un nuevo UserDAOImpl usando la fábrica de conexiones de producción. */
     public UserDAOImpl() { }
 
-    // SQL constants
+    // Constantes SQL
     // -------------------------------------------------------------------------
 
     private static final String SQL_FIND_BY_ID =
@@ -56,13 +56,13 @@ public class UserDAOImpl implements UserDAO {
             "DELETE FROM users WHERE user_id = ?";
 
     // -------------------------------------------------------------------------
-    // Public interface methods
+    // Métodos públicos de interfaz
     // -------------------------------------------------------------------------
 
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalArgumentException if {@code userId} is zero or negative
+     * @throws IllegalArgumentException si {@code userId} es cero o negativo
      */
     @Override
     public Optional<User> findById(Connection conn, int userId) throws SQLException {
@@ -83,10 +83,10 @@ public class UserDAOImpl implements UserDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>The returned {@link User} includes the {@code passwordHash} field so that
-     * {@code AuthenticationService} can call {@code BCrypt.checkpw()}.
+     * <p>El {@link User} devuelto incluye el campo {@code passwordHash} para que
+     * {@code AuthenticationService} pueda llamar a {@code BCrypt.checkpw()}.
      *
-     * @throws IllegalArgumentException if {@code username} is null or blank
+     * @throws IllegalArgumentException si {@code username} es null o está en blanco
      */
     @Override
     public Optional<User> findByUsername(Connection conn, String username) throws SQLException {
@@ -122,11 +122,11 @@ public class UserDAOImpl implements UserDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>The {@code userId} field of {@code user} is ignored; the database-generated
-     * {@code user_id} is returned. The {@code created_at} column is omitted from the
-     * INSERT so {@code DEFAULT NOW()} applies.
+     * <p>El campo {@code userId} de {@code user} se ignora; el {@code user_id} generado por la
+     * base de datos es devuelto. La columna {@code created_at} se omite del
+     * INSERT para que aplique {@code DEFAULT NOW()}.
      *
-     * @throws IllegalArgumentException if {@code user} is null
+     * @throws IllegalArgumentException si {@code user} es null
      */
     @Override
     public int insert(Connection conn, User user) throws SQLException {
@@ -150,10 +150,10 @@ public class UserDAOImpl implements UserDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>Updates {@code username}, {@code passwordHash}, and {@code role} for the
-     * user identified by {@code user.getUserId()}.
+     * <p>Actualiza {@code username}, {@code passwordHash} y {@code role} para el
+     * usuario identificado por {@code user.getUserId()}.
      *
-     * @throws IllegalArgumentException if {@code user} is null or {@code user.getUserId()} is zero or negative
+     * @throws IllegalArgumentException si {@code user} es null o {@code user.getUserId()} es cero o negativo
      */
     @Override
     public void update(Connection conn, User user) throws SQLException {
@@ -177,7 +177,7 @@ public class UserDAOImpl implements UserDAO {
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalArgumentException if {@code userId} is zero or negative
+     * @throws IllegalArgumentException si {@code userId} es cero o negativo
      */
     @Override
     public void delete(Connection conn, int userId) throws SQLException {
@@ -191,18 +191,18 @@ public class UserDAOImpl implements UserDAO {
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Ayudantes privados
     // -------------------------------------------------------------------------
 
     /**
-     * Maps the current row of a {@link ResultSet} to a {@link User} object.
+     * Mapea la fila actual de un {@link ResultSet} a un objeto {@link User}.
      *
-     * <p>Handles a {@code null} {@code created_at} value gracefully by leaving
-     * {@code User.createdAt} as {@code null}.
+     * <p>Maneja un valor {@code null} en {@code created_at} de forma elegante dejando
+     * {@code User.createdAt} como {@code null}.
      *
-     * @param rs ResultSet positioned on a valid row
-     * @return populated {@link User}
-     * @throws SQLException if a column value cannot be retrieved
+     * @param rs ResultSet posicionado en una fila válida
+     * @return {@link User} poblado
+     * @throws SQLException si un valor de columna no puede ser recuperado
      */
     private User mapRow(ResultSet rs) throws SQLException {
         User user = new User();

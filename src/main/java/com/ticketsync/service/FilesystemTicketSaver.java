@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Persists already-generated ticket PDFs to the local filesystem when printing is unavailable.
+ * Persiste PDFs de boletos ya generados en el sistema de archivos local cuando la impresión no está disponible.
  */
 public class FilesystemTicketSaver {
 
@@ -22,17 +22,17 @@ public class FilesystemTicketSaver {
     private final Path ticketsRootDirectory;
 
     /**
-     * Creates a new {@code FilesystemTicketSaver} that writes to the directory
-     * resolved by {@link FilePathUtil#getTicketsDirectory()}.
+     * Crea un nuevo {@code FilesystemTicketSaver} que escribe en el directorio
+     * resuelto por {@link FilePathUtil#getTicketsDirectory()}.
      */
     public FilesystemTicketSaver() {
         this(FilePathUtil.getTicketsDirectory());
     }
 
     /**
-     * Creates a new {@code FilesystemTicketSaver} that writes to the given directory.
+     * Crea un nuevo {@code FilesystemTicketSaver} que escribe en el directorio dado.
      *
-     * @param ticketsRootDirectory root directory for ticket PDFs; must not be {@code null}
+     * @param ticketsRootDirectory directorio raíz para PDFs de boletos; no debe ser {@code null}
      */
     public FilesystemTicketSaver(Path ticketsRootDirectory) {
         this.ticketsRootDirectory = Objects.requireNonNull(ticketsRootDirectory, "ticketsRootDirectory must not be null")
@@ -41,25 +41,25 @@ public class FilesystemTicketSaver {
     }
 
     /**
-     * Returns the root directory where ticket PDFs are saved.
+     * Devuelve el directorio raíz donde se guardan los PDFs de boletos.
      *
-     * @return absolute, normalised tickets root directory; never {@code null}
+     * @return directorio raíz de boletos absoluto y normalizado; nunca {@code null}
      */
     public Path getTicketsRootDirectory() {
         return ticketsRootDirectory;
     }
 
     /**
-     * Saves a ticket PDF for the given sale to a dated subdirectory.
+     * Guarda un PDF de boleto para la venta dada en un subdirectorio con fecha.
      *
-     * <p>Creates the date subdirectory if it does not yet exist and writes
-     * {@code pdfData} as a new file named after the transaction ID.
+     * <p>Crea el subdirectorio de fecha si aún no existe y escribe
+     * {@code pdfData} como un nuevo archivo nombrado según el ID de transacción.
      *
-     * @param sale    the completed sale; must not be {@code null}
-     * @param pdfData the PDF bytes to persist; must not be {@code null} or empty
-     * @return the path of the newly created PDF file
-     * @throws IOException              if the file cannot be written
-     * @throws IllegalArgumentException if {@code pdfData} is empty
+     * @param sale    la venta completada; no debe ser {@code null}
+     * @param pdfData los bytes PDF a persistir; no debe ser {@code null} ni estar vacío
+     * @return la ruta del archivo PDF recién creado
+     * @throws IOException              si el archivo no puede escribirse
+     * @throws IllegalArgumentException si {@code pdfData} está vacío
      */
     public Path saveTicket(Sale sale, byte[] pdfData) throws IOException {
         Objects.requireNonNull(sale, "sale must not be null");

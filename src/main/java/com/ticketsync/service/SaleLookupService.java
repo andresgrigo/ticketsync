@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Service for looking up completed sales and their line items from the database.
+ * Servicio para buscar ventas completadas y sus ítems de línea desde la base de datos.
  *
- * <p>Thin façade over {@link SaleDAO} that acquires a database connection for
- * each operation. Constructor-injectable seams allow unit testing without a
- * live database.
+ * <p>Fachada delgada sobre {@link SaleDAO} que adquiere una conexión de base de datos para
+ * cada operación. Las costuras inyectables por constructor permiten realizar pruebas
+ * unitarias sin una base de datos activa.
  */
 public class SaleLookupService {
 
@@ -24,8 +24,8 @@ public class SaleLookupService {
     private final ConnectionFactory connFactory;
 
     /**
-     * Creates a production {@code SaleLookupService} backed by the default
-     * {@link SaleDAOImpl} and the pooled connection factory.
+     * Crea un {@code SaleLookupService} de producción respaldado por el
+     * {@link SaleDAOImpl} predeterminado y la fábrica de conexiones en pool.
      */
     public SaleLookupService() {
         this(new SaleDAOImpl(), DatabaseConfig::getConnection);
@@ -37,11 +37,11 @@ public class SaleLookupService {
     }
 
     /**
-     * Finds a sale by its primary key.
+     * Busca una venta por su clave primaria.
      *
-     * @param saleId the sale ID to look up; non-positive values return empty immediately
-     * @return the matching sale, or {@link java.util.Optional#empty()} if not found
-     * @throws java.sql.SQLException if a database error occurs
+     * @param saleId el ID de venta a buscar; valores no positivos devuelven empty inmediatamente
+     * @return la venta coincidente, o {@link java.util.Optional#empty()} si no se encuentra
+     * @throws java.sql.SQLException si ocurre un error de base de datos
      */
     public Optional<Sale> getSaleById(int saleId) throws SQLException {
         if (saleId <= 0) {
@@ -53,11 +53,11 @@ public class SaleLookupService {
     }
 
     /**
-     * Returns all sale items that belong to the given sale.
+     * Devuelve todos los ítems de venta que pertenecen a la venta dada.
      *
-     * @param saleId the sale ID; non-positive values return an empty list immediately
-     * @return unmodifiable list of sale items; never {@code null}
-     * @throws java.sql.SQLException if a database error occurs
+     * @param saleId el ID de venta; valores no positivos devuelven una lista vacía inmediatamente
+     * @return lista no modificable de ítems de venta; nunca {@code null}
+     * @throws java.sql.SQLException si ocurre un error de base de datos
      */
     public List<SaleItem> getSaleItemsBySaleId(int saleId) throws SQLException {
         if (saleId <= 0) {

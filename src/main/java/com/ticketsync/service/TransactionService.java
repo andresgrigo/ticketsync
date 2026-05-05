@@ -26,15 +26,15 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Service class for atomic seat-purchase transactions.
+ * Clase de servicio para transacciones atómicas de compra de asientos.
  *
- * <p>Each call to {@link #purchaseSeats} runs inside a single SERIALIZABLE
- * PostgreSQL transaction: seats are locked, availability is validated, a Sale
- * record and its SaleItem children are inserted, and the seats are marked SOLD
- * before the transaction commits. Any failure triggers a full rollback.
+ * <p>Cada llamada a {@link #purchaseSeats} se ejecuta dentro de una sola transacción
+ * PostgreSQL SERIALIZABLE: los asientos se bloquean, se valida la disponibilidad, se inserta
+ * un registro de Venta y sus SaleItem hijos, y los asientos se marcan como VENDIDOS
+ * antes de que la transacción haga commit. Cualquier fallo desencadena un rollback completo.
  *
- * <p>The service delegates all SQL to {@link SeatDAO} and {@link SaleDAO}.
- * No SQL strings live here.
+ * <p>El servicio delega todo el SQL a {@link SeatDAO} y {@link SaleDAO}.
+ * No hay cadenas SQL aquí.
  */
 public class TransactionService {
 
@@ -45,7 +45,7 @@ public class TransactionService {
     private final AuditService auditService;
     private final ConnectionFactory connFactory;
 
-    /** Production constructor. */
+    /** Constructor de producción. */
     public TransactionService() {
         this.seatDAO = new SeatDAOImpl();
         this.saleDAO = new SaleDAOImpl();
@@ -53,12 +53,12 @@ public class TransactionService {
         this.connFactory = DatabaseConfig::getConnection;
     }
 
-    /** Test constructor — no DB required. */
+    /** Constructor de prueba — sin BD requerida. */
     TransactionService(SeatDAO seatDAO, SaleDAO saleDAO, ConnectionFactory connFactory) {
         this(seatDAO, saleDAO, AuditService.noop(), connFactory);
     }
 
-    /** Test constructor with injectable audit seam. */
+    /** Constructor de prueba con costura de auditoría inyectable. */
     TransactionService(SeatDAO seatDAO, SaleDAO saleDAO,
                        AuditService auditService, ConnectionFactory connFactory) {
         this.seatDAO = seatDAO;
@@ -68,26 +68,26 @@ public class TransactionService {
     }
 
     /**
-     * Executes an atomic seat-purchase transaction with SERIALIZABLE isolation.
+     * Ejecuta una transacción atómica de compra de asientos con aislamiento SERIALIZABLE.
      *
-     * <p>Transaction flow:
+     * <p>Flujo de transacción:
      * <ol>
-     *   <li>Obtain connection; set SERIALIZABLE + autoCommit=false + 10 s statement timeout</li>
-     *   <li>Lock seats with SELECT FOR UPDATE</li>
-     *   <li>Validate all seats are AVAILABLE</li>
-     *   <li>Insert Sale record</li>
-     *   <li>Insert SaleItem records (one per seat)</li>
-     *   <li>Update seats to SOLD status with sale reference</li>
+     *   <li>Obtener conexión; establecer SERIALIZABLE + autoCommit=false + timeout de sentencia 10 s</li>
+     *   <li>Bloquear asientos con SELECT FOR UPDATE</li>
+     *   <li>Validar que todos los asientos están DISPONIBLES</li>
+     *   <li>Insertar registro de Venta</li>
+     *   <li>Insertar registros de SaleItem (uno por asiento)</li>
+     *   <li>Actualizar asientos al estado VENDIDO con referencia de venta</li>
      *   <li>COMMIT</li>
      * </ol>
      *
-     * @param eventId event for which tickets are being sold; must be positive
-     * @param seatIds seat IDs to purchase; must not be null or empty
-     * @param total   total purchase price for all seats; must be positive
-     * @return the committed {@link Sale} with its DB-generated saleId set
-     * @throws SeatUnavailableException if any seat is not AVAILABLE, or a serialization conflict occurs
-     * @throws IllegalArgumentException if any parameter is invalid
-     * @throws IllegalStateException    if no user is logged in via {@link SessionContext}
+     * @param eventId evento para el que se venden boletos; debe ser positivo
+     * @param seatIds IDs de asientos a comprar; no debe ser null ni estar vacío
+     * @param total   precio total de compra para todos los asientos; debe ser positivo
+     * @return la {@link Sale} comprometida con su saleId generado por BD establecido
+     * @throws SeatUnavailableException si algún asiento no está DISPONIBLE, o ocurre un conflicto de serialización
+     * @throws IllegalArgumentException si algún parámetro es inválido
+     * @throws IllegalStateException    si ningún usuario tiene sesión iniciada vía {@link SessionContext}
      */
     public Sale purchaseSeats(int eventId, List<Integer> seatIds, BigDecimal total)
             throws SeatUnavailableException {
@@ -95,20 +95,20 @@ public class TransactionService {
     }
 
     /**
-     * Purchases the specified seats for an event, recording the vendor booth ID.
+     * Compra los asientos especificados para un evento, registrando el ID de cabina del vendedor.
      *
-     * <p>This overload accepts an optional booth identifier that is stored on the
-     * sale record for reporting purposes. The purchase is identical in behaviour
-     * to {@link #purchaseSeats(int, List, BigDecimal)}.
+     * <p>Esta sobrecarga acepta un identificador de cabina opcional que se almacena en el
+     * registro de venta para propósitos de reporte. La compra es idéntica en comportamiento
+     * a {@link #purchaseSeats(int, List, BigDecimal)}.
      *
-     * @param eventId  event for which seats are being purchased; must be positive
-     * @param seatIds  non-empty list of distinct seat IDs to purchase; must not be null
-     * @param total    total charge amount; must be positive
-     * @param boothId  optional vendor booth identifier; may be null
-     * @return the persisted {@link Sale} record for the completed transaction
-     * @throws SeatUnavailableException if any seat is no longer available or a concurrency conflict occurs
-     * @throws IllegalArgumentException if any parameter fails validation
-     * @throws IllegalStateException    if no user is logged in via {@link SessionContext}
+     * @param eventId  evento para el que se compran asientos; debe ser positivo
+     * @param seatIds  lista no vacía de IDs de asientos distintos a comprar; no debe ser null
+     * @param total    monto total a cobrar; debe ser positivo
+     * @param boothId  identificador de cabina del vendedor opcional; puede ser null
+     * @return el registro {@link Sale} persistido para la transacción completada
+     * @throws SeatUnavailableException si algún asiento ya no está disponible o ocurre un conflicto de concurrencia
+     * @throws IllegalArgumentException si algún parámetro falla la validación
+     * @throws IllegalStateException    si ningún usuario tiene sesión iniciada vía {@link SessionContext}
      */
     public Sale purchaseSeats(int eventId, List<Integer> seatIds, BigDecimal total, String boothId)
             throws SeatUnavailableException {
@@ -135,17 +135,17 @@ public class TransactionService {
                 stmt.execute("SET LOCAL statement_timeout = '10000'");
             }
 
-            // Step 1: Lock seats
+            // Paso 1: Bloquear asientos
             List<Seat> lockedSeats = seatDAO.selectForUpdate(conn, seatIds);
 
-            // Guard: all requested seat IDs must have been found and locked
+            // Guardia: todos los IDs de asientos solicitados deben haber sido encontrados y bloqueados
             if (lockedSeats.size() != seatIds.size()) {
                 List<Integer> lockedIds = lockedSeats.stream().map(Seat::getSeatId).collect(Collectors.toList());
                 List<Integer> notFound = seatIds.stream().filter(id -> !lockedIds.contains(id)).collect(Collectors.toList());
                 throw new SeatUnavailableException("Seat(s) not found: " + notFound, notFound);
             }
 
-            // Step 2: Validate availability
+            // Paso 2: Validar disponibilidad
             List<Integer> unavailable = lockedSeats.stream()
                     .filter(s -> s.getStatus() != SeatStatus.AVAILABLE)
                     .map(Seat::getSeatId)
@@ -155,7 +155,7 @@ public class TransactionService {
                         "Seat(s) unavailable: " + unavailable, unavailable);
             }
 
-            // Step 3: Build Sale
+            // Paso 3: Construir Venta
             Sale sale = new Sale();
             sale.setEventId(eventId);
             sale.setVendorId(vendorId);
@@ -163,11 +163,11 @@ public class TransactionService {
             sale.setSaleTimestamp(LocalDateTime.now());
             sale.setBoothId(normalizeBoothId(boothId));
 
-            // Step 4: Insert Sale
+            // Paso 4: Insertar Venta
             int saleId = saleDAO.insert(conn, sale);
             sale.setSaleId(saleId);
 
-            // Step 5: Build and insert SaleItems
+            // Paso 5: Construir e insertar SaleItems
             BigDecimal pricePerSeat = total.divide(BigDecimal.valueOf(seatIds.size()), 2, RoundingMode.HALF_UP);
             List<SaleItem> items = new ArrayList<>();
             for (int sid : seatIds) {
@@ -178,7 +178,7 @@ public class TransactionService {
             }
             saleDAO.insertSaleItems(conn, saleId, items);
 
-            // Step 6: Mark seats SOLD
+            // Paso 6: Marcar asientos como VENDIDOS
             seatDAO.updateStatus(conn, seatIds, SeatStatus.SOLD, saleId);
 
             conn.commit();

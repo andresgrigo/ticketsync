@@ -4,27 +4,27 @@ import com.ticketsync.model.SeatStatus;
 import javafx.scene.paint.Color;
 
 /**
- * Centralised colour palette for the TicketSync application.
+ * Paleta de colores centralizada para la aplicación TicketSync.
  *
- * <p>All canvas-rendered colours (seat fills, borders, labels, focus rings, etc.)
- * are defined here so that theming changes only require edits in one place.
- * This class is a utility singleton and cannot be instantiated.
+ * <p>Todos los colores renderizados en canvas (rellenos de asientos, bordes, etiquetas, anillos de foco, etc.)
+ * están definidos aquí para que los cambios de tema solo requieran ediciones en un lugar.
+ * Esta clase es un singleton de utilidad y no puede ser instanciada.
  */
 public final class ThemePalette {
 
     /**
-     * Visual state categories used by the seat-map canvas to colour each seat cell.
+     * Categorías de estado visual usadas por el canvas del mapa de asientos para colorear cada celda.
      */
     public enum SeatVisualTone {
-        /** Seat is available for purchase (green). */
+        /** El asiento está disponible para compra (verde). */
         AVAILABLE,
-        /** Seat is currently selected by the operator (yellow). */
+        /** El asiento está actualmente seleccionado por el operador (amarillo). */
         SELECTED,
-        /** Seat is temporarily reserved by another session (orange). */
+        /** El asiento está temporalmente reservado por otra sesión (naranja). */
         RESERVED,
-        /** Seat has been sold (red). */
+        /** El asiento ha sido vendido (rojo). */
         SOLD,
-        /** Seat is disabled by an administrator (grey). */
+        /** El asiento está deshabilitado por un administrador (gris). */
         DISABLED
     }
 
@@ -32,10 +32,10 @@ public final class ThemePalette {
     }
 
     /**
-     * Returns the fill colour for a seat cell in the given visual tone.
+     * Devuelve el color de relleno para una celda de asiento en el tono visual dado.
      *
-     * @param seatVisualTone the visual state to resolve; must not be {@code null}
-     * @return the fill colour; never {@code null}
+     * @param seatVisualTone el estado visual a resolver; no debe ser {@code null}
+     * @return el color de relleno; nunca {@code null}
      */
     public static Color seatFill(SeatVisualTone seatVisualTone) {
         return switch (seatVisualTone) {
@@ -48,12 +48,12 @@ public final class ThemePalette {
     }
 
     /**
-     * Returns the fill colour for a seat cell derived from a {@link SeatStatus} value.
+     * Devuelve el color de relleno para una celda de asiento derivado de un valor {@link SeatStatus}.
      *
-     * <p>A {@code null} status is treated as {@link SeatVisualTone#DISABLED}.
+     * <p>Un estado {@code null} se trata como {@link SeatVisualTone#DISABLED}.
      *
-     * @param seatStatus the booking status of the seat; may be {@code null}
-     * @return the fill colour; never {@code null}
+     * @param seatStatus el estado de reserva del asiento; puede ser {@code null}
+     * @return el color de relleno; nunca {@code null}
      */
     public static Color seatFill(SeatStatus seatStatus) {
         if (seatStatus == null) {
@@ -69,63 +69,63 @@ public final class ThemePalette {
     }
 
     /**
-     * Returns the border stroke colour used for all seat cells.
+     * Devuelve el color del borde usado para todas las celdas de asiento.
      *
-     * @return the border colour; never {@code null}
+     * @return el color del borde; nunca {@code null}
      */
     public static Color seatBorder() {
         return Color.web("#37474F");
     }
 
     /**
-     * Returns the colour of the focus ring drawn around the keyboard-focused seat.
+     * Devuelve el color del anillo de foco dibujado alrededor del asiento con foco de teclado.
      *
-     * @return the focus ring colour; never {@code null}
+     * @return el color del anillo de foco; nunca {@code null}
      */
     public static Color focusRing() {
         return Color.web("#1565C0");
     }
 
     /**
-     * Returns the colour used for zone and section heading labels on the canvas.
+     * Devuelve el color usado para etiquetas de encabezado de zonas y secciones en el canvas.
      *
-     * @return the heading text colour; never {@code null}
+     * @return el color del texto de encabezado; nunca {@code null}
      */
     public static Color headingText() {
         return Color.web("#212121");
     }
 
     /**
-     * Returns the colour used for row labels and other secondary metadata on the canvas.
+     * Devuelve el color usado para etiquetas de fila y otros metadatos secundarios en el canvas.
      *
-     * @return the meta text colour; never {@code null}
+     * @return el color del texto de metadatos; nunca {@code null}
      */
     public static Color metaText() {
         return Color.web("#616161");
     }
 
     /**
-     * Returns the colour used for seat number labels drawn inside seat cells.
+     * Devuelve el color usado para etiquetas de número de asiento dibujadas dentro de las celdas.
      *
-     * @return the seat label text colour; never {@code null}
+     * @return el color del texto de etiqueta del asiento; nunca {@code null}
      */
     public static Color seatLabelText() {
         return Color.WHITE;
     }
 
     /**
-     * Returns the colour used for the placeholder text shown when no seats are loaded.
+     * Devuelve el color usado para el texto de marcador de posición mostrado cuando no hay asientos cargados.
      *
-     * @return the placeholder text colour; never {@code null}
+     * @return el color del texto de marcador de posición; nunca {@code null}
      */
     public static Color placeholderText() {
         return Color.GRAY;
     }
 
     /**
-     * Returns the colour used for selection outline strokes on the seat-map canvas.
+     * Devuelve el color usado para los trazos del contorno de selección en el canvas del mapa de asientos.
      *
-     * @return the selection outline colour; never {@code null}
+     * @return el color del contorno de selección; nunca {@code null}
      */
     public static Color selectionOutline() {
         return Color.WHITE;

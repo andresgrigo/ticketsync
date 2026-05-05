@@ -8,11 +8,12 @@ import javafx.scene.control.DialogPane;
 import java.util.Objects;
 
 /**
- * Utility class for applying the AtlantaFX theme and application CSS to JavaFX {@link Alert}
- * and {@link Dialog} instances.
+ * Clase de utilidad para aplicar el tema AtlantaFX y el CSS de la aplicación a instancias
+ * de {@link Alert} y {@link Dialog} de JavaFX.
  *
- * <p>All overloads add the application stylesheet and the {@code app-dialog-pane} style class
- * to the target dialog pane, ensuring consistent theming across all modal dialogs.
+ * <p>Todas las sobrecargas agregan la hoja de estilos de la aplicación y la clase de estilo
+ * {@code app-dialog-pane} al panel de diálogo destino, asegurando un tema consistente
+ * en todos los diálogos modales.
  *
 
  * @since 1.0
@@ -25,12 +26,12 @@ public final class DialogThemeHelper {
     }
 
     /**
-     * Applies the application theme to a {@link Dialog}.
+     * Aplica el tema de la aplicación a un {@link Dialog}.
      *
-     * @param <T>    the dialog's result type
-     * @param dialog the dialog to theme; must not be null
-     * @return the same dialog instance, for fluent chaining
-     * @throws NullPointerException if {@code dialog} is null
+     * @param <T>    el tipo de resultado del diálogo
+     * @param dialog el diálogo al que aplicar el tema; no debe ser null
+     * @return la misma instancia del diálogo, para encadenamiento fluido
+     * @throws NullPointerException si {@code dialog} es null
      */
     public static <T extends Dialog<?>> T apply(T dialog) {
         Objects.requireNonNull(dialog, "dialog must not be null");
@@ -39,21 +40,21 @@ public final class DialogThemeHelper {
     }
 
     /**
-     * Applies the application theme to an {@link Alert}.
+     * Aplica el tema de la aplicación a un {@link Alert}.
      *
-     * @param alert the alert to theme; must not be null
-     * @return the same alert instance, for fluent chaining
-     * @throws NullPointerException if {@code alert} is null
+     * @param alert la alerta a la que aplicar el tema; no debe ser null
+     * @return la misma instancia de la alerta, para encadenamiento fluido
+     * @throws NullPointerException si {@code alert} es null
      */
     public static Alert apply(Alert alert) {
         return apply((Dialog<?>) alert) instanceof Alert themedAlert ? themedAlert : alert;
     }
 
     /**
-     * Applies the application theme to a {@link DialogPane} directly.
+     * Aplica el tema de la aplicación directamente a un {@link DialogPane}.
      *
-     * @param dialogPane the dialog pane to theme; must not be null
-     * @throws NullPointerException if {@code dialogPane} is null
+     * @param dialogPane el panel de diálogo al que aplicar el tema; no debe ser null
+     * @throws NullPointerException si {@code dialogPane} es null
      */
     public static void apply(DialogPane dialogPane) {
         Objects.requireNonNull(dialogPane, "dialogPane must not be null");

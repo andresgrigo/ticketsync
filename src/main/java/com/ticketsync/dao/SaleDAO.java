@@ -39,80 +39,80 @@ import java.util.Optional;
 public interface SaleDAO {
     
     /**
-     * Finds a sale by primary key.
-     * 
-     * @param conn Active database connection
-     * @param saleId Primary key of sale to retrieve
-     * @return Optional containing Sale if found, empty otherwise
-     * @throws SQLException if database access error occurs
-     * @throws IllegalArgumentException if saleId is zero or negative
+     * Encuentra una venta por clave primaria.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param saleId Clave primaria de la venta a recuperar
+     * @return Optional que contiene Sale si se encontró, vacío en caso contrario
+     * @throws SQLException si ocurre un error de acceso a la base de datos
+     * @throws IllegalArgumentException si saleId es cero o negativo
      */
     Optional<Sale> findById(Connection conn, int saleId) throws SQLException;
 
     /**
-     * Retrieves committed sale items for a specific sale.
+     * Recupera los ítems de venta confirmados para una venta específica.
      *
-     * @param conn Active database connection
-     * @param saleId Sale ID whose line items should be returned
-     * @return List of committed sale items in insertion order, empty if none exist
-     * @throws SQLException if database access error occurs
-     * @throws IllegalArgumentException if saleId is zero or negative
+     * @param conn Conexión de base de datos activa
+     * @param saleId ID de la venta cuyos ítems deben ser devueltos
+     * @return Lista de ítems de venta confirmados en orden de inserción, vacía si no existen
+     * @throws SQLException si ocurre un error de acceso a la base de datos
+     * @throws IllegalArgumentException si saleId es cero o negativo
      */
     List<SaleItem> findSaleItemsBySaleId(Connection conn, int saleId) throws SQLException;
     
     /**
-     * Retrieves all sales for a specific event.
-     * Used in admin sales reporting.
-     * 
-     * @param conn Active database connection
-     * @param eventId Event ID to retrieve sales for
-     * @return List of sales for event, empty list if none exist
-     * @throws SQLException if database access error occurs
+     * Recupera todas las ventas de un evento específico.
+     * Utilizado en reportes de ventas del administrador.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param eventId ID del evento para recuperar ventas
+     * @return Lista de ventas del evento, lista vacía si no existen
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     List<Sale> findByEventId(Connection conn, int eventId) throws SQLException;
     
     /**
-     * Retrieves all sales by a specific vendor on a specific date.
-     * Used in vendor daily sales report.
-     * 
-     * @param conn Active database connection
-     * @param vendorId Vendor user ID
-     * @param date Date to retrieve sales for. Implementations must compare against the
-     *        {@code sale_timestamp} column cast to the database server's local date.
-     *        Callers should ensure the date reflects the server's timezone (typically UTC)
-     *        to avoid off-by-one errors at midnight boundaries.
-     * @return List of sales by vendor on date, empty list if none exist
-     * @throws SQLException if database access error occurs
+     * Recupera todas las ventas de un vendedor específico en una fecha específica.
+     * Utilizado en el reporte de ventas diario del vendedor.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param vendorId ID de usuario del vendedor
+     * @param date Fecha para recuperar ventas. Las implementaciones deben comparar contra la
+     *        columna {@code sale_timestamp} convertida a la fecha local del servidor de base de datos.
+     *        Los llamadores deben asegurar que la fecha refleje la zona horaria del servidor (generalmente UTC)
+     *        para evitar errores de desfase en los límites de medianoche.
+     * @return Lista de ventas del vendedor en la fecha, lista vacía si no existen
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     List<Sale> findByVendor(Connection conn, int vendorId, LocalDate date) throws SQLException;
     
     /**
-     * Inserts a new sale record into the database.
-     * 
-     * <p>This method is called within a transaction AFTER seat availability is validated
-     * and BEFORE seat status is updated. See {@link SaleDAO} class documentation for
-     * complete transaction flow.
-     * 
-     * @param conn Active database connection
-     * @param sale Sale object to insert (saleId field is ignored; database generates the key)
-     * @return Generated sale_id from database
-     * @throws SQLException if database access error or constraint violation occurs
-     * @throws IllegalArgumentException if sale is null
+     * Inserta un nuevo registro de venta en la base de datos.
+     *
+     * <p>Este método se llama dentro de una transacción DESPUÉS de validar la disponibilidad
+     * de asientos y ANTES de actualizar el estado del asiento. Ver la documentación de clase
+     * {@link SaleDAO} para el flujo completo de transacción.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param sale Objeto Sale a insertar (el campo saleId se ignora; la base de datos genera la clave)
+     * @return sale_id generado por la base de datos
+     * @throws SQLException si ocurre un error de acceso a la base de datos o violación de restricción
+     * @throws IllegalArgumentException si sale es null
      */
     int insert(Connection conn, Sale sale) throws SQLException;
     
     /**
-     * Inserts sale item records linking seats to a sale.
-     * 
-     * <p>This method is called within the same transaction as {@link #insert},
-     * immediately after the Sale record is created.
-     * 
-     * @param conn Active database connection
-     * @param saleId Sale ID to associate items with
-     * @param items List of SaleItem objects to insert (saleItemId field is ignored;
-     *        database generates each key). Must be non-null and non-empty.
-     * @throws SQLException if database access error or constraint violation occurs
-     * @throws IllegalArgumentException if items is null or empty
+     * Inserta registros de ítems de venta vinculando asientos a una venta.
+     *
+     * <p>Este método se llama dentro de la misma transacción que {@link #insert},
+     * inmediatamente después de que se crea el registro Sale.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param saleId ID de venta para asociar ítems
+     * @param items Lista de objetos SaleItem a insertar (el campo saleItemId se ignora;
+     *        la base de datos genera cada clave). Debe ser no-null y no-vacía.
+     * @throws SQLException si ocurre un error de acceso a la base de datos o violación de restricción
+     * @throws IllegalArgumentException si items es null o vacía
      */
     void insertSaleItems(Connection conn, int saleId, List<SaleItem> items) throws SQLException;
 }

@@ -5,19 +5,19 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Thrown when one or more seats are unavailable for purchase (status != AVAILABLE)
- * or when a concurrent transaction causes a serialization conflict.
+ * Lanzada cuando uno o más asientos no están disponibles para su compra (status != AVAILABLE)
+ * o cuando una transacción concurrente causa un conflicto de serialización.
  */
 public class SeatUnavailableException extends Exception {
 
-    /** Seat IDs that were unavailable or caused the serialization conflict. */
+    /** IDs de asientos que no estaban disponibles o causaron el conflicto de serialización. */
     private final List<Integer> unavailableSeatIds;
 
     /**
-     * For seat validation failures — seats exist but are not AVAILABLE.
+     * Para fallos de validación de asientos — los asientos existen pero no están DISPONIBLES.
      *
-     * @param message            human-readable description
-     * @param unavailableSeatIds the seat IDs that failed validation
+     * @param message            descripción legible por humanos
+     * @param unavailableSeatIds los IDs de asientos que fallaron la validación
      */
     public SeatUnavailableException(String message, List<Integer> unavailableSeatIds) {
         super(message);
@@ -27,11 +27,11 @@ public class SeatUnavailableException extends Exception {
     }
 
     /**
-     * For SERIALIZABLE serialization failures — wraps a database exception.
+     * Para fallos de serialización SERIALIZABLE — envuelve una excepción de base de datos.
      *
-     * @param message human-readable description
-     * @param seatIds the seat IDs involved in the failed transaction
-     * @param cause   the underlying {@link java.sql.SQLException}
+     * @param message descripción legible por humanos
+     * @param seatIds los IDs de asientos involucrados en la transacción fallida
+     * @param cause   la excepción subyacente {@link java.sql.SQLException}
      */
     public SeatUnavailableException(String message, List<Integer> seatIds, Throwable cause) {
         super(message, cause);
@@ -41,9 +41,9 @@ public class SeatUnavailableException extends Exception {
     }
 
     /**
-     * Returns the seat IDs that were unavailable or involved in the conflict.
+     * Devuelve los IDs de asientos que no estaban disponibles o estuvieron involucrados en el conflicto.
      *
-     * @return unmodifiable list of seat IDs; never {@code null}
+     * @return lista no modificable de IDs de asientos; nunca {@code null}
      */
     public List<Integer> getUnavailableSeatIds() {
         return unavailableSeatIds;

@@ -14,33 +14,33 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 /**
- * FXML controller for the event create/edit dialog ({@code EventFormView.fxml}).
+ * Controlador FXML para el diálogo de creación/edición de eventos ({@code EventFormView.fxml}).
  *
- * <p>Operates in two modes controlled by {@link Mode}:
+ * <p>Opera en dos modos controlados por {@link Mode}:
  * <ul>
- *   <li>{@link Mode#CREATE} — all fields empty and editable; validates name,
- *       date, optional time format, future date-time, and venue.</li>
- *   <li>{@link Mode#EDIT} — all fields pre-populated from the existing event;
- *       all fields are editable including the event name. The original event's
- *       {@code eventId}, {@code createdBy}, and {@code createdAt} are preserved
- *       in the returned event from {@link #getEventFromForm()}.</li>
+ *   <li>{@link Mode#CREATE} — todos los campos vacíos y editables; valida nombre,
+ *       fecha, formato de hora opcional, fecha-hora futura y lugar.</li>
+ *   <li>{@link Mode#EDIT} — todos los campos pre-rellenos desde el evento existente;
+ *       todos los campos son editables incluyendo el nombre del evento. El
+ *       {@code eventId}, {@code createdBy} y {@code createdAt} originales del evento se preservan
+ *       en el evento retornado por {@link #getEventFromForm()}.</li>
  * </ul>
  *
- * <p>The dialog container (owned by {@code AdminDashboardController}) attaches
- * an event filter to the OK button that calls {@link #validate()} before
- * allowing the dialog to close, keeping all validation logic here.
+ * <p>El contenedor del diálogo (propiedad de {@code AdminDashboardController}) adjunta
+ * un filtro de evento al botón OK que llama a {@link #validate()} antes de
+ * permitir que el diálogo se cierre, manteniendo toda la lógica de validación aquí.
  */
 public class EventFormController {
 
-    /** Creates a new {@code EventFormController} instance (invoked by FXMLLoader via reflection). */
+    /** Crea una nueva instancia de {@code EventFormController} (invocada por FXMLLoader mediante reflexión). */
     public EventFormController() {
     }
 
-    /** Operational mode that determines pre-population behaviour. */
+    /** Modo operacional que determina el comportamiento de pre-relleno. */
     public enum Mode {
-        /** All fields empty; a new event will be constructed from form values. */
+        /** Todos los campos vacíos; se construirá un nuevo evento a partir de los valores del formulario. */
         CREATE,
-        /** All fields pre-populated from an existing event; {@code eventId} is preserved. */
+        /** Todos los campos pre-rellenos desde un evento existente; {@code eventId} se preserva. */
         EDIT
     }
 
@@ -68,28 +68,28 @@ public class EventFormController {
     private Event originalEvent = null;
 
     /**
-     * Sets the operational mode for this form.
+     * Establece el modo operacional para este formulario.
      *
-     * <p>In both {@link Mode#CREATE} and {@link Mode#EDIT} all fields are
-     * visible and editable. This method exists so the controller knows
-     * whether to preserve the original event's identity fields when
-     * {@link #getEventFromForm()} is called.
+     * <p>Tanto en {@link Mode#CREATE} como en {@link Mode#EDIT} todos los campos son
+     * visibles y editables. Este método existe para que el controlador sepa
+     * si debe preservar los campos de identidad del evento original cuando
+     * se llame a {@link #getEventFromForm()}.
      *
-     * @param mode the mode to apply; must not be {@code null}
+     * @param mode el modo a aplicar; no debe ser {@code null}
      */
     public void setMode(Mode mode) {
         this.mode = mode;
     }
 
     /**
-     * Pre-populates the form fields with data from an existing event.
+     * Pre-rellena los campos del formulario con datos de un evento existente.
      *
-     * <p>Should be called in {@link Mode#EDIT} after {@link #setMode(Mode)}.
-     * Saves the original event reference so that {@link #getEventFromForm()}
-     * can preserve identity fields ({@code eventId}, {@code createdBy},
+     * <p>Debe llamarse en {@link Mode#EDIT} después de {@link #setMode(Mode)}.
+     * Guarda la referencia al evento original para que {@link #getEventFromForm()}
+     * pueda preservar los campos de identidad ({@code eventId}, {@code createdBy},
      * {@code createdAt}).
      *
-     * @param event the event whose data should be displayed; must not be {@code null}
+     * @param event el evento cuyos datos deben mostrarse; no debe ser {@code null}
      */
     public void setEvent(Event event) {
         this.originalEvent = event;
@@ -107,23 +107,23 @@ public class EventFormController {
     }
 
     /**
-     * Validates the form contents.
+     * Valida el contenido del formulario.
      *
-     * <p>Validation rules applied in order:
+     * <p>Reglas de validación aplicadas en orden:
      * <ol>
-     *   <li>Name must not be blank.</li>
-     *   <li>Date must be selected.</li>
-     *   <li>Time, if non-blank, must match {@code \d{2}:\d{2}}.</li>
-     *   <li>The combined date-time (defaulting to midnight when time is blank)
-     *       must be in the future.</li>
-     *   <li>Venue must not be blank.</li>
+     *   <li>El nombre no debe estar en blanco.</li>
+     *   <li>La fecha debe estar seleccionada.</li>
+     *   <li>La hora, si no está en blanco, debe coincidir con {@code \d{2}:\d{2}}.</li>
+     *   <li>La fecha-hora combinada (por defecto a medianoche cuando la hora está en blanco)
+     *       debe ser en el futuro.</li>
+     *   <li>El lugar no debe estar en blanco.</li>
      * </ol>
      *
-     * <p>On the first failure the error label is made visible with an
-     * explanatory message and {@code false} is returned. On success the
-     * error label is hidden and {@code true} is returned.
+     * <p>En la primera falla la etiqueta de error se hace visible con un
+     * mensaje explicativo y se retorna {@code false}. En caso de éxito la
+     * etiqueta de error se oculta y se retorna {@code true}.
      *
-     * @return {@code true} if all validations pass; {@code false} otherwise
+     * @return {@code true} si todas las validaciones pasan; {@code false} en caso contrario
      */
     public boolean validate() {
         if (nameField.getText() == null || nameField.getText().isBlank()) {
@@ -161,18 +161,17 @@ public class EventFormController {
     }
 
     /**
-     * Constructs and returns an {@link Event} from the current form values.
+     * Construye y retorna un {@link Event} a partir de los valores actuales del formulario.
      *
-     * <p>In {@link Mode#EDIT} the returned event preserves the original
-     * event's {@code eventId}, {@code createdBy}, and {@code createdAt}
-     * fields so that {@code EventService.updateEvent()} can identify and
-     * correctly update the record.
+     * <p>En {@link Mode#EDIT} el evento retornado preserva el {@code eventId},
+     * {@code createdBy} y {@code createdAt} del evento original para que
+     * {@code EventService.updateEvent()} pueda identificar y actualizar correctamente el registro.
      *
-     * <p>In {@link Mode#CREATE} the {@code eventId} is {@code 0},
-     * {@code createdBy} is {@code 0}, and {@code createdAt} is {@code null};
-     * the service layer assigns real values on insert.
+     * <p>En {@link Mode#CREATE} el {@code eventId} es {@code 0},
+     * {@code createdBy} es {@code 0} y {@code createdAt} es {@code null};
+     * la capa de servicio asigna valores reales al insertar.
      *
-     * @return the populated {@link Event}; never {@code null}
+     * @return el {@link Event} poblado; nunca {@code null}
      */
     public Event getEventFromForm() {
         String name = nameField.getText().trim();
@@ -207,9 +206,9 @@ public class EventFormController {
     }
 
     /**
-     * Displays a validation error message inside the dialog.
+     * Muestra un mensaje de error de validación dentro del diálogo.
      *
-     * @param message the error message to display; must not be {@code null}
+     * @param message el mensaje de error a mostrar; no debe ser {@code null}
      */
     private void showError(String message) {
         errorLabel.setText(message);

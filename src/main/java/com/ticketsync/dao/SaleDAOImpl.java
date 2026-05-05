@@ -16,16 +16,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * JDBC implementation of {@link SaleDAO} for the {@code sales} and {@code sale_items} tables.
+ * Implementación JDBC de {@link SaleDAO} para las tablas {@code sales} y {@code sale_items}.
  *
- * <p>All SQL is executed via {@link PreparedStatement} using {@code ?} placeholders.
- * No SQL is ever built by string concatenation, preventing SQL injection (OWASP A03).
+ * <p>Todo el SQL se ejecuta vía {@link PreparedStatement} usando marcadores {@code ?}.
+ * Nunca se construye SQL por concatenación de cadenas, previniendo inyección SQL (OWASP A03).
  *
- * <p>Callers are responsible for managing the {@link Connection} lifecycle (open,
- * commit/rollback, close). This class never closes the supplied connection.
+ * <p>Los llamadores son responsables de gestionar el ciclo de vida de {@link Connection} (abrir,
+ * commit/rollback, cerrar). Esta clase nunca cierra la conexión suministrada.
  *
- * <p>Transaction coordination (autoCommit=false, SERIALIZABLE isolation, commit/rollback)
- * is the responsibility of the service layer (TransactionService).
+ * <p>La coordinación de transacciones (autoCommit=false, aislamiento SERIALIZABLE, commit/rollback)
+ * es responsabilidad de la capa de servicio (TransactionService).
  *
  * @see SaleDAO
  * @see com.ticketsync.model.Sale
@@ -33,12 +33,12 @@ import org.apache.logging.log4j.Logger;
  */
 public class SaleDAOImpl implements SaleDAO {
 
-    /** Creates a new {@code SaleDAOImpl} using the default connection factory. */
+    /** Crea un nuevo {@code SaleDAOImpl} usando la fábrica de conexiones predeterminada. */
     public SaleDAOImpl() {
     }
 
     // -------------------------------------------------------------------------
-    // SQL constants
+    // Constantes SQL
     // -------------------------------------------------------------------------
 
     private static final String SQL_INSERT_SALE =
@@ -71,17 +71,17 @@ public class SaleDAOImpl implements SaleDAO {
     private static final Logger LOGGER = LogManager.getLogger(SaleDAOImpl.class);
 
     // -------------------------------------------------------------------------
-    // Public interface methods
+    // Métodos públicos de interfaz
     // -------------------------------------------------------------------------
 
     /**
-     * Finds a sale by primary key.
+     * Encuentra una venta por clave primaria.
      *
-     * @param conn   Active database connection
-     * @param saleId Primary key of the sale to retrieve
-     * @return {@code Optional} containing the {@link Sale} if found, empty otherwise
-     * @throws SQLException             if a database access error occurs
-     * @throws IllegalArgumentException if {@code saleId} is zero or negative
+     * @param conn   Conexión de base de datos activa
+     * @param saleId Clave primaria de la venta a recuperar
+     * @return {@code Optional} que contiene {@link Sale} si se encontró, vacío en caso contrario
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
+     * @throws IllegalArgumentException si {@code saleId} es cero o negativo
      */
     @Override
     public Optional<Sale> findById(Connection conn, int saleId) throws SQLException {
@@ -101,12 +101,12 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-    * Retrieves all sales for a specific event, ordered by {@code sale_timestamp DESC}.
+    * Recupera todas las ventas de un evento específico, ordenadas por {@code sale_timestamp DESC}.
      *
-     * @param conn    Active database connection
-     * @param eventId Event ID to retrieve sales for
-     * @return List of sales for the event; empty list if none exist
-     * @throws SQLException if a database access error occurs
+     * @param conn    Conexión de base de datos activa
+     * @param eventId ID del evento para recuperar ventas
+     * @return Lista de ventas del evento; lista vacía si no existen
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     @Override
     public List<Sale> findByEventId(Connection conn, int eventId) throws SQLException {
@@ -142,18 +142,18 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-    * Retrieves all sales by a specific vendor on a specific date.
+    * Recupera todas las ventas de un vendedor específico en una fecha específica.
      *
-     * <p>Uses PostgreSQL's {@code ::date} cast to compare the {@code sale_timestamp}
-     * column against the supplied date. Note: the cast uses the database server's local
-     * date — callers should ensure the supplied date matches the server's timezone (typically UTC)
-     * to avoid off-by-one errors at midnight boundaries.
+     * <p>Usa el cast {@code ::date} de PostgreSQL para comparar la columna {@code sale_timestamp}
+     * contra la fecha suministrada. Nota: el cast usa la fecha local del servidor de base de datos
+     * — los llamadores deben asegurar que la fecha suministrada coincida con la zona horaria del servidor (generalmente UTC)
+     * para evitar errores de desfase en los límites de medianoche.
      *
-     * @param conn     Active database connection
-     * @param vendorId Vendor user ID
-     * @param date     Calendar date to match against {@code sale_timestamp::date}
-     * @return List of sales by the vendor on the given date; empty list if none exist
-     * @throws SQLException if a database access error occurs
+     * @param conn     Conexión de base de datos activa
+     * @param vendorId ID de usuario del vendedor
+     * @param date     Fecha de calendario para coincidir con {@code sale_timestamp::date}
+     * @return Lista de ventas del vendedor en la fecha dada; lista vacía si no existen
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     @Override
     public List<Sale> findByVendor(Connection conn, int vendorId, LocalDate date) throws SQLException {
@@ -175,17 +175,17 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-    * Inserts a new sale record and returns the database-generated {@code sale_id}.
+    * Inserta un nuevo registro de venta y devuelve el {@code sale_id} generado por la base de datos.
      *
-     * <p>This method is called within a transaction AFTER seat availability is validated
-     * and BEFORE seat status is updated. See {@link SaleDAO} class documentation for the
-     * complete transaction flow.
+     * <p>Este método se llama dentro de una transacción DESPUÉS de validar la disponibilidad
+     * de asientos y ANTES de actualizar el estado del asiento. Ver la documentación de clase
+     * {@link SaleDAO} para el flujo completo de transacción.
      *
-     * @param conn Active database connection
-     * @param sale Sale to insert; the {@code saleId} field is ignored — the database generates it
-     * @return Generated {@code sale_id}
-     * @throws SQLException             if a database access error or constraint violation occurs
-     * @throws IllegalArgumentException if {@code sale} is null, or if {@code sale.saleTimestamp} is null
+     * @param conn Conexión de base de datos activa
+     * @param sale Venta a insertar; el campo {@code saleId} se ignora — la base de datos lo genera
+     * @return {@code sale_id} generado
+     * @throws SQLException             si ocurre un error de acceso a la base de datos o violación de restricción
+     * @throws IllegalArgumentException si {@code sale} es null, o si {@code sale.saleTimestamp} es null
      */
     @Override
     public int insert(Connection conn, Sale sale) throws SQLException {
@@ -213,16 +213,16 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     /**
-    * Inserts sale item records linking seats to a sale.
+    * Inserta registros de ítems de venta vinculando asientos a una venta.
      *
-     * <p>This method is called within the same transaction as {@link #insert},
-     * immediately after the Sale record is created.
+     * <p>Este método se llama dentro de la misma transacción que {@link #insert},
+     * inmediatamente después de crear el registro Sale.
      *
-     * @param conn   Active database connection
-     * @param saleId Sale ID to associate items with; must be positive
-     * @param items  List of {@link SaleItem} objects to insert; must be non-null and non-empty
-     * @throws SQLException             if a database access error or constraint violation occurs
-     * @throws IllegalArgumentException if {@code saleId} is zero or negative, or if {@code items} is null or empty
+     * @param conn   Conexión de base de datos activa
+     * @param saleId ID de venta para asociar ítems; debe ser positivo
+     * @param items  Lista de objetos {@link SaleItem} a insertar; debe ser no-null y no-vacía
+     * @throws SQLException             si ocurre un error de acceso a la base de datos o violación de restricción
+     * @throws IllegalArgumentException si {@code saleId} es cero o negativo, o si {@code items} es null o vacía
      */
     @Override
     public void insertSaleItems(Connection conn, int saleId, List<SaleItem> items) throws SQLException {
@@ -245,18 +245,18 @@ public class SaleDAOImpl implements SaleDAO {
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Ayudantes privados
     // -------------------------------------------------------------------------
 
     /**
-     * Maps the current row of a {@link ResultSet} to a {@link Sale} object.
+     * Mapea la fila actual de un {@link ResultSet} a un objeto {@link Sale}.
      *
-     * <p>The nullable {@code booth_id} column is handled by {@link ResultSet#getString},
-     * which returns {@code null} for SQL NULL values.
+     * <p>La columna nullable {@code booth_id} es manejada por {@link ResultSet#getString},
+     * que devuelve {@code null} para valores SQL NULL.
      *
-     * @param rs ResultSet positioned on the current row
-     * @return populated {@link Sale} instance
-     * @throws SQLException if a column cannot be read
+     * @param rs ResultSet posicionado en la fila actual
+     * @return instancia de {@link Sale} poblada
+     * @throws SQLException si una columna no puede ser leída
      */
     private Sale mapRow(ResultSet rs) throws SQLException {
         Sale sale = new Sale();

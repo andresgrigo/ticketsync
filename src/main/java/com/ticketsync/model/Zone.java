@@ -4,50 +4,50 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * Represents a pricing zone within an event's seating layout.
- * Maps to the 'zones' database table.
+ * Representa una zona de precios dentro del plano de asientos de un evento.
+ * Mapea a la tabla de base de datos 'zones'.
  * 
- * <h2>Zone Concept</h2>
- * Each event is divided into zones with different pricing tiers (e.g., "Floor", "Balcony", "VIP").
- * All seats within a zone have the same ticket price.
+ * <h2>Concepto de Zona</h2>
+ * Cada evento se divide en zonas con diferentes niveles de precios (ej., "Pista", "Balcón", "VIP").
+ * Todos los asientos dentro de una zona tienen el mismo precio de entrada.
  * 
- * <h2>Example</h2>
+ * <h2>Ejemplo</h2>
  * <pre>
- * Event: Spring Concert 2024
- * - Zone 1: "VIP Floor" ($150.00)
- * - Zone 2: "General Floor" ($90.00)
- * - Zone 3: "Balcony" ($50.00)
+ * Evento: Concierto de Primavera 2024
+ * - Zona 1: "VIP Pista" ($150.00)
+ * - Zona 2: "Pista General" ($90.00)
+ * - Zona 3: "Balcón" ($50.00)
  * </pre>
  * 
  * @see com.ticketsync.dao.ZoneDAO
  * @see Seat
  */
 public class Zone {
-    /** Primary key from zones.zone_id column. */
+    /** Clave primaria de la columna zones.zone_id. */
     private int zoneId;
     
-    /** Foreign key to events.event_id. */
+    /** Clave foránea a events.event_id. */
     private int eventId;
     
-    /** Zone name (e.g., "Floor", "Balcony", "VIP"). */
+    /** Nombre de la zona (ej., "Pista", "Balcón", "VIP"). */
     private String name;
     
-    /** Ticket price for this zone (all seats same price). */
+    /** Precio de la entrada para esta zona (todos los asientos tienen el mismo precio). */
     private BigDecimal price;
     
     /**
-     * Default constructor for JDBC mapping.
+     * Constructor por defecto para mapeo JDBC.
      */
     public Zone() {
     }
     
     /**
-     * Constructs a Zone with all fields.
+     * Construye una Zone con todos los campos.
      * 
-     * @param zoneId Primary key
-     * @param eventId Event this zone belongs to
-     * @param name Zone name
-     * @param price Ticket price for this zone
+     * @param zoneId Clave primaria
+     * @param eventId Evento al que pertenece esta zona
+     * @param name Nombre de la zona
+     * @param price Precio de entrada para esta zona
      */
     public Zone(int zoneId, int eventId, String name, BigDecimal price) {
         this.zoneId = zoneId;
@@ -56,75 +56,75 @@ public class Zone {
         this.price = price;
     }
     
-    // Getters and Setters
+    // Getters y Setters
 
     /**
-     * Returns the zone identifier.
+     * Devuelve el identificador de zona.
      *
-     * @return database-generated primary key
+     * @return clave primaria generada por la base de datos
      */
     public int getZoneId() {
         return zoneId;
     }
 
     /**
-     * Sets the zone identifier.
+     * Establece el identificador de zona.
      *
-     * @param zoneId database-generated primary key
+     * @param zoneId clave primaria generada por la base de datos
      */
     public void setZoneId(int zoneId) {
         this.zoneId = zoneId;
     }
 
     /**
-     * Returns the event this zone belongs to.
+     * Devuelve el evento al que pertenece esta zona.
      *
-     * @return foreign key referencing the parent event
+     * @return clave foránea referenciando el evento padre
      */
     public int getEventId() {
         return eventId;
     }
 
     /**
-     * Sets the event this zone belongs to.
+     * Establece el evento al que pertenece esta zona.
      *
-     * @param eventId foreign key referencing the parent event
+     * @param eventId clave foránea referenciando el evento padre
      */
     public void setEventId(int eventId) {
         this.eventId = eventId;
     }
 
     /**
-     * Returns the zone name.
+     * Devuelve el nombre de la zona.
      *
-     * @return zone name string (e.g., {@code "Floor"}, {@code "VIP"})
+     * @return cadena con el nombre de la zona (ej., {@code "Pista"}, {@code "VIP"})
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Sets the zone name.
+     * Establece el nombre de la zona.
      *
-     * @param name zone name; must not be null
+     * @param name nombre de la zona; no debe ser null
      */
     public void setName(String name) {
         this.name = name;
     }
 
     /**
-     * Returns the ticket price for this zone.
+     * Devuelve el precio de entrada para esta zona.
      *
-     * @return ticket price; all seats in the zone share this price
+     * @return precio de entrada; todos los asientos de la zona comparten este precio
      */
     public BigDecimal getPrice() {
         return price;
     }
     
     /**
-     * Sets the ticket price for this zone.
+     * Establece el precio de entrada para esta zona.
      *
-     * @param price ticket price; must not be null
+     * @param price precio de entrada; no debe ser null
      */
     public void setPrice(BigDecimal price) {
         if (price == null) {
@@ -133,13 +133,13 @@ public class Zone {
         this.price = price;
     }
     
-    // Utility Methods
+    // Métodos de Utilidad
     
     /**
-     * Compares zones based on primary key.
+     * Compara zonas basado en la clave primaria.
      * 
-     * @param o Object to compare
-     * @return true if same zoneId, false otherwise
+     * @param o Objeto a comparar
+     * @return true si tienen el mismo zoneId, false en caso contrario
      */
     @Override
     public boolean equals(Object o) {
@@ -154,9 +154,9 @@ public class Zone {
     }
     
     /**
-     * Hash based on primary key.
+     * Hash basado en la clave primaria.
      * 
-     * @return Hash code
+     * @return Código hash
      */
     @Override
     public int hashCode() {
@@ -164,9 +164,9 @@ public class Zone {
     }
     
     /**
-     * String representation for debugging.
+     * Representación en cadena para depuración.
      * 
-     * @return String representation
+     * @return Representación en cadena
      */
     @Override
     public String toString() {

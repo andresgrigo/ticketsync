@@ -16,18 +16,18 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Service class for zone management business logic.
+ * Clase de servicio para la lógica de negocio de gestión de zonas.
  *
- * <p>Provides create, update, delete, and query operations on the {@code zones}
- * table, delegating persistence to {@link ZoneDAO}. All methods acquire their own
- * {@link Connection} via the injected {@link ConnectionFactory} and release it via
+ * <p>Proporciona operaciones de crear, actualizar, eliminar y consultar en la tabla {@code zones},
+ * delegando la persistencia a {@link ZoneDAO}. Todos los métodos adquieren su propia
+ * {@link Connection} vía el {@link ConnectionFactory} inyectado y la liberan vía
  * try-with-resources.
  *
- * <p>All mutating operations require an active ADMIN session in {@link SessionContext}.
- * A {@link SecurityException} is thrown if the caller does not have the {@code ADMIN} role.
+ * <p>Todas las operaciones mutantes requieren una sesión ADMIN activa en {@link SessionContext}.
+ * Se lanza una {@link SecurityException} si el llamador no tiene el rol {@code ADMIN}.
  *
- * <p>All mutating operations log an audit trail entry at INFO level.
- * {@link SQLException} from DAO calls is caught, logged at ERROR level, and re-thrown.
+ * <p>Todas las operaciones mutantes registran una entrada de rastro de auditoría al nivel INFO.
+ * Las {@link SQLException} de llamadas DAO se capturan, se registran al nivel ERROR y se vuelven a lanzar.
  */
 public class ZoneService {
 
@@ -40,25 +40,25 @@ public class ZoneService {
     private final ConnectionFactory connFactory;
 
     /**
-     * Production constructor — creates a live {@link ZoneDAOImpl} instance and
-     * uses {@link DatabaseConfig#getConnection()} for connection acquisition.
+     * Constructor de producción — crea una instancia activa de {@link ZoneDAOImpl} y
+     * usa {@link DatabaseConfig#getConnection()} para la adquisición de conexiones.
      */
     public ZoneService() {
         this(new ZoneDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
-     * Package-private constructor for full unit-test injection (no DB required).
+     * Constructor de paquete para inyección completa en pruebas unitarias (sin BD requerida).
      *
-     * @param zoneDAO     the DAO stub; must not be {@code null}
-     * @param connFactory the connection provider stub; must not be {@code null}
+     * @param zoneDAO     el stub DAO; no debe ser {@code null}
+     * @param connFactory el proveedor de conexiones stub; no debe ser {@code null}
      */
     ZoneService(ZoneDAO zoneDAO, ConnectionFactory connFactory) {
         this(zoneDAO, AuditService.noop(), connFactory);
     }
 
     /**
-     * Package-private constructor with injectable audit seam.
+     * Constructor de paquete con costura de auditoría inyectable.
      */
     ZoneService(ZoneDAO zoneDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.zoneDAO = zoneDAO;
@@ -67,7 +67,7 @@ public class ZoneService {
     }
 
     // -----------------------------------------------------------------------
-    // Private helpers
+    // Ayudantes privados
     // -----------------------------------------------------------------------
 
     private void requireAdminRole() {
@@ -77,19 +77,19 @@ public class ZoneService {
     }
 
     // -----------------------------------------------------------------------
-    // Public API
+    // API Pública
     // -----------------------------------------------------------------------
 
     /**
-     * Creates a new zone for the specified event.
+     * Crea una nueva zona para el evento especificado.
      *
-     * @param eventId the event to associate the zone with; must be positive
-     * @param name    the zone name; must not be blank
-     * @param price   the ticket price; must be &gt; 0
-     * @return the generated {@code zone_id}
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if name is blank or price is not positive
-     * @throws SQLException             if a database access error occurs
+     * @param eventId el evento al que asociar la zona; debe ser positivo
+     * @param name    el nombre de la zona; no debe estar en blanco
+     * @param price   el precio del boleto; debe ser &gt; 0
+     * @return el {@code zone_id} generado
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si el nombre está en blanco o el precio no es positivo
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public int createZone(int eventId, String name, BigDecimal price) throws SQLException {
         requireAdminRole();
@@ -120,13 +120,13 @@ public class ZoneService {
     }
 
     /**
-     * Updates an existing zone's name and price.
+     * Actualiza el nombre y precio de una zona existente.
      *
-     * @param zone the zone with updated fields; {@code zoneId} must be positive,
-     *             name must not be blank, price must be &gt; 0
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if validation fails
-     * @throws SQLException             if a database access error occurs
+     * @param zone la zona con campos actualizados; {@code zoneId} debe ser positivo,
+     *             el nombre no debe estar en blanco, el precio debe ser &gt; 0
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si la validación falla
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public void updateZone(Zone zone) throws SQLException {
         requireAdminRole();
@@ -151,12 +151,12 @@ public class ZoneService {
     }
 
     /**
-     * Deletes a zone and (via ON DELETE CASCADE) all its associated seats.
+     * Elimina una zona y (vía ON DELETE CASCADE) todos sus asientos asociados.
      *
-     * @param zoneId the ID of the zone to delete; must be positive
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if {@code zoneId} is not positive
-     * @throws SQLException             if a database access error occurs
+     * @param zoneId el ID de la zona a eliminar; debe ser positivo
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si {@code zoneId} no es positivo
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public void deleteZone(int zoneId) throws SQLException {
         requireAdminRole();
@@ -177,11 +177,11 @@ public class ZoneService {
     }
 
     /**
-     * Returns all zones for the specified event ordered by {@code zone_id ASC}.
+     * Devuelve todas las zonas para el evento especificado ordenadas por {@code zone_id ASC}.
      *
-     * @param eventId the event to retrieve zones for
-     * @return list of zones; never {@code null}, may be empty
-     * @throws SQLException if a database access error occurs
+     * @param eventId el evento del que recuperar zonas
+     * @return lista de zonas; nunca {@code null}, puede estar vacía
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     public List<Zone> getZonesByEvent(int eventId) throws SQLException {
         try (Connection conn = connFactory.get()) {
@@ -193,15 +193,15 @@ public class ZoneService {
     }
 
     /**
-     * Returns the number of seats belonging to the specified zone.
+     * Devuelve el número de asientos pertenecientes a la zona especificada.
      *
-     * <p>Executes {@code SELECT COUNT(*) FROM seats WHERE zone_id = ?} inline to
-     * avoid adding methods to {@link com.ticketsync.dao.SeatDAO} that would break
-     * existing test mocks.
+     * <p>Ejecuta {@code SELECT COUNT(*) FROM seats WHERE zone_id = ?} inline para
+     * evitar agregar métodos a {@link com.ticketsync.dao.SeatDAO} que romperían
+     * los mocks de pruebas existentes.
      *
-     * @param zoneId the zone to count seats for
-     * @return the seat count; 0 if no seats exist
-     * @throws SQLException if a database access error occurs
+     * @param zoneId el ID de la zona para contar asientos
+     * @return el conteo de asientos; 0 si no existen asientos
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     public int countSeatsForZone(int zoneId) throws SQLException {
         try (Connection conn = connFactory.get();

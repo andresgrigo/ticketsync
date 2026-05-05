@@ -60,15 +60,15 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * FXML controller for the seating and zone management tab within the Admin Dashboard.
+ * Controlador FXML para la pestaña de gestión de asientos y zonas del Panel de Administración.
  *
- * <p>Provides a combined interface to create, edit, and delete zones for an event
- * and to generate, delete, and toggle the status of individual seats within each zone.
- * Also renders a mini seat-map canvas showing current seat availability.
+ * <p>Proporciona una interfaz combinada para crear, editar y eliminar zonas para un evento
+ * y para generar, eliminar y alternar el estado de los asientos individuales dentro de cada zona.
+ * También renderiza un mini lienzo de mapa de asientos que muestra la disponibilidad actual de asientos.
  */
 public class SeatingTabController {
 
-    /** Creates a new {@code SeatingTabController} instance (invoked by FXMLLoader via reflection). */
+    /** Crea una nueva instancia de {@code SeatingTabController} (invocada por FXMLLoader mediante reflexión). */
     public SeatingTabController() {
     }
 
@@ -94,7 +94,7 @@ public class SeatingTabController {
 
     private record SeatCell(Seat seat, double x, double y) {}
 
-    // ── FXML fields: zones ────────────────────────────────────────────────────
+    // ── Campos FXML: zonas ────────────────────────────────────────────────────
 
     @FXML private ComboBox<Event> zonesEventSelector;
     @FXML private Button zonesAddButton;
@@ -106,7 +106,7 @@ public class SeatingTabController {
     @FXML private TableColumn<Zone, String> zonesPriceColumn;
     @FXML private TableColumn<Zone, String> zonesSeatCountColumn;
 
-    // ── FXML fields: seats ────────────────────────────────────────────────────
+    // ── Campos FXML: asientos ────────────────────────────────────────────────
 
     @FXML private ComboBox<Zone> seatsZoneSelector;
     @FXML private TextField seatsRowField;
@@ -125,18 +125,18 @@ public class SeatingTabController {
     @FXML private ScrollPane seatMapScrollPane;
     @FXML private Label seatMapHoverLabel;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     /**
-     * Initialises the controller after FXML injection.
+     * Inicializa el controlador después de la inyección FXML.
      *
-     * <p>Configures zone and seat table columns, binds observable lists,
-     * sets up the seat-map canvas listeners, and wires button states
-     * to table selections and zone selectors.
+     * <p>Configura las columnas de las tablas de zonas y asientos, enlaza las listas observables,
+     * configura los listeners del lienzo del mapa de asientos y conecta los estados de los botones
+     * a las selecciones de tabla y selectores de zona.
      */
     @FXML
     public void initialize() {
-        // Zone table setup
+        // Configuración de la tabla de zonas
         zonesViewModel = new ZoneManagementViewModel();
         zonesTable.setItems(zonesViewModel.zonesProperty());
 
@@ -158,7 +158,7 @@ public class SeatingTabController {
         zonesDeleteButton.disableProperty().bind(
                 zonesTable.getSelectionModel().selectedItemProperty().isNull());
 
-        // Zone event selector cell factories
+        // Fábricas de celdas del selector de eventos de zona
         zonesEventSelector.setCellFactory(lv -> new ListCell<>() {
             @Override protected void updateItem(Event item, boolean empty) {
                 super.updateItem(item, empty);
@@ -184,7 +184,7 @@ public class SeatingTabController {
                     }
                 });
 
-        // Seat table setup
+        // Configuración de la tabla de asientos
         seatsViewModel = new SeatManagementViewModel();
         seatsTable.setItems(seatsViewModel.seatsProperty());
         seatsTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -273,7 +273,7 @@ public class SeatingTabController {
                     }
                 });
 
-        // sync zone TableView selection → seatsZoneSelector
+        // sincronizar selección de TableView de zonas → seatsZoneSelector
         zonesTable.getSelectionModel().selectedItemProperty()
                 .addListener((obs, oldVal, newZone) -> {
                     if (newZone != null) {
@@ -294,9 +294,9 @@ public class SeatingTabController {
     }
 
     /**
-     * Called by the shell controller once the admin identity is known.
+     * Llamado por el controlador shell una vez que la identidad del administrador es conocida.
      *
-     * @param admin the authenticated administrator user; must not be {@code null}
+     * @param admin el usuario administrador autenticado; no debe ser {@code null}
      */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;
@@ -304,21 +304,21 @@ public class SeatingTabController {
     }
 
     /**
-     * Provides a lambda the controller uses to guard canvas renders to the
-     * seating tab's active state, preventing Prism RTTexture NPEs.
+     * Proporciona una lambda que el controlador usa para proteger los renders del lienzo al
+     * estado activo de la pestaña de asientos, evitando NPEs de Prism RTTexture.
      *
-     * @param isActive supplier that returns {@code true} when the seating tab is currently active
+     * @param isActive proveedor que retorna {@code true} cuando la pestaña de asientos está actualmente activa
      */
     public void setTabActiveCheck(Supplier<Boolean> isActive) {
         this.isTabActive = isActive;
     }
 
-    /** Called by the shell when the seating tab is selected. */
+    /** Llamado por el shell cuando la pestaña de asientos está seleccionada. */
     public void onTabActivated() {
         Platform.runLater(this::renderSeatMap);
     }
 
-    // ── Zone loading ──────────────────────────────────────────────────────────
+    // ── Carga de zonas ──────────────────────────────────────────────────────────
 
     private void loadZonesEventSelectorAsync() {
         User capturedAdmin = currentAdminUser;
@@ -386,7 +386,7 @@ public class SeatingTabController {
         t.start();
     }
 
-    // ── Zone CRUD handlers ────────────────────────────────────────────────────
+    // ── Manejadores CRUD de zonas ─────────────────────────────────────────────
 
     @FXML
     private void handleAddZone() {
@@ -518,7 +518,7 @@ public class SeatingTabController {
         }
     }
 
-    // ── Seat loading ──────────────────────────────────────────────────────────
+    // ── Carga de asientos ─────────────────────────────────────────────────────────
 
     private void loadSeatsAsync(int zoneId) {
         Task<List<Seat>> task = new Task<>() {
@@ -552,7 +552,7 @@ public class SeatingTabController {
         t.start();
     }
 
-    // ── Seat CRUD handlers ────────────────────────────────────────────────────
+    // ── Manejadores CRUD de asientos ──────────────────────────────────────────
 
     @FXML
     private void handleGenerateSeats() {
@@ -795,7 +795,7 @@ public class SeatingTabController {
         }
     }
 
-    // ── Canvas rendering ──────────────────────────────────────────────────────
+    // ── Renderizado del lienzo ────────────────────────────────────────────────
 
     private void renderSeatMap() {
         if (!isTabActive.get()) return;
@@ -927,7 +927,7 @@ public class SeatingTabController {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Ayudantes ───────────────────────────────────────────────────────────────
 
     private FXMLLoader createZoneFormLoader() {
         try {

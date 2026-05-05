@@ -31,11 +31,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Admin tab controller for the user management section of the Admin Dashboard.
+ * Controlador de pestaña de administrador para la sección de gestión de usuarios del Panel de Administración.
  *
- * <p>Displays the full user list in a {@link javafx.scene.control.TableView}, and
- * wires the create, edit, and delete toolbar actions to {@link UserManagementService}
- * operations via {@link UserManagementViewModel}.
+ * <p>Muestra la lista completa de usuarios en un {@link javafx.scene.control.TableView}, y
+ * conecta las acciones de la barra de herramientas de creación, edición y eliminación a las operaciones
+ * de {@link UserManagementService} mediante {@link UserManagementViewModel}.
  */
 public class UsersTabController {
 
@@ -55,12 +55,12 @@ public class UsersTabController {
     @FXML private Button deleteUserButton;
     @FXML private Label statusLabel;
 
-    /** Creates a new UsersTabController; instantiated by FXMLLoader. */
+    /** Crea un nuevo UsersTabController; instanciado por FXMLLoader. */
     public UsersTabController() { }
 
     /**
-     * FXML lifecycle method; configures table columns and binds them to the view model.
-     * Invoked by FXMLLoader after all {@code @FXML} fields are injected.
+     * Método del ciclo de vida FXML; configura las columnas de la tabla y las enlaza al view model.
+     * Invocado por FXMLLoader después de que todos los campos {@code @FXML} son inyectados.
      */
     @FXML
     public void initialize() {
@@ -81,10 +81,10 @@ public class UsersTabController {
     }
 
     /**
-     * Sets the authenticated admin user and loads the initial user list.
-     * Called by the parent shell controller once the admin identity is known.
+     * Establece el usuario administrador autenticado y carga la lista inicial de usuarios.
+     * Llamado por el controlador shell padre una vez que la identidad del administrador es conocida.
      *
-     * @param admin the currently authenticated admin user; must have ADMIN role
+     * @param admin el usuario administrador actualmente autenticado; debe tener el rol ADMIN
      */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;
@@ -240,7 +240,7 @@ public class UsersTabController {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Ayudantes ───────────────────────────────────────────────────────────────
 
     private FXMLLoader createUserFormLoader() {
         try {

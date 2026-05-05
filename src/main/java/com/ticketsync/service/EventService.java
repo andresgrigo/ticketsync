@@ -15,10 +15,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Provides a {@link Connection} for each service operation.
+ * Proporciona una {@link Connection} para cada operación de servicio.
  *
- * <p>The production implementation delegates to {@link DatabaseConfig#getConnection()}.
- * Tests supply a no-op substitute so that unit tests run without a live database.
+ * <p>La implementación de producción delega a {@link DatabaseConfig#getConnection()}.
+ * Las pruebas suministran un sustituto sin efecto para que las pruebas unitarias se ejecuten
+ * sin una base de datos activa.
  */
 @FunctionalInterface
 interface ConnectionFactory {
@@ -26,20 +27,20 @@ interface ConnectionFactory {
 }
 
 /**
- * Service class for event management business logic.
+ * Clase de servicio para la lógica de negocio de gestión de eventos.
  *
- * <p>Provides create, update, delete, activate/deactivate, and query operations
- * on the {@code events} table, delegating persistence to {@link EventDAO}. All
- * methods acquire their own {@link Connection} via
- * {@link DatabaseConfig#getConnection()} and release it via try-with-resources.
+ * <p>Proporciona operaciones de crear, actualizar, eliminar, activar/desactivar y consultar
+ * en la tabla {@code events}, delegando la persistencia a {@link EventDAO}. Todos los
+ * métodos adquieren su propia {@link Connection} vía
+ * {@link DatabaseConfig#getConnection()} y la liberan vía try-with-resources.
  *
- * <p>All mutating operations require an active ADMIN session in
- * {@link SessionContext}. A {@link SecurityException} is thrown if the caller
- * does not have the {@code ADMIN} role.
+ * <p>Todas las operaciones mutantes requieren una sesión ADMIN activa en
+ * {@link SessionContext}. Se lanza una {@link SecurityException} si el llamador
+ * no tiene el rol {@code ADMIN}.
  *
- * <p>All mutating operations log an audit trail entry at INFO level.
- * {@link SQLException} from DAO calls is caught, logged at ERROR level
- * and re-thrown.
+ * <p>Todas las operaciones mutantes registran una entrada de rastro de auditoría al nivel INFO.
+ * Las {@link SQLException} de llamadas DAO se capturan, se registran al nivel ERROR
+ * y se vuelven a lanzar.
  */
 public class EventService {
 
@@ -50,41 +51,41 @@ public class EventService {
     private final ConnectionFactory connFactory;
 
     /**
-     * Production constructor — creates a live {@link EventDAOImpl} instance and
-     * uses {@link DatabaseConfig#getConnection()} for connection acquisition.
+     * Constructor de producción — crea una instancia activa de {@link EventDAOImpl} y
+     * usa {@link DatabaseConfig#getConnection()} para la adquisición de conexiones.
      */
     public EventService() {
         this(new EventDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
-     * Package-private constructor for test injection.
+     * Constructor de paquete para inyección en pruebas.
      *
-     * <p>Accepts a custom {@link EventDAO} and falls back to the live
-     * {@link DatabaseConfig#getConnection()} for connection acquisition.
-     * Use the three-argument form when a no-op connection is also required.
+     * <p>Acepta un {@link EventDAO} personalizado y recurre a
+     * {@link DatabaseConfig#getConnection()} activo para la adquisición de conexiones.
+     * Usa la forma de tres argumentos cuando también se requiere una conexión sin efecto.
      *
-     * @param eventDAO the DAO implementation to use; must not be {@code null}
+     * @param eventDAO la implementación DAO a usar; no debe ser {@code null}
      */
     EventService(EventDAO eventDAO) {
         this(eventDAO, AuditService.noop(), DatabaseConfig::getConnection);
     }
 
     /**
-     * Package-private constructor for full unit-test injection (no DB required).
+     * Constructor de paquete para inyección completa en pruebas unitarias (sin BD requerida).
      *
-     * <p>Allows pure unit tests to inject both a stub {@link EventDAO} and a
-     * no-op {@link ConnectionFactory} so that tests never touch the database.
+     * <p>Permite a las pruebas unitarias puras inyectar tanto un {@link EventDAO} stub como una
+     * {@link ConnectionFactory} sin efecto para que las pruebas nunca toquen la base de datos.
      *
-     * @param eventDAO    the DAO stub; must not be {@code null}
-     * @param connFactory the connection provider stub; must not be {@code null}
+     * @param eventDAO    el stub DAO; no debe ser {@code null}
+     * @param connFactory el proveedor de conexiones stub; no debe ser {@code null}
      */
     EventService(EventDAO eventDAO, ConnectionFactory connFactory) {
         this(eventDAO, AuditService.noop(), connFactory);
     }
 
     /**
-     * Package-private constructor with injectable audit seam.
+     * Constructor de paquete con costura de auditoría inyectable.
      */
     EventService(EventDAO eventDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.eventDAO = eventDAO;
@@ -93,14 +94,14 @@ public class EventService {
     }
 
     // -----------------------------------------------------------------------
-    // Private helpers
+    // Ayudantes privados
     // -----------------------------------------------------------------------
 
     /**
-     * Verifies that the current session belongs to a user with the ADMIN role.
+     * Verifica que la sesión actual pertenece a un usuario con el rol ADMIN.
      *
-     * @throws SecurityException if no user is authenticated or the authenticated
-     *                           user does not hold the ADMIN role
+     * @throws SecurityException si ningún usuario está autenticado o el usuario autenticado
+     *                           no tiene el rol ADMIN
      */
     private void requireAdminRole() {
         if (!SessionContext.hasRole("ADMIN")) {
@@ -109,9 +110,9 @@ public class EventService {
     }
 
     /**
-     * Verifies that a user is currently authenticated (any role).
+     * Verifica que un usuario esté actualmente autenticado (cualquier rol).
      *
-     * @throws SecurityException if no user is authenticated
+     * @throws SecurityException si ningún usuario está autenticado
      */
     private void requireAuthenticated() {
         if (SessionContext.getCurrentUser().isEmpty()) {
@@ -120,11 +121,11 @@ public class EventService {
     }
 
     /**
-     * Validates that the required event fields are present and logically correct.
+     * Valida que los campos requeridos del evento estén presentes y sean lógicamente correctos.
      *
-     * @param event the event to validate; must not be {@code null}
-     * @throws IllegalArgumentException if any required field is null, blank, or
-     *                                  the event date is not in the future
+     * @param event el evento a validar; no debe ser {@code null}
+     * @throws IllegalArgumentException si algún campo requerido es null, está en blanco o
+     *                                  la fecha del evento no está en el futuro
      */
     private void validateEventFields(Event event) {
         if (event.getName() == null || event.getName().isBlank()) {
@@ -139,20 +140,20 @@ public class EventService {
     }
 
     // -----------------------------------------------------------------------
-    // Public API
+    // API Pública
     // -----------------------------------------------------------------------
 
     /**
-     * Creates a new event in the database.
+     * Crea un nuevo evento en la base de datos.
      *
-     * <p>Requires an active ADMIN session. The {@code createdBy} field of the
-     * supplied event is set to the current user's ID before the insert.
+     * <p>Requiere una sesión ADMIN activa. El campo {@code createdBy} del
+     * evento suministrado se establece al ID del usuario actual antes del insert.
      *
-     * @param event the event to create; required fields: name, eventDate (future), venue
-     * @return the generated {@code event_id}
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if any required field is invalid
-     * @throws SQLException             if a database access error occurs
+     * @param event el evento a crear; campos requeridos: name, eventDate (futuro), venue
+     * @return el {@code event_id} generado
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si algún campo requerido es inválido
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public int createEvent(Event event) throws SQLException {
         requireAdminRole();
@@ -172,16 +173,16 @@ public class EventService {
     }
 
     /**
-     * Updates an existing event in the database.
+     * Actualiza un evento existente en la base de datos.
      *
-     * <p>Requires an active ADMIN session and a valid (positive) event ID.
-     * Throws {@link IllegalArgumentException} if the event does not exist.
+     * <p>Requiere una sesión ADMIN activa y un ID de evento válido (positivo).
+     * Lanza {@link IllegalArgumentException} si el evento no existe.
      *
-     * @param event the event to update; {@code eventId} must be positive
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if {@code eventId} is not positive, or
-     *                                  the event does not exist in the database
-     * @throws SQLException             if a database access error occurs
+     * @param event el evento a actualizar; {@code eventId} debe ser positivo
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si {@code eventId} no es positivo, o
+     *                                  el evento no existe en la base de datos
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public void updateEvent(Event event) throws SQLException {
         requireAdminRole();
@@ -204,14 +205,14 @@ public class EventService {
     }
 
     /**
-     * Deletes an event from the database.
+     * Elimina un evento de la base de datos.
      *
-     * <p>Requires an active ADMIN session and a valid (positive) event ID.
+     * <p>Requiere una sesión ADMIN activa y un ID de evento válido (positivo).
      *
-     * @param eventId the ID of the event to delete; must be positive
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if {@code eventId} is not positive
-     * @throws SQLException             if a database access error occurs
+     * @param eventId el ID del evento a eliminar; debe ser positivo
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si {@code eventId} no es positivo
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public void deleteEvent(int eventId) throws SQLException {
         requireAdminRole();
@@ -232,15 +233,15 @@ public class EventService {
     }
 
     /**
-     * Activates an event so it appears in the vendor POS event selector.
+     * Activa un evento para que aparezca en el selector de eventos del POS para vendedores.
      *
-     * <p>Loads the full event from the database, sets {@code isActive = true},
-     * and persists the change via {@link EventDAO#update(Connection, Event)}.
+     * <p>Carga el evento completo desde la base de datos, establece {@code isActive = true},
+     * y persiste el cambio vía {@link EventDAO#update(Connection, Event)}.
      *
-     * @param eventId the ID of the event to activate; must be positive
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if the event does not exist
-     * @throws SQLException             if a database access error occurs
+     * @param eventId el ID del evento a activar; debe ser positivo
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si el evento no existe
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public void activateEvent(int eventId) throws SQLException {
         requireAdminRole();
@@ -262,15 +263,15 @@ public class EventService {
     }
 
     /**
-     * Deactivates an event so it no longer appears in the vendor POS event selector.
+     * Desactiva un evento para que no aparezca en el selector de eventos del POS para vendedores.
      *
-     * <p>Loads the full event from the database, sets {@code isActive = false},
-     * and persists the change via {@link EventDAO#update(Connection, Event)}.
+     * <p>Carga el evento completo desde la base de datos, establece {@code isActive = false},
+     * y persiste el cambio vía {@link EventDAO#update(Connection, Event)}.
      *
-     * @param eventId the ID of the event to deactivate; must be positive
-     * @throws SecurityException        if the current user does not have the ADMIN role
-     * @throws IllegalArgumentException if the event does not exist
-     * @throws SQLException             if a database access error occurs
+     * @param eventId el ID del evento a desactivar; debe ser positivo
+     * @throws SecurityException        si el usuario actual no tiene el rol ADMIN
+     * @throws IllegalArgumentException si el evento no existe
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public void deactivateEvent(int eventId) throws SQLException {
         requireAdminRole();
@@ -292,13 +293,14 @@ public class EventService {
     }
 
     /**
-     * Returns all active events.
+    /**
+     * Devuelve todos los eventos activos.
      *
-     * <p>Requires an authenticated session (any role — vendors need this for the POS event selector).
+     * <p>Requiere una sesión autenticada (cualquier rol — los vendedores necesitan esto para el selector de eventos POS).
      *
-     * @return list of active events; never {@code null}, may be empty
-     * @throws SecurityException if no user is authenticated
-     * @throws SQLException if a database access error occurs
+     * @return lista de eventos activos; nunca {@code null}, puede estar vacía
+     * @throws SecurityException si ningún usuario está autenticado
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     public List<Event> getActiveEvents() throws SQLException {
         requireAuthenticated();
@@ -312,13 +314,13 @@ public class EventService {
     }
 
     /**
-     * Returns all events ordered by {@code event_date DESC}.
+     * Devuelve todos los eventos ordenados por {@code event_date DESC}.
      *
-     * <p>Requires an active ADMIN session.
+     * <p>Requiere una sesión ADMIN activa.
      *
-     * @return list of all events; never {@code null}, may be empty
-     * @throws SecurityException if the current user does not have the ADMIN role
-     * @throws SQLException      if a database access error occurs
+     * @return lista de todos los eventos; nunca {@code null}, puede estar vacía
+     * @throws SecurityException si el usuario actual no tiene el rol ADMIN
+     * @throws SQLException      si ocurre un error de acceso a la base de datos
      */
     public List<Event> findAllEvents() throws SQLException {
         requireAdminRole();

@@ -4,58 +4,58 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Represents a ticketed event with date, venue, and activation status.
- * Maps to the 'events' database table.
+ * Representa un evento con boletos que incluye fecha, lugar y estado de activación.
+ * Mapea a la tabla de base de datos 'events'.
  * 
- * <h2>Event Lifecycle</h2>
- * Events are created by administrators with {@code isActive = true} to appear in vendor POS.
- * Deactivating an event ({@code isActive = false}) hides it from vendor event selector
- * but preserves historical sales data.
+ * <h2>Ciclo de Vida del Evento</h2>
+ * Los eventos son creados por administradores con {@code isActive = true} para aparecer en el POS del proveedor.
+ * Desactivar un evento ({@code isActive = false}) lo oculta del selector de eventos del proveedor
+ * pero preserva los datos históricos de ventas.
  * 
  * @see com.ticketsync.dao.EventDAO
  */
 public class Event {
-    /** Primary key from events.event_id column. */
+    /** Clave primaria de la columna events.event_id. */
     private int eventId;
     
-    /** Event name (e.g., "Spring Concert 2024"). */
+    /** Nombre del evento (ej., "Concierto de Primavera 2024"). */
     private String name;
     
-    /** Date and time when event occurs. */
+    /** Fecha y hora en que ocurre el evento. */
     private LocalDateTime eventDate;
     
-    /** Venue name and location. */
+    /** Nombre y ubicación del lugar del evento. */
     private String venue;
     
-    /** Detailed event description. */
+    /** Descripción detallada del evento. */
     private String description;
     
-    /** Whether event appears in vendor POS event selector. */
+    /** Si el evento aparece en el selector de eventos del POS del proveedor. */
     private boolean isActive;
     
-    /** User ID of administrator who created this event. */
+    /** ID de usuario del administrador que creó este evento. */
     private int createdBy;
     
-    /** Timestamp when event was created in system. */
+    /** Marca de tiempo de cuando el evento fue creado en el sistema. */
     private LocalDateTime createdAt;
     
     /**
-     * Default constructor for JDBC mapping.
+     * Constructor por defecto para mapeo JDBC.
      */
     public Event() {
     }
     
     /**
-     * Constructs an Event with all fields.
+     * Construye un Event con todos los campos.
      * 
-     * @param eventId Primary key
-     * @param name Event name
-     * @param eventDate Event date and time
-     * @param venue Venue name
-     * @param description Event description
-     * @param isActive Whether event is active
-     * @param createdBy User ID who created event
-     * @param createdAt Creation timestamp
+     * @param eventId Clave primaria
+     * @param name Nombre del evento
+     * @param eventDate Fecha y hora del evento
+     * @param venue Nombre del lugar
+     * @param description Descripción del evento
+     * @param isActive Si el evento está activo
+     * @param createdBy ID de usuario que creó el evento
+     * @param createdAt Marca de tiempo de creación
      */
     public Event(int eventId, String name, LocalDateTime eventDate, String venue,
             String description, boolean isActive, int createdBy, LocalDateTime createdAt) {
@@ -69,159 +69,159 @@ public class Event {
         this.createdAt = createdAt;
     }
     
-    // Getters and Setters
+    // Getters y Setters
 
     /**
-     * Returns the event ID.
+     * Devuelve el ID del evento.
      *
-     * @return the event ID
+     * @return el ID del evento
      */
     public int getEventId() {
         return eventId;
     }
 
     /**
-     * Sets the event ID.
+     * Establece el ID del evento.
      *
-     * @param eventId the event ID
+     * @param eventId el ID del evento
      */
     public void setEventId(int eventId) {
         this.eventId = eventId;
     }
 
     /**
-     * Returns the event name.
+     * Devuelve el nombre del evento.
      *
-     * @return the event name
+     * @return el nombre del evento
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Sets the event name.
+     * Establece el nombre del evento.
      *
-     * @param name the event name
+     * @param name el nombre del evento
      */
     public void setName(String name) {
         this.name = name;
     }
 
     /**
-     * Returns the event date and time.
+     * Devuelve la fecha y hora del evento.
      *
-     * @return the event date and time; may be {@code null}
+     * @return la fecha y hora del evento; puede ser {@code null}
      */
     public LocalDateTime getEventDate() {
         return eventDate;
     }
 
     /**
-     * Sets the event date and time.
+     * Establece la fecha y hora del evento.
      *
-     * @param eventDate the event date and time
+     * @param eventDate la fecha y hora del evento
      */
     public void setEventDate(LocalDateTime eventDate) {
         this.eventDate = eventDate;
     }
 
     /**
-     * Returns the venue name.
+     * Devuelve el nombre del lugar del evento.
      *
-     * @return the venue name; may be {@code null}
+     * @return el nombre del lugar; puede ser {@code null}
      */
     public String getVenue() {
         return venue;
     }
 
     /**
-     * Sets the venue name.
+     * Establece el nombre del lugar del evento.
      *
-     * @param venue the venue name
+     * @param venue el nombre del lugar
      */
     public void setVenue(String venue) {
         this.venue = venue;
     }
 
     /**
-     * Returns the event description.
+     * Devuelve la descripción del evento.
      *
-     * @return the event description; may be {@code null}
+     * @return la descripción del evento; puede ser {@code null}
      */
     public String getDescription() {
         return description;
     }
 
     /**
-     * Sets the event description.
+     * Establece la descripción del evento.
      *
-     * @param description the event description
+     * @param description la descripción del evento
      */
     public void setDescription(String description) {
         this.description = description;
     }
 
     /**
-     * Returns whether the event is active.
+     * Devuelve si el evento está activo.
      *
-     * @return {@code true} if active, {@code false} otherwise
+     * @return {@code true} si está activo, {@code false} en caso contrario
      */
     public boolean isActive() {
         return isActive;
     }
 
     /**
-     * Sets the active state of the event.
+     * Establece el estado activo del evento.
      *
-     * @param isActive {@code true} to activate the event, {@code false} to deactivate
+     * @param isActive {@code true} para activar el evento, {@code false} para desactivarlo
      */
     public void setActive(boolean isActive) {
         this.isActive = isActive;
     }
 
     /**
-     * Returns the ID of the user who created the event.
+     * Devuelve el ID del usuario que creó el evento.
      *
-     * @return the creator user ID
+     * @return el ID del usuario creador
      */
     public int getCreatedBy() {
         return createdBy;
     }
 
     /**
-     * Sets the ID of the user who created the event.
+     * Establece el ID del usuario que creó el evento.
      *
-     * @param createdBy the creator user ID
+     * @param createdBy el ID del usuario creador
      */
     public void setCreatedBy(int createdBy) {
         this.createdBy = createdBy;
     }
 
     /**
-     * Returns the timestamp when the event was created.
+     * Devuelve la marca de tiempo de cuando fue creado el evento.
      *
-     * @return the creation timestamp; may be {@code null}
+     * @return la marca de tiempo de creación; puede ser {@code null}
      */
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     /**
-     * Sets the creation timestamp.
+     * Establece la marca de tiempo de creación.
      *
-     * @param createdAt the creation timestamp
+     * @param createdAt la marca de tiempo de creación
      */
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
     
-    // Utility Methods
+    // Métodos de Utilidad
     
     /**
-     * Compares events based on primary key.
+     * Compara eventos basado en la clave primaria.
      * 
-     * @param o Object to compare
-     * @return true if same eventId, false otherwise
+     * @param o Objeto a comparar
+     * @return true si tienen el mismo eventId, false en caso contrario
      */
     @Override
     public boolean equals(Object o) {
@@ -236,9 +236,9 @@ public class Event {
     }
     
     /**
-     * Hash based on primary key.
+     * Hash basado en la clave primaria.
      * 
-     * @return Hash code
+     * @return Código hash
      */
     @Override
     public int hashCode() {
@@ -246,9 +246,9 @@ public class Event {
     }
     
     /**
-     * String representation for debugging.
+     * Representación en cadena para depuración.
      * 
-     * @return String representation
+     * @return Representación en cadena
      */
     @Override
     public String toString() {

@@ -61,9 +61,9 @@ final class PosScreenCoordinator {
             }
         }
 
-        // Intentionally do not update PosViewModel here; UI-thread updates
-        // must be performed by the controller/view-model owner to respect
-        // JavaFX threading rules and avoid stale reads.
+        // No actualizar PosViewModel aquí intencionalmente; las actualizaciones del hilo de UI
+        // deben ser realizadas por el propietario del controlador/view-model para respetar
+        // las reglas de hilos de JavaFX y evitar lecturas obsoletas.
 
         return List.copyOf(refreshedSeats);
     }

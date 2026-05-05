@@ -9,20 +9,20 @@ import javafx.collections.ObservableList;
 import java.util.List;
 
 /**
- * Presentation-layer state for the seat layout editor within the Admin
- * Dashboard Seating tab.
+ * Estado de la capa de presentación para el editor de distribución de asientos
+ * de la pestaña Asientos del Panel de Administración.
  *
- * <p>Holds an {@link ObservableList} of {@link Seat} objects that the
- * {@code AdminDashboardController} binds to its seats {@code TableView}.
- * Changes to the list are automatically reflected in the UI through
- * JavaFX property bindings.
+ * <p>Mantiene una {@link ObservableList} de objetos {@link Seat} que el
+ * {@code AdminDashboardController} enlaza a su {@code TableView} de asientos.
+ * Los cambios en la lista se reflejan automáticamente en la UI mediante
+ * los enlaces de propiedades de JavaFX.
  *
- * <p>This class has no reference to JavaFX UI controls and can therefore
- * be tested without initialising the JavaFX toolkit.
+ * <p>Esta clase no tiene referencia a controles de la UI de JavaFX y por tanto
+ * puede ser probada sin inicializar el toolkit de JavaFX.
  */
 public class SeatManagementViewModel {
 
-    /** Creates a new {@code SeatManagementViewModel} with an empty seat list. */
+    /** Crea un nuevo {@code SeatManagementViewModel} con una lista de asientos vacía. */
     public SeatManagementViewModel() {
     }
 
@@ -30,27 +30,27 @@ public class SeatManagementViewModel {
     private final BooleanProperty loading = new SimpleBooleanProperty(false);
 
     /**
-     * Returns the observable list of seats displayed in the table.
+     * Retorna la lista observable de asientos mostrados en la tabla.
      *
-     * @return the observable seats list; never {@code null}
+     * @return la lista observable de asientos; nunca {@code null}
      */
     public ObservableList<Seat> seatsProperty() {
         return seats;
     }
 
     /**
-     * Returns the loading flag property.
+     * Retorna la propiedad indicadora de carga.
      *
-     * @return the loading property
+     * @return la propiedad loading
      */
     public BooleanProperty loadingProperty() {
         return loading;
     }
 
     /**
-     * Replaces the contents of the seats list with the supplied list.
+     * Reemplaza el contenido de la lista de asientos con la lista proporcionada.
      *
-     * @param newSeats the new list of seats; may be {@code null} (treated as empty)
+     * @param newSeats la nueva lista de asientos; puede ser {@code null} (tratado como vacío)
      */
     public void setSeats(List<Seat> newSeats) {
         seats.clear();

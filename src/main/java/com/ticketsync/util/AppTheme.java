@@ -9,11 +9,11 @@ import java.net.URL;
 import java.util.Objects;
 
 /**
- * Utility class for applying the shared TicketSync application stylesheet to JavaFX nodes.
+ * Clase de utilidad para aplicar la hoja de estilos compartida de la aplicación TicketSync a nodos JavaFX.
  *
- * <p>All public {@code apply} overloads add the application CSS to the target stylesheet
- * list if it is not already present, enabling consistent styling across scenes, dialogs,
- * and loose parent nodes.
+ * <p>Todas las sobrecargas públicas de {@code apply} agregan el CSS de la aplicación a la lista
+ * de hojas de estilos del destino si aún no está presente, habilitando un estilo consistente
+ * en escenas, diálogos y nodos padre independientes.
  *
 
  * @since 1.0
@@ -26,10 +26,10 @@ public final class AppTheme {
     }
 
     /**
-     * Returns the external URL string of the shared application CSS resource.
+     * Devuelve la cadena URL externa del recurso CSS compartido de la aplicación.
      *
-     * @return external-form URL of {@code /com/ticketsync/application.css}
-     * @throws IllegalStateException if the CSS resource cannot be found on the classpath
+     * @return URL en forma externa de {@code /com/ticketsync/application.css}
+     * @throws IllegalStateException si el recurso CSS no se puede encontrar en el classpath
      */
     public static String stylesheetUrl() {
         URL resource = AppTheme.class.getResource(STYLESHEET_RESOURCE);
@@ -40,10 +40,10 @@ public final class AppTheme {
     }
 
     /**
-     * Applies the shared application stylesheet to a {@link javafx.scene.Scene}.
+     * Aplica la hoja de estilos compartida a una {@link javafx.scene.Scene}.
      *
-     * @param scene the target scene; must not be null
-     * @throws NullPointerException if {@code scene} is null
+     * @param scene la escena destino; no debe ser null
+     * @throws NullPointerException si {@code scene} es null
      */
     public static void apply(Scene scene) {
         Objects.requireNonNull(scene, "scene must not be null");
@@ -51,10 +51,10 @@ public final class AppTheme {
     }
 
     /**
-     * Applies the shared application stylesheet to a {@link Parent} node.
+     * Aplica la hoja de estilos compartida a un nodo {@link Parent}.
      *
-     * @param parent the target parent node; must not be null
-     * @throws NullPointerException if {@code parent} is null
+     * @param parent el nodo padre destino; no debe ser null
+     * @throws NullPointerException si {@code parent} es null
      */
     public static void apply(Parent parent) {
         Objects.requireNonNull(parent, "parent must not be null");
@@ -62,10 +62,10 @@ public final class AppTheme {
     }
 
     /**
-     * Applies the shared application stylesheet to a {@link DialogPane}.
+     * Aplica la hoja de estilos compartida a un {@link DialogPane}.
      *
-     * @param dialogPane the target dialog pane; must not be null
-     * @throws NullPointerException if {@code dialogPane} is null
+     * @param dialogPane el panel de diálogo destino; no debe ser null
+     * @throws NullPointerException si {@code dialogPane} es null
      */
     public static void apply(DialogPane dialogPane) {
         Objects.requireNonNull(dialogPane, "dialogPane must not be null");

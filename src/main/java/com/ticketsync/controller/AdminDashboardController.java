@@ -15,8 +15,8 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * Shell controller for AdminDashboardView.fxml.
- * Enforces RBAC, bootstraps sub-controllers, wires the tab-change listener.
+ * Controlador shell para AdminDashboardView.fxml.
+ * Aplica RBAC, inicializa los sub-controladores y conecta el listener de cambio de pestaña.
  */
 public class AdminDashboardController {
 
@@ -34,12 +34,12 @@ public class AdminDashboardController {
     @FXML private LayoutViewTabController layoutViewTabContentController;
     @FXML private AuditLogTabController auditLogTabContentController;
 
-    /** Creates a new AdminDashboardController; instantiated by FXMLLoader. */
+    /** Crea un nuevo AdminDashboardController; instanciado por FXMLLoader. */
     public AdminDashboardController() { }
 
     /**
-     * FXML lifecycle method — invoked by FXMLLoader after all @FXML fields are injected.
-     * Validates the current session has ADMIN role, then bootstraps sub-controllers.
+     * Método de ciclo de vida FXML — invocado por FXMLLoader después de que todos los campos @FXML son inyectados.
+     * Valida que la sesión actual tiene rol ADMIN, luego inicializa los sub-controladores.
      */
     @FXML
     public void initialize() {

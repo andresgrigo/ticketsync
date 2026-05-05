@@ -15,16 +15,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Service class for seat management business logic.
+ * Clase de servicio para la lógica de negocio de gestión de asientos.
  *
- * <p>Provides seat generation, deletion, and query operations on the
- * {@code seats} table, delegating persistence to {@link SeatDAO}. All
- * methods acquire their own {@link Connection} via the injected
- * {@link ConnectionFactory} and release it via try-with-resources.
+ * <p>Proporciona operaciones de generación, eliminación y consulta de asientos en la
+ * tabla {@code seats}, delegando la persistencia a {@link SeatDAO}. Todos los
+ * métodos adquieren su propia {@link Connection} vía el {@link ConnectionFactory}
+ * inyectado y la liberan vía try-with-resources.
  *
- * <p>All mutating operations require an active ADMIN session in
- * {@link SessionContext}. A {@link SecurityException} is thrown if the
- * caller does not have the {@code ADMIN} role.
+ * <p>Todas las operaciones mutantes requieren una sesión ADMIN activa en
+ * {@link SessionContext}. Se lanza una {@link SecurityException} si el
+ * llamador no tiene el rol {@code ADMIN}.
  */
 public class SeatService {
 
@@ -35,26 +35,25 @@ public class SeatService {
     private final ConnectionFactory connFactory;
 
     /**
-     * Production constructor — creates a live {@link SeatDAOImpl} instance
-     * and uses {@link DatabaseConfig#getConnection()} for connection
-     * acquisition.
+     * Constructor de producción — crea una instancia activa de {@link SeatDAOImpl}
+     * y usa {@link DatabaseConfig#getConnection()} para la adquisición de conexiones.
      */
     public SeatService() {
         this(new SeatDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
-     * Package-private constructor for full unit-test injection (no DB required).
+     * Constructor de paquete para inyección completa en pruebas unitarias (sin BD requerida).
      *
-     * @param seatDAO     the DAO stub; must not be {@code null}
-     * @param connFactory the connection provider stub; must not be {@code null}
+     * @param seatDAO     el stub DAO; no debe ser {@code null}
+     * @param connFactory el proveedor de conexiones stub; no debe ser {@code null}
      */
     SeatService(SeatDAO seatDAO, ConnectionFactory connFactory) {
         this(seatDAO, AuditService.noop(), connFactory);
     }
 
     /**
-     * Package-private constructor with injectable audit seam.
+     * Constructor de paquete con costura de auditoría inyectable.
      */
     SeatService(SeatDAO seatDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.seatDAO = seatDAO;
@@ -63,7 +62,7 @@ public class SeatService {
     }
 
     // -----------------------------------------------------------------------
-    // Private helpers
+    // Ayudantes privados
     // -----------------------------------------------------------------------
 
     private void requireAdminRole() {
@@ -73,21 +72,21 @@ public class SeatService {
     }
 
     // -----------------------------------------------------------------------
-    // Public API
+    // API Pública
     // -----------------------------------------------------------------------
 
     /**
-     * Generates a range of seats for the specified zone in a single
-     * database transaction. If any seat insertion fails (e.g., duplicate
-     * unique-constraint violation), the entire transaction is rolled back.
+     * Genera un rango de asientos para la zona especificada en una sola
+     * transacción de base de datos. Si algún insert de asiento falla (p.ej.,
+     * violación de restricción única duplicada), toda la transacción se revierte.
      *
-     * @param zoneId     the zone to add seats to; must be positive
-     * @param rowNumber  the row label (e.g., "A"); must not be blank
-     * @param fromSeat   the first seat number in the range; must be &ge; 1
-     * @param toSeat     the last seat number in the range; must be &ge; fromSeat
-     * @throws IllegalArgumentException if any parameter is invalid
-     * @throws SecurityException        if the caller is not ADMIN
-     * @throws SQLException             if a database error occurs (transaction rolled back)
+     * @param zoneId     la zona a la que agregar asientos; debe ser positivo
+     * @param rowNumber  la etiqueta de fila (p.ej., "A"); no debe estar en blanco
+     * @param fromSeat   el primer número de asiento en el rango; debe ser &ge; 1
+     * @param toSeat     el último número de asiento en el rango; debe ser &ge; fromSeat
+     * @throws IllegalArgumentException si alguno parámetro es inválido
+     * @throws SecurityException        si el llamador no es ADMIN
+     * @throws SQLException             si ocurre un error de base de datos (transacción revertida)
      */
     public void generateSeats(int zoneId, String rowNumber, int fromSeat, int toSeat) throws SQLException {
         requireAdminRole();
@@ -124,12 +123,12 @@ public class SeatService {
     }
 
     /**
-     * Deletes a batch of seats inside a managed transaction. Package-private
-     * so it can be called from within a transaction opened by the caller.
+     * Elimina un lote de asientos dentro de una transacción gestionada. Privado de paquete
+     * para poder ser llamado desde dentro de una transacción abierta por el llamador.
      *
-     * @param conn    active connection with autoCommit disabled
-     * @param seatIds list of seat IDs to delete
-     * @throws SQLException if any deletion fails
+     * @param conn    conexión activa con autoCommit desactivado
+     * @param seatIds lista de IDs de asientos a eliminar
+     * @throws SQLException si alguna eliminación falla
      */
     void deleteSeatsBatch(Connection conn, List<Integer> seatIds) throws SQLException {
         for (int seatId : seatIds) {
@@ -138,12 +137,12 @@ public class SeatService {
     }
 
     /**
-     * Deletes the specified seats in a single database transaction.
-     * On any failure the transaction is rolled back.
+     * Elimina los asientos especificados en una sola transacción de base de datos.
+     * En cualquier fallo la transacción se revierte.
      *
-     * @param seatIds list of seat IDs to delete; must not be empty
-     * @throws SecurityException if the caller is not ADMIN
-     * @throws SQLException      if a database error occurs (transaction rolled back)
+     * @param seatIds lista de IDs de asientos a eliminar; no debe estar vacía
+     * @throws SecurityException si el llamador no es ADMIN
+     * @throws SQLException      si ocurre un error de base de datos (transacción revertida)
      */
     public void deleteSeatsTransaction(List<Integer> seatIds) throws SQLException {
         requireAdminRole();
@@ -167,12 +166,12 @@ public class SeatService {
     }
 
     /**
-     * Returns all seats for the specified zone ordered by row_number ASC,
+     * Devuelve todos los asientos para la zona especificada ordenados por row_number ASC,
      * seat_number ASC.
      *
-     * @param zoneId the zone to query; must be positive
-     * @return list of seats; empty if none exist
-     * @throws SQLException if a database error occurs
+     * @param zoneId la zona a consultar; debe ser positivo
+     * @return lista de asientos; vacía si no existen
+     * @throws SQLException si ocurre un error de base de datos
      */
     public List<Seat> getSeatsByZone(int zoneId) throws SQLException {
         try (Connection conn = connFactory.get()) {
@@ -181,12 +180,12 @@ public class SeatService {
     }
 
     /**
-     * Returns all seats for a given event across all zones, ordered by zone_id, row, seat.
-     * Uses READ_COMMITTED isolation (read-only, no locking needed).
+     * Devuelve todos los asientos para un evento dado en todas las zonas, ordenados por zone_id, fila, asiento.
+     * Usa aislamiento READ_COMMITTED (solo lectura, sin bloqueo necesario).
      *
-     * @param eventId the event identifier; must be positive
-     * @return list of all seats for the event; never {@code null}
-     * @throws java.sql.SQLException if a database error occurs
+     * @param eventId el identificador del evento; debe ser positivo
+     * @return lista de todos los asientos para el evento; nunca {@code null}
+     * @throws java.sql.SQLException si ocurre un error de base de datos
      */
     public List<Seat> getSeatsForEvent(int eventId) throws SQLException {
         try (Connection conn = connFactory.get()) {
@@ -195,11 +194,11 @@ public class SeatService {
     }
 
     /**
-     * Returns a single seat by primary key.
+     * Devuelve un solo asiento por clave primaria.
      *
-     * @param seatId the seat to look up; must be positive
-     * @return the seat when found, otherwise {@link Optional#empty()}
-     * @throws SQLException if a database error occurs
+     * @param seatId el asiento a buscar; debe ser positivo
+     * @return el asiento cuando se encuentra, en caso contrario {@link Optional#empty()}
+     * @throws SQLException si ocurre un error de base de datos
      */
     public Optional<Seat> getSeatById(int seatId) throws SQLException {
         try (Connection conn = connFactory.get()) {
@@ -208,15 +207,15 @@ public class SeatService {
     }
 
     /**
-     * Updates the status of the specified seats in a single database transaction.
-     * Only AVAILABLE and DISABLED are valid target statuses for admin operations.
-     * On any failure the transaction is rolled back.
+     * Actualiza el estado de los asientos especificados en una sola transacción de base de datos.
+     * Solo AVAILABLE y DISABLED son estados de destino válidos para operaciones administrativas.
+     * En cualquier fallo la transacción se revierte.
      *
-     * @param seatIds      list of seat IDs to update; null or empty list is a no-op
-     * @param targetStatus the desired new status; must not be null, SOLD, or RESERVED
-     * @throws IllegalArgumentException if targetStatus is null, SOLD, or RESERVED
-     * @throws SecurityException        if the caller is not ADMIN
-     * @throws SQLException             if a database error occurs (transaction rolled back)
+     * @param seatIds      lista de IDs de asientos a actualizar; null o lista vacía es una operación sin efecto
+     * @param targetStatus el nuevo estado deseado; no debe ser null, SOLD ni RESERVED
+     * @throws IllegalArgumentException si targetStatus es null, SOLD o RESERVED
+     * @throws SecurityException        si el llamador no es ADMIN
+     * @throws SQLException             si ocurre un error de base de datos (transacción revertida)
      */
     public void updateSeatStatus(List<Integer> seatIds, SeatStatus targetStatus) throws SQLException {
         requireAdminRole();

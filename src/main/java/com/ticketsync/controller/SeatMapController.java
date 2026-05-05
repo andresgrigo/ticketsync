@@ -34,14 +34,14 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * FXML controller for the interactive seat-map canvas widget.
+ * Controlador FXML para el widget de lienzo de mapa de asientos interactivo.
  *
- * <p>Renders zone and seat layouts obtained from a {@link SeatMapViewModel},
- * and handles pointer/keyboard interaction for seat selection, panning, and zooming.
+ * <p>Renderiza distribuciones de zonas y asientos obtenidas de un {@link SeatMapViewModel},
+ * y gestiona la interacción de puntero/teclado para la selección de asientos, desplazamiento y zoom.
  */
 public class SeatMapController {
 
-    /** Creates a new {@code SeatMapController} (invoked by FXMLLoader via reflection). */
+    /** Crea un nuevo {@code SeatMapController} (invocado por FXMLLoader mediante reflexión). */
     public SeatMapController() {
     }
 
@@ -76,10 +76,10 @@ public class SeatMapController {
     private Integer pressedSeatId;
 
     /**
-     * Initialises the controller after FXML injection.
+     * Inicializa el controlador después de la inyección FXML.
      *
-     * <p>Installs mouse, scroll, and keyboard handlers on the canvas
-     * and registers listeners on the default {@link SeatMapViewModel}.
+     * <p>Instala manejadores de ratón, desplazamiento y teclado en el lienzo
+     * y registra listeners en el {@link SeatMapViewModel} predeterminado.
      */
     @FXML
     public void initialize() {
@@ -103,13 +103,13 @@ public class SeatMapController {
     }
 
     /**
-     * Replaces the view-model backing this canvas.
+     * Reemplaza el view-model que respalda este lienzo.
      *
-     * <p>Detaches listeners from the old view-model, attaches them to {@code seatMapViewModel},
-     * resets the pan/zoom viewport, and schedules a re-render.
+     * <p>Desconecta los listeners del view-model anterior, los adjunta a {@code seatMapViewModel},
+     * restablece el viewport de desplazamiento/zoom, y programa un re-renderizado.
      *
-     * @param seatMapViewModel the new view-model; must not be {@code null}
-     * @throws NullPointerException if {@code seatMapViewModel} is {@code null}
+     * @param seatMapViewModel el nuevo view-model; no debe ser {@code null}
+     * @throws NullPointerException si {@code seatMapViewModel} es {@code null}
      */
     public void setViewModel(SeatMapViewModel seatMapViewModel) {
         SeatMapViewModel newViewModel = Objects.requireNonNull(seatMapViewModel, "seatMapViewModel must not be null");
@@ -125,18 +125,18 @@ public class SeatMapController {
     }
 
     /**
-     * Returns the view-model currently backing this canvas.
+     * Retorna el view-model que respalda actualmente este lienzo.
      *
-     * @return the current {@link SeatMapViewModel}; never {@code null}
+     * @return el {@link SeatMapViewModel} actual; nunca {@code null}
      */
     public SeatMapViewModel getViewModel() {
         return viewModel;
     }
 
     /**
-     * Directly sets whether the user can select seats on the canvas.
+     * Establece directamente si el usuario puede seleccionar asientos en el lienzo.
      *
-     * @param enabled {@code true} to allow seat selection; {@code false} to prevent it
+     * @param enabled {@code true} para permitir la selección de asientos; {@code false} para prevenirla
      */
     public void setInteractionEnabled(boolean enabled) {
         interactionEnabled.unbind();
@@ -144,9 +144,9 @@ public class SeatMapController {
     }
 
     /**
-     * Binds whether the user can select seats to an observable boolean value.
+     * Enlaza si el usuario puede seleccionar asientos a un valor booleano observable.
      *
-     * @param enabledValue observable whose value controls interaction; must not be {@code null}
+     * @param enabledValue observable cuyo valor controla la interacción; no debe ser {@code null}
      */
     public void bindInteractionEnabled(ObservableBooleanValue enabledValue) {
         interactionEnabled.unbind();
@@ -154,21 +154,21 @@ public class SeatMapController {
     }
 
     /**
-     * Supplies a guard that prevents canvas renders when the hosting tab or view is not visible.
+     * Proporciona una protección que impide renders del lienzo cuando la pestaña o vista anfitriona no es visible.
      *
-     * @param isActive supplier returning {@code true} when this view is currently active;
-     *                 must not be {@code null}
-     * @throws NullPointerException if {@code isActive} is {@code null}
+     * @param isActive proveedor que retorna {@code true} cuando esta vista está actualmente activa;
+     *                 no debe ser {@code null}
+     * @throws NullPointerException si {@code isActive} es {@code null}
      */
     public void setViewActiveCheck(Supplier<Boolean> isActive) {
         isViewActive = Objects.requireNonNull(isActive, "isActive must not be null");
     }
 
     /**
-     * Called by the parent view when this seat-map tab/panel becomes the active view.
+     * Llamado por la vista padre cuando esta pestaña/panel del mapa de asientos se convierte en la vista activa.
      *
-     * <p>Schedules a canvas re-render so any state changes that occurred while
-     * the view was hidden are reflected immediately on activation.
+     * <p>Programa un re-renderizado del lienzo para que cualquier cambio de estado que ocurrió
+     * mientras la vista estaba oculta se refleje inmediatamente al activarse.
      */
     public void onViewActivated() {
         requestRender();

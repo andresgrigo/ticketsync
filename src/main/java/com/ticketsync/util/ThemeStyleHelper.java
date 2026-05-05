@@ -8,16 +8,16 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Utility class providing CSS style-class constants and helper methods for applying
- * themed state classes to JavaFX nodes.
+ * Clase de utilidad que proporciona constantes de clases de estilo CSS y métodos auxiliares
+ * para aplicar clases de estado temadas a nodos JavaFX.
  *
- * <p>All methods are stateless; this class cannot be instantiated.
+ * <p>Todos los métodos son sin estado; esta clase no puede ser instanciada.
  */
 public final class ThemeStyleHelper {
 
     /**
-     * All mutually exclusive CSS classes that represent
-     * {@link com.ticketsync.viewmodel.PosViewModel.SystemHealthState} values.
+     * Todas las clases CSS mutuamente excluyentes que representan
+     * los valores de {@link com.ticketsync.viewmodel.PosViewModel.SystemHealthState}.
      */
     public static final List<String> HEALTH_STATE_CLASSES = List.of(
             "health-healthy",
@@ -26,8 +26,8 @@ public final class ThemeStyleHelper {
     );
 
     /**
-     * All mutually exclusive CSS classes that represent event or seat status values
-     * ({@code active}, {@code inactive}, {@code available}, {@code sold},
+     * Todas las clases CSS mutuamente excluyentes que representan los valores de estado
+     * de eventos o asientos ({@code active}, {@code inactive}, {@code available}, {@code sold},
      * {@code reserved}, {@code disabled}).
      */
     public static final List<String> STATUS_STATE_CLASSES = List.of(
@@ -40,7 +40,7 @@ public final class ThemeStyleHelper {
     );
 
     /**
-     * All mutually exclusive CSS classes used to indicate countdown warning state.
+     * Todas las clases CSS mutuamente excluyentes usadas para indicar el estado de advertencia de cuenta regresiva.
      */
     public static final List<String> COUNTDOWN_STATE_CLASSES = List.of("countdown-warning");
 
@@ -48,10 +48,10 @@ public final class ThemeStyleHelper {
     }
 
     /**
-     * Returns the CSS class that represents the given system health state.
+     * Devuelve la clase CSS que representa el estado de salud del sistema dado.
      *
-     * @param state the current health state; if {@code null} defaults to {@code HEALTHY}
-     * @return the single CSS class string corresponding to {@code state}
+     * @param state el estado de salud actual; si es {@code null} usa {@code HEALTHY} por defecto
+     * @return la cadena de clase CSS única correspondiente a {@code state}
      */
     public static String healthStateClass(PosViewModel.SystemHealthState state) {
         PosViewModel.SystemHealthState effectiveState =
@@ -64,20 +64,20 @@ public final class ThemeStyleHelper {
     }
 
     /**
-     * Returns the CSS class representing whether an event is active.
+     * Devuelve la clase CSS que representa si un evento está activo.
      *
-     * @param active {@code true} for an active event; {@code false} for inactive
-     * @return {@code "status-active"} or {@code "status-inactive"}
+     * @param active {@code true} para un evento activo; {@code false} para inactivo
+     * @return {@code "status-active"} o {@code "status-inactive"}
      */
     public static String eventStatusClass(boolean active) {
         return active ? "status-active" : "status-inactive";
     }
 
     /**
-     * Maps a seat status string to its CSS class.
+     * Mapea una cadena de estado de asiento a su clase CSS.
      *
-     * @param status case-insensitive seat status (e.g., {@code "AVAILABLE"}, {@code "SOLD"})
-     * @return the corresponding CSS class, or {@code null} if {@code status} is blank or unknown
+     * @param status estado del asiento sin distinguir mayúsculas (ej., {@code "AVAILABLE"}, {@code "SOLD"})
+     * @return la clase CSS correspondiente, o {@code null} si {@code status} está en blanco o es desconocido
      */
     public static String seatStatusClass(String status) {
         if (status == null || status.isBlank()) {
@@ -94,25 +94,25 @@ public final class ThemeStyleHelper {
     }
 
     /**
-     * Returns the CSS class for countdown warning state.
+     * Devuelve la clase CSS para el estado de advertencia de cuenta regresiva.
      *
-     * @param warning {@code true} if the countdown is in warning state
-     * @return {@code "countdown-warning"} when {@code warning} is {@code true}; otherwise {@code null}
+     * @param warning {@code true} si la cuenta regresiva está en estado de advertencia
+     * @return {@code "countdown-warning"} cuando {@code warning} es {@code true}; de lo contrario {@code null}
      */
     public static String countdownStateClass(boolean warning) {
         return warning ? "countdown-warning" : null;
     }
 
     /**
-     * Atomically replaces all managed state classes on a node's style-class list.
+     * Reemplaza atómicamente todas las clases de estado gestionadas en la lista de clases de estilo de un nodo.
      *
-     * <p>Ensures the {@code baseClass} is present, removes all classes in
-     * {@code managedStateClasses}, then adds {@code activeStateClass} if non-blank.
+     * <p>Asegura que la {@code baseClass} esté presente, elimina todas las clases en
+     * {@code managedStateClasses}, luego agrega {@code activeStateClass} si no está en blanco.
      *
-     * @param styleClasses       the node's live {@link ObservableList} of style classes; must not be null
-     * @param baseClass          permanent base CSS class to guarantee; must not be null
-     * @param managedStateClasses all classes in the mutually exclusive set to clear; must not be null
-     * @param activeStateClass   the single class to apply for the current state; may be null or blank
+     * @param styleClasses       la lista {@link ObservableList} de clases CSS del nodo; no debe ser null
+     * @param baseClass          clase CSS base permanente a garantizar; no debe ser null
+     * @param managedStateClasses todas las clases en el conjunto mutuamente excluyente a limpiar; no debe ser null
+     * @param activeStateClass   la clase única a aplicar para el estado actual; puede ser null o estar en blanco
      */
     public static void applyManagedStateClass(ObservableList<String> styleClasses,
             String baseClass, List<String> managedStateClasses, String activeStateClass) {

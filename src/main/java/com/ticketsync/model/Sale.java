@@ -5,60 +5,60 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Represents a completed ticket sale transaction.
- * Maps to the 'sales' database table.
+ * Representa una transacción de venta de tickets completada.
+ * Mapea a la tabla de base de datos 'sales'.
  * 
- * <h2>Transaction Workflow</h2>
+ * <h2>Flujo de Transacción</h2>
  * <ol>
- *   <li>Vendor selects seats in POS interface</li>
- *   <li>System locks seats with SELECT FOR UPDATE</li>
- *   <li>System creates Sale record (this class)</li>
- *   <li>System creates SaleItem records linking seats to sale</li>
- *   <li>System updates seat status to SOLD</li>
- *   <li>Transaction commits atomically</li>
+ *   <li>El vendedor selecciona asientos en la interfaz POS</li>
+ *   <li>El sistema bloquea los asientos con SELECT FOR UPDATE</li>
+ *   <li>El sistema crea el registro Sale (esta clase)</li>
+ *   <li>El sistema crea registros SaleItem vinculando asientos a la venta</li>
+ *   <li>El sistema actualiza el estado del asiento a SOLD</li>
+ *   <li>La transacción se confirma atómicamente</li>
  * </ol>
  * 
- * <h2>Transaction ID Format</h2>
- * Generated transaction IDs follow pattern: TXN-YYYYMMDD-HHMMSS-BX
- * Example: TXN-20240315-143022-B1
+ * <h2>Formato de ID de Transacción</h2>
+ * Los IDs de transacción generados siguen el patrón: TXN-YYYYMMDD-HHMMSS-BX
+ * Ejemplo: TXN-20240315-143022-B1
  * 
  * @see com.ticketsync.dao.SaleDAO
  * @see SaleItem
  */
 public class Sale {
-    /** Primary key from sales.sale_id column. */
+    /** Clave primaria de la columna sales.sale_id. */
     private int saleId;
     
-    /** Foreign key to events.event_id. */
+    /** Clave foránea a events.event_id. */
     private int eventId;
     
-    /** Foreign key to users.user_id (vendor who made sale). */
+    /** Clave foránea a users.user_id (vendedor que realizó la venta). */
     private int vendorId;
     
-    /** Sum of all seat prices in this sale. */
+    /** Suma de todos los precios de asientos en esta venta. */
     private BigDecimal totalAmount;
     
-    /** Timestamp when sale was completed. */
+    /** Marca de tiempo de cuando se completó la venta. */
     private LocalDateTime saleTimestamp;
     
-    /** Booth identifier (e.g., "Booth-1", "Booth-2"). */
+    /** Identificador del puesto (ej., "Booth-1", "Booth-2"). */
     private String boothId;
     
     /**
-     * Default constructor for JDBC mapping.
+     * Constructor por defecto para mapeo JDBC.
      */
     public Sale() {
     }
     
     /**
-     * Constructs a Sale with all fields.
+     * Construye una Sale con todos los campos.
      * 
-     * @param saleId Primary key
-     * @param eventId Event for which tickets were sold
-     * @param vendorId Vendor who made the sale
-     * @param totalAmount Total sale amount
-     * @param saleTimestamp Sale completion timestamp
-     * @param boothId Booth identifier
+     * @param saleId Clave primaria
+     * @param eventId Evento para el que se vendieron los tickets
+     * @param vendorId Vendedor que realizó la venta
+     * @param totalAmount Monto total de la venta
+     * @param saleTimestamp Marca de tiempo de finalización de la venta
+     * @param boothId Identificador del puesto
      */
     public Sale(int saleId, int eventId, int vendorId, BigDecimal totalAmount,
             LocalDateTime saleTimestamp, String boothId) {
@@ -70,76 +70,76 @@ public class Sale {
         this.boothId = boothId;
     }
     
-    // Getters and Setters
+    // Getters y Setters
 
     /**
-     * Returns the sale ID.
+     * Devuelve el ID de la venta.
      *
-     * @return the sale ID
+     * @return el ID de la venta
      */
     public int getSaleId() {
         return saleId;
     }
 
     /**
-     * Sets the sale ID.
+     * Establece el ID de la venta.
      *
-     * @param saleId the sale ID
+     * @param saleId el ID de la venta
      */
     public void setSaleId(int saleId) {
         this.saleId = saleId;
     }
 
     /**
-     * Returns the event ID associated with this sale.
+     * Devuelve el ID del evento asociado a esta venta.
      *
-     * @return the event ID
+     * @return el ID del evento
      */
     public int getEventId() {
         return eventId;
     }
 
     /**
-     * Sets the event ID associated with this sale.
+     * Establece el ID del evento asociado a esta venta.
      *
-     * @param eventId the event ID
+     * @param eventId el ID del evento
      */
     public void setEventId(int eventId) {
         this.eventId = eventId;
     }
 
     /**
-     * Returns the vendor user ID who recorded this sale.
+     * Devuelve el ID de usuario del vendedor que registró esta venta.
      *
-     * @return the vendor user ID
+     * @return el ID del vendedor
      */
     public int getVendorId() {
         return vendorId;
     }
 
     /**
-     * Sets the vendor user ID who recorded this sale.
+     * Establece el ID de usuario del vendedor que registró esta venta.
      *
-     * @param vendorId the vendor user ID
+     * @param vendorId el ID del vendedor
      */
     public void setVendorId(int vendorId) {
         this.vendorId = vendorId;
     }
 
     /**
-     * Returns the total sale amount.
+     * Devuelve el monto total de la venta.
      *
-     * @return the total amount; never {@code null}
+     * @return el monto total; nunca {@code null}
      */
     public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
     /**
-     * Sets the total sale amount.
+     * Establece el monto total de la venta.
      *
-     * @param totalAmount the total amount; must not be {@code null}
-     * @throws IllegalArgumentException if {@code totalAmount} is {@code null}
+     * @param totalAmount el monto total; no debe ser {@code null}
+     * @throws IllegalArgumentException si {@code totalAmount} es {@code null}
      */
     public void setTotalAmount(BigDecimal totalAmount) {
         if (totalAmount == null) {
@@ -149,48 +149,48 @@ public class Sale {
     }
     
     /**
-     * Returns the timestamp when the sale was recorded.
+     * Devuelve la marca de tiempo de cuando se registró la venta.
      *
-     * @return the sale timestamp; may be {@code null}
+     * @return la marca de tiempo de la venta; puede ser {@code null}
      */
     public LocalDateTime getSaleTimestamp() {
         return saleTimestamp;
     }
 
     /**
-     * Sets the timestamp when the sale was recorded.
+     * Establece la marca de tiempo de cuando se registró la venta.
      *
-     * @param saleTimestamp the sale timestamp
+     * @param saleTimestamp la marca de tiempo de la venta
      */
     public void setSaleTimestamp(LocalDateTime saleTimestamp) {
         this.saleTimestamp = saleTimestamp;
     }
 
     /**
-     * Returns the booth ID where the sale was recorded.
+     * Devuelve el ID del puesto donde se registró la venta.
      *
-     * @return the booth ID; may be {@code null}
+     * @return el ID del puesto; puede ser {@code null}
      */
     public String getBoothId() {
         return boothId;
     }
 
     /**
-     * Sets the booth ID where the sale was recorded.
+     * Establece el ID del puesto donde se registró la venta.
      *
-     * @param boothId the booth ID
+     * @param boothId el ID del puesto
      */
     public void setBoothId(String boothId) {
         this.boothId = boothId;
     }
     
-    // Utility Methods
+    // Métodos de Utilidad
     
     /**
-     * Compares sales based on primary key.
+     * Compara ventas basado en la clave primaria.
      * 
-     * @param o Object to compare
-     * @return true if same saleId, false otherwise
+     * @param o Objeto a comparar
+     * @return true si tienen el mismo saleId, false en caso contrario
      */
     @Override
     public boolean equals(Object o) {
@@ -205,9 +205,9 @@ public class Sale {
     }
     
     /**
-     * Hash based on primary key.
+     * Hash basado en la clave primaria.
      * 
-     * @return Hash code
+     * @return Código hash
      */
     @Override
     public int hashCode() {
@@ -215,9 +215,9 @@ public class Sale {
     }
     
     /**
-     * String representation for debugging.
+     * Representación en cadena para depuración.
      * 
-     * @return String representation
+     * @return Representación en cadena
      */
     @Override
     public String toString() {

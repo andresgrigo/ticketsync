@@ -4,14 +4,14 @@ import java.io.IOException;
 import javafx.fxml.FXML;
 
 /**
- * Minimal controller for the secondary view in the TicketSync demo navigation flow.
+ * Controlador mínimo para la vista secundaria en el flujo de navegación demo de TicketSync.
  *
- * <p>Its only responsibility is switching back to the primary FXML view
- * when the user triggers the back action.
+ * <p>Su única responsabilidad es volver a la vista FXML primaria
+ * cuando el usuario activa la acción de retroceso.
  */
 public class SecondaryController {
 
-    /** Creates a new {@code SecondaryController} (invoked by FXMLLoader via reflection). */
+    /** Crea un nuevo {@code SecondaryController} (invocado por FXMLLoader vía reflexión). */
     public SecondaryController() {
     }
 

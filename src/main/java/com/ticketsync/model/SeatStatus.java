@@ -1,43 +1,43 @@
 package com.ticketsync.model;
 
 /**
- * Seat availability status for real-time synchronization across booths.
+ * Estado de disponibilidad del asiento para sincronización en tiempo real entre puestos.
  * 
- * <h2>Status Transitions</h2>
+ * <h2>Transiciones de Estado</h2>
  * <ul>
- *   <li>AVAILABLE → SOLD (atomic transaction)</li>
- *   <li>AVAILABLE ↔ DISABLED (admin toggle)</li>
- *   <li>RESERVED (future enhancement, not MVP)</li>
+ *   <li>AVAILABLE → SOLD (transacción atómica)</li>
+ *   <li>AVAILABLE ↔ DISABLED (alternancia de administrador)</li>
+ *   <li>RESERVED (mejora futura, no en MVP)</li>
  * </ul>
  * 
- * <h2>Color Coding</h2>
+ * <h2>Códigos de Color</h2>
  * <ul>
- *   <li>AVAILABLE: Green (can be purchased)</li>
- *   <li>SOLD: Red (purchased by any booth)</li>
- *   <li>RESERVED: Yellow (locked during transaction, 60-second timeout)</li>
- *   <li>DISABLED: Gray (administratively disabled, not selectable)</li>
+ *   <li>AVAILABLE: Verde (puede ser comprado)</li>
+ *   <li>SOLD: Rojo (comprado por cualquier puesto)</li>
+ *   <li>RESERVED: Amarillo (bloqueado durante transacción, tiempo de espera de 60 segundos)</li>
+ *   <li>DISABLED: Gris (deshabilitado administrativamente, no seleccionable)</li>
  * </ul>
  * 
  * @see Seat
  */
 public enum SeatStatus {
     /**
-     * Seat is available for purchase.
+     * El asiento está disponible para su compra.
      */
     AVAILABLE,
     
     /**
-     * Seat has been sold and cannot be purchased.
+     * El asiento ha sido vendido y no puede ser comprado.
      */
     SOLD,
     
     /**
-     * Seat is temporarily locked during a transaction (future enhancement).
+     * El asiento está temporalmente bloqueado durante una transacción (mejora futura).
      */
     RESERVED,
     
     /**
-     * Seat is administratively disabled and not available for purchase.
+     * El asiento está deshabilitado administrativamente y no está disponible para su compra.
      */
     DISABLED
 }

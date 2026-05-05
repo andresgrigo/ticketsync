@@ -43,9 +43,9 @@ final class PosPurchaseCoordinator {
             try {
                 seatRefresher.refreshSeats(seatIds);
             } catch (SQLException refreshEx) {
-                // Sale is already committed — swallow the refresh failure so the
-                // operator sees the receipt, not a misleading "purchase failed" error.
-                // The seat map will self-correct on the next LISTEN/NOTIFY cycle.
+                // La venta ya está confirmada — ignorar el fallo de actualización para que el
+                // operador vea el recibo, no un error engañoso de "compra fallida".
+                // El mapa de asientos se autocorregirá en el siguiente ciclo LISTEN/NOTIFY.
                 LOGGER.warn("Post-purchase seat refresh failed (sale committed): {}", refreshEx.getMessage());
             }
             return new PurchaseSuccess(PurchaseReceiptDetails.fromSale(

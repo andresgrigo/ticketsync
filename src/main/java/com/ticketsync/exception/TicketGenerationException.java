@@ -1,25 +1,25 @@
 package com.ticketsync.exception;
 
 /**
- * Thrown when ticket PDF generation cannot complete because required sale data
- * cannot be loaded or the PDF cannot be rendered safely.
+ * Lanzada cuando la generación de PDF de boleto no puede completarse porque los datos
+ * de venta requeridos no pueden cargarse o el PDF no puede renderizarse de forma segura.
  */
 public class TicketGenerationException extends Exception {
 
     /**
-     * Constructs an exception with the given detail message.
+     * Construye una excepción con el mensaje de detalle dado.
      *
-     * @param message human-readable description of the failure
+     * @param message descripción legible por humanos del fallo
      */
     public TicketGenerationException(String message) {
         super(message);
     }
 
     /**
-     * Constructs an exception with the given detail message and cause.
+     * Construye una excepción con el mensaje de detalle y causa dados.
      *
-     * @param message human-readable description of the failure
-     * @param cause   the underlying exception that caused the failure
+     * @param message descripción legible por humanos del fallo
+     * @param cause   la excepción subyacente que causó el fallo
      */
     public TicketGenerationException(String message, Throwable cause) {
         super(message, cause);

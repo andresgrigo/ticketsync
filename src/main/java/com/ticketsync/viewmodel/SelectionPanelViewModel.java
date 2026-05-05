@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Derives selection-panel state from {@link SeatMapViewModel}'s local seat selection.
+ * Deriva el estado del panel de selección de la selección local de asientos de {@link SeatMapViewModel}.
  *
- * <p>The countdown and release behavior remain local to the workstation. This
- * class does not persist RESERVED seats or submit purchases.
+ * <p>El comportamiento de cuenta regresiva y liberación permanece local a la estación de trabajo. Esta
+ * clase no persiste asientos RESERVADOS ni envía compras.
  */
 public class SelectionPanelViewModel implements AutoCloseable {
 
@@ -76,13 +76,13 @@ public class SelectionPanelViewModel implements AutoCloseable {
     private Runnable onReleaseAction;
 
     /**
-     * Creates a production-ready view-model wired to the given {@link SeatMapViewModel}.
+     * Crea un view-model listo para producción conectado al {@link SeatMapViewModel} dado.
      *
-     * <p>Uses {@link Platform#runLater(Runnable)} for UI-thread dispatch and an
-     * internal scheduled executor for the lock-countdown timer.
+     * <p>Usa {@link Platform#runLater(Runnable)} para el despacho al hilo de UI y un
+     * ejecutor programado interno para el temporizador de cuenta regresiva del bloqueo.
      *
-     * @param seatMapViewModel the source of seat selection state; must not be {@code null}
-     * @throws NullPointerException if {@code seatMapViewModel} is {@code null}
+     * @param seatMapViewModel la fuente del estado de selección de asientos; no debe ser {@code null}
+     * @throws NullPointerException si {@code seatMapViewModel} es {@code null}
      */
     public SelectionPanelViewModel(SeatMapViewModel seatMapViewModel) {
         this(
@@ -123,134 +123,134 @@ public class SelectionPanelViewModel implements AutoCloseable {
     }
 
     /**
-     * Returns the read-only list of formatted display rows for the currently selected seats.
+     * Retorna la lista de solo lectura de filas de visualización formateadas para los asientos actualmente seleccionados.
      *
-     * @return unmodifiable observable list; never {@code null}
+     * @return lista observable no modificable; nunca {@code null}
      */
     public ObservableList<String> selectedSeatRowsProperty() {
         return readOnlySelectedSeatRows;
     }
 
     /**
-     * Returns the read-only property holding the number of currently selected seats.
+     * Retorna la propiedad de solo lectura que contiene el número de asientos actualmente seleccionados.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyIntegerProperty seatCountProperty() {
         return seatCount.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property holding the sum price of all selected seats.
+     * Retorna la propiedad de solo lectura que contiene el precio total de todos los asientos seleccionados.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyObjectProperty<BigDecimal> totalPriceProperty() {
         return totalPrice.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property holding the number of seconds remaining before
-     * the local seat-lock expires.
+     * Retorna la propiedad de solo lectura que contiene el número de segundos restantes antes
+     * de que expire el bloqueo local de asientos.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyIntegerProperty remainingLockSecondsProperty() {
         return remainingLockSeconds.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property that is {@code true} when the lock is active
-     * and fewer than 10 seconds remain, triggering a visual warning.
+     * Retorna la propiedad de solo lectura que es {@code true} cuando el bloqueo está activo
+     * y quedan menos de 10 segundos, activando una advertencia visual.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyBooleanProperty warningStateProperty() {
         return warningState.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property that is {@code true} while the local seat-lock countdown is running.
+     * Retorna la propiedad de solo lectura que es {@code true} mientras la cuenta regresiva del bloqueo local de asientos está en ejecución.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyBooleanProperty lockActiveProperty() {
         return lockActive.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property that is {@code true} when no seats are selected,
-     * indicating the panel should show its empty-state placeholder.
+     * Retorna la propiedad de solo lectura que es {@code true} cuando no hay asientos seleccionados,
+     * indicando que el panel debe mostrar su marcador de posición de estado vacío.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyBooleanProperty emptyStateVisibleProperty() {
         return emptyStateVisible.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property that is {@code true} while a purchase submission is in progress.
+     * Retorna la propiedad de solo lectura que es {@code true} mientras el envío de una compra está en progreso.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyBooleanProperty processingProperty() {
         return processing.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property that is {@code true} when the confirm-purchase action is available.
+     * Retorna la propiedad de solo lectura que es {@code true} cuando la acción de confirmar compra está disponible.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyBooleanProperty confirmEnabledProperty() {
         return confirmEnabled.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property that is {@code true} when the release-lock action is available.
+     * Retorna la propiedad de solo lectura que es {@code true} cuando la acción de liberar bloqueo está disponible.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyBooleanProperty releaseEnabledProperty() {
         return releaseEnabled.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property containing the selection-panel header text,
-     * e.g. {@code "Selected Seats (3 seats)"}.
+     * Retorna la propiedad de solo lectura que contiene el texto del encabezado del panel de selección,
+     * p. ej. {@code "Selected Seats (3 seats)"}.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyStringProperty headerTextProperty() {
         return headerText.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property containing the formatted total price string,
-     * e.g. {@code "Total: EUR25.00"}.
+     * Retorna la propiedad de solo lectura que contiene la cadena de precio total formateada,
+     * p. ej. {@code "Total: EUR25.00"}.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyStringProperty totalPriceTextProperty() {
         return totalPriceText.getReadOnlyProperty();
     }
 
     /**
-     * Returns the read-only property containing the formatted countdown text,
-     * e.g. {@code "Lock expires in: 42"}.
+     * Retorna la propiedad de solo lectura que contiene el texto de cuenta regresiva formateado,
+     * p. ej. {@code "Lock expires in: 42"}.
      *
-     * @return read-only property; never {@code null}
+     * @return propiedad de solo lectura; nunca {@code null}
      */
     public ReadOnlyStringProperty countdownTextProperty() {
         return countdownText.getReadOnlyProperty();
     }
 
     /**
-     * Binds the confirm-purchase availability to an external observable gate,
-     * e.g. a database-health monitor's connected property.
+     * Enlaza la disponibilidad de confirmación de compra a una puerta observable externa,
+     * p. ej. la propiedad conectada de un monitor de salud de base de datos.
      *
-     * @param purchaseEnabledGate observable controlling purchase availability; must not be {@code null}
-     * @throws NullPointerException if {@code purchaseEnabledGate} is {@code null}
+     * @param purchaseEnabledGate observable que controla la disponibilidad de compra; no debe ser {@code null}
+     * @throws NullPointerException si {@code purchaseEnabledGate} es {@code null}
      */
     public void bindPurchaseEnabled(ObservableBooleanValue purchaseEnabledGate) {
         Objects.requireNonNull(purchaseEnabledGate, "purchaseEnabledGate must not be null");
@@ -259,36 +259,36 @@ public class SelectionPanelViewModel implements AutoCloseable {
     }
 
     /**
-     * Sets whether a purchase submission is currently in progress.
+     * Establece si el envío de una compra está actualmente en progreso.
      *
-     * @param processing {@code true} to show the processing overlay; {@code false} to hide it
+     * @param processing {@code true} para mostrar la superposición de procesamiento; {@code false} para ocultarla
      */
     public void setProcessing(boolean processing) {
         uiRunner.accept(() -> this.processing.set(processing));
     }
 
     /**
-     * Registers the action to invoke when the user confirms a purchase.
+     * Registra la acción a invocar cuando el usuario confirma una compra.
      *
-     * @param onConfirmAction runnable invoked on the UI thread; may be {@code null} to clear
+     * @param onConfirmAction ejecutable invocado en el hilo de UI; puede ser {@code null} para limpiar
      */
     public void setOnConfirmAction(Runnable onConfirmAction) {
         this.onConfirmAction = onConfirmAction;
     }
 
     /**
-     * Registers the action to invoke when the user releases the seat lock.
+     * Registra la acción a invocar cuando el usuario libera el bloqueo de asientos.
      *
-     * @param onReleaseAction runnable invoked on the UI thread; may be {@code null} to clear
+     * @param onReleaseAction ejecutable invocado en el hilo de UI; puede ser {@code null} para limpiar
      */
     public void setOnReleaseAction(Runnable onReleaseAction) {
         this.onReleaseAction = onReleaseAction;
     }
 
     /**
-     * Triggers the confirm-purchase action if the confirm button is currently enabled.
+     * Activa la acción de confirmación de compra si el botón de confirmar está actualmente habilitado.
      *
-     * <p>No-ops silently if confirm is disabled or no confirm action has been registered.
+     * <p>No hace nada silenciosamente si la confirmación está deshabilitada o no se ha registrado ninguna acción de confirmación.
      */
     public void confirmSelection() {
         if (!confirmEnabled.get()) {
@@ -300,10 +300,10 @@ public class SelectionPanelViewModel implements AutoCloseable {
     }
 
     /**
-     * Triggers the release action if the release button is currently enabled.
+     * Activa la acción de liberación si el botón de liberación está actualmente habilitado.
      *
-     * <p>Clears the seat selection on the underlying {@link SeatMapViewModel} and invokes
-     * the registered release action (if any). No-ops silently when release is disabled.
+     * <p>Limpia la selección de asientos en el {@link SeatMapViewModel} subyacente e invoca
+     * la acción de liberación registrada (si existe). No hace nada silenciosamente cuando la liberación está deshabilitada.
      */
     public void releaseSelection() {
         if (!releaseEnabled.get()) {
@@ -316,9 +316,9 @@ public class SelectionPanelViewModel implements AutoCloseable {
     }
 
     /**
-     * Clears the processing flag and seat selection, returning the panel to the ready state.
+     * Limpia el indicador de procesamiento y la selección de asientos, devolviendo el panel al estado listo.
      *
-     * <p>Typically called after a failed or cancelled purchase attempt.
+     * <p>Normalmente llamado después de un intento de compra fallido o cancelado.
      */
     public void resetToReadyState() {
         setProcessing(false);
@@ -326,10 +326,10 @@ public class SelectionPanelViewModel implements AutoCloseable {
     }
 
     /**
-     * Detaches listeners from the source view-model and stops the countdown timer.
+     * Desconecta los listeners del view-model fuente y detiene el temporizador de cuenta regresiva.
      *
-     * <p>Must be called when this view-model is no longer needed to prevent memory leaks.
-     * Implements {@link AutoCloseable} so this view-model can be used in try-with-resources.
+     * <p>Se debe llamar cuando este view-model ya no sea necesario para prevenir fugas de memoria.
+     * Implementa {@link AutoCloseable} para que este view-model pueda usarse en try-with-resources.
      */
     public void dispose() {
         disposed = true;

@@ -44,15 +44,15 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * FXML controller for the venue layout view tab within the Admin Dashboard.
+ * Controlador FXML para la pestaña de vista de distribución del local del Panel de Administración.
  *
- * <p>Renders an interactive seat-map canvas for a selected event, showing
- * each seat's availability status colour-coded by zone. Supports zoom/pan
- * interactions and PDF export of the current layout view.
+ * <p>Renderiza un lienzo de mapa de asientos interactivo para un evento seleccionado, mostrando
+ * el estado de disponibilidad de cada asiento codificado por color según la zona. Admite interacciones
+ * de zoom/desplazamiento y exportación a PDF de la vista de distribución actual.
  */
 public class LayoutViewTabController {
 
-    /** Creates a new {@code LayoutViewTabController} instance (invoked by FXMLLoader via reflection). */
+    /** Crea una nueva instancia de {@code LayoutViewTabController} (invocada por FXMLLoader mediante reflexión). */
     public LayoutViewTabController() {
     }
 
@@ -87,7 +87,7 @@ public class LayoutViewTabController {
 
     private record LayoutSeatCell(Seat seat, Zone zone, double worldX, double worldY) {}
 
-    // ── FXML fields ───────────────────────────────────────────────────────────
+    // ── Campos FXML ───────────────────────────────────────────────────────────
 
     @FXML private ComboBox<Event> layoutEventSelector;
     @FXML private Button layoutExportButton;
@@ -100,13 +100,13 @@ public class LayoutViewTabController {
     @FXML private ScrollPane layoutScrollPane;
     @FXML private Label layoutHoverLabel;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // ── Ciclo de vida ───────────────────────────────────────────────────────────
 
     /**
-     * Initialises the controller after FXML injection.
+     * Inicializa el controlador después de la inyección FXML.
      *
-     * <p>Configures the event selector converter, canvas mouse/scroll event
-     * handlers, and wires the export button state to the event selection.
+     * <p>Configura el convertidor del selector de eventos, los manejadores de eventos de
+     * ratón/desplazamiento del lienzo y conecta el estado del botón de exportación a la selección de evento.
      */
     @FXML
     public void initialize() {
@@ -140,9 +140,9 @@ public class LayoutViewTabController {
     }
 
     /**
-     * Called by the shell controller once the admin identity is known.
+     * Llamado por el controlador shell una vez que la identidad del administrador es conocida.
      *
-     * @param admin the authenticated administrator user; must not be {@code null}
+     * @param admin el usuario administrador autenticado; no debe ser {@code null}
      */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;
@@ -150,16 +150,16 @@ public class LayoutViewTabController {
     }
 
     /**
-     * Provides a lambda the controller uses to guard canvas renders to the
-     * layout tab's active state, preventing Prism RTTexture NPEs.
+     * Proporciona una lambda que el controlador usa para proteger los renders del lienzo al
+     * estado activo de la pestaña de distribución, evitando NPEs de Prism RTTexture.
      *
-     * @param isActive supplier that returns {@code true} when the layout tab is currently active
+     * @param isActive proveedor que retorna {@code true} cuando la pestaña de distribución está actualmente activa
      */
     public void setTabActiveCheck(Supplier<Boolean> isActive) {
         this.isTabActive = isActive;
     }
 
-    /** Called by the shell when the layout view tab is selected. */
+    /** Llamado por el shell cuando la pestaña de vista de distribución está seleccionada. */
     public void onTabActivated() {
         Event selectedEvent = layoutEventSelector.getSelectionModel().getSelectedItem();
         if (selectedEvent != null) {
@@ -167,7 +167,7 @@ public class LayoutViewTabController {
         }
     }
 
-    // ── Data loading ──────────────────────────────────────────────────────────
+    // ── Carga de datos ─────────────────────────────────────────────────────────
 
     private void loadLayoutEventsAsync() {
         User capturedAdmin = currentAdminUser;
@@ -251,7 +251,7 @@ public class LayoutViewTabController {
         t.start();
     }
 
-    // ── Canvas rendering ──────────────────────────────────────────────────────
+    // ── Renderizado del lienzo ──────────────────────────────────────────────────────
 
     private void clearLayoutView() {
         layoutEventNameLabel.setText("No event selected");
@@ -400,7 +400,7 @@ public class LayoutViewTabController {
         gc.restore();
     }
 
-    // ── Canvas event handlers ─────────────────────────────────────────────────
+    // ── Manejadores de eventos del lienzo ──────────────────────────────────────────────
 
     private void handleLayoutScroll(ScrollEvent e) {
         if (e.getDeltaY() == 0) return;
@@ -452,7 +452,7 @@ public class LayoutViewTabController {
         layoutHoverLabel.setText("");
     }
 
-    // ── Export handler ────────────────────────────────────────────────────────
+    // ── Manejador de exportación ─────────────────────────────────────────────────────────
 
     @FXML
     private void handleExportLayout() {

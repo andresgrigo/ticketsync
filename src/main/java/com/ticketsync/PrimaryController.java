@@ -4,14 +4,14 @@ import java.io.IOException;
 import javafx.fxml.FXML;
 
 /**
- * Secondary FXML controller used during initial application navigation.
+ * Controlador FXML secundario utilizado durante la navegación inicial de la aplicación.
  *
- * <p>Provides a navigation action to switch from the secondary view back to
- * the primary view via {@link App#setRoot(String)}.
+ * <p>Proporciona una acción de navegación para cambiar desde la vista secundaria
+ * de vuelta a la vista primaria mediante {@link App#setRoot(String)}.
  */
 public class PrimaryController {
 
-    /** Creates a new {@code PrimaryController} instance (invoked by FXMLLoader via reflection). */
+    /** Crea una nueva instancia de {@code PrimaryController} (invocada por FXMLLoader vía reflexión). */
     public PrimaryController() {
     }
 

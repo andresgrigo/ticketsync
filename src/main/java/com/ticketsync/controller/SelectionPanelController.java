@@ -16,14 +16,14 @@ import com.ticketsync.util.ThemeStyleHelper;
 import java.util.Objects;
 
 /**
- * FXML controller for the selection panel sidebar shown in the POS view.
+ * Controlador FXML para la barra lateral del panel de selección mostrada en la vista del POS.
  *
- * <p>Displays the currently selected seats, total price, lock countdown, and
- * confirmation/release actions. Binds its UI elements to a {@link SelectionPanelViewModel}.
+ * <p>Muestra los asientos seleccionados actualmente, el precio total, la cuenta regresiva de bloqueo
+ * y las acciones de confirmación/liberación. Enlaza sus elementos de UI a un {@link SelectionPanelViewModel}.
  */
 public class SelectionPanelController {
 
-    /** Creates a new SelectionPanelController; instantiated by FXMLLoader. */
+    /** Crea un nuevo SelectionPanelController; instanciado por FXMLLoader. */
     public SelectionPanelController() { }
 
     @FXML private VBox rootContainer;
@@ -48,10 +48,10 @@ public class SelectionPanelController {
     private ObservableStringValue confirmPurchaseTooltipSource;
 
     /**
-     * Initialises the controller after FXML injection.
+     * Inicializa el controlador después de la inyección FXML.
      *
-     * <p>Configures the seat list view to be non-focus-traversable so that
-     * keyboard focus stays on the seat-map canvas.
+     * <p>Configura la vista de lista de asientos para que no sea navegable por foco, de modo que
+     * el foco de teclado permanezca en el lienzo del mapa de asientos.
      */
     @FXML
     public void initialize() {
@@ -59,10 +59,10 @@ public class SelectionPanelController {
     }
 
     /**
-     * Binds all UI controls to the given view-model, replacing any previous binding.
+     * Enlaza todos los controles de UI al view-model dado, reemplazando cualquier enlace previo.
      *
-     * @param viewModel the view-model to bind; must not be {@code null}
-     * @throws NullPointerException if {@code viewModel} is {@code null}
+     * @param viewModel el view-model a enlazar; no debe ser {@code null}
+     * @throws NullPointerException si {@code viewModel} es {@code null}
      */
     public void setViewModel(SelectionPanelViewModel viewModel) {
         SelectionPanelViewModel newViewModel = Objects.requireNonNull(viewModel, "viewModel must not be null");
@@ -87,20 +87,20 @@ public class SelectionPanelController {
     }
 
     /**
-     * Returns the view-model currently bound to this panel.
+     * Retorna el view-model actualmente enlazado a este panel.
      *
-     * @return the current view-model; may be {@code null} before {@link #setViewModel} is called
+     * @return el view-model actual; puede ser {@code null} antes de que se llame {@link #setViewModel}
      */
     public SelectionPanelViewModel getViewModel() {
         return viewModel;
     }
 
     /**
-     * Subscribes to the given observable string to show as the confirm-purchase button tooltip.
+     * Se suscribe al string observable dado para mostrarlo como tooltip del botón de confirmación de compra.
      *
-     * <p>Pass {@code null} to remove any previously installed tooltip source.
+     * <p>Pasar {@code null} para eliminar cualquier fuente de tooltip previamente instalada.
      *
-     * @param tooltipText observable providing the tooltip text; may be {@code null}
+     * @param tooltipText observable que proporciona el texto del tooltip; puede ser {@code null}
      */
     public void bindConfirmPurchaseTooltip(ObservableStringValue tooltipText) {
         if (confirmPurchaseTooltipSource != null) {
@@ -116,9 +116,9 @@ public class SelectionPanelController {
     }
 
     /**
-     * Unbinds all UI properties, disposes the current view-model, and removes tooltip subscriptions.
+     * Desenlaza todas las propiedades de UI, destruye el view-model actual y elimina las suscripciones de tooltip.
      *
-     * <p>Must be called when the owning controller is torn down to avoid memory leaks.
+     * <p>Debe llamarse cuando el controlador dueño es desmontado para evitar fugas de memoria.
      */
     public void dispose() {
         unbindCurrentViewModel();

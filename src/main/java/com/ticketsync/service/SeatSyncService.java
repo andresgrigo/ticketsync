@@ -16,17 +16,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Listens for PostgreSQL LISTEN/NOTIFY notifications on the {@code seat_update} channel
- * and dispatches seat ID updates to a registered callback on the JavaFX Application Thread.
+ * Escucha notificaciones PostgreSQL LISTEN/NOTIFY en el canal {@code seat_update}
+ * y despacha actualizaciones de ID de asiento a un callback registrado en el Hilo de Aplicación JavaFX.
  *
- * <p>A single dedicated connection is held permanently for the lifetime of the service.
- * This connection is never used for business queries — only for LISTEN/NOTIFY.
+ * <p>Se mantiene una sola conexión dedicada permanentemente durante la vida útil del servicio.
+ * Esta conexión nunca se usa para consultas de negocio — solo para LISTEN/NOTIFY.
  *
- * <p>A background daemon thread polls the connection every 500ms via {@code SELECT 1}.
- * After each poll, pending {@link PGNotification}s are retrieved via
- * {@link PGConnection#getNotifications()} and dispatched to the registered callback.
- * PGJDBC delivers notifications synchronously during statement execution, so polling
- * is required to pick them up.
+ * <p>Un hilo daemon en segundo plano sondea la conexión cada 500ms vía {@code SELECT 1}.
+ * Tras cada sondeo, se recuperan las {@link PGNotification}s pendientes vía
+ * {@link PGConnection#getNotifications()} y se despachan al callback registrado.
+ * PGJDBC entrega notificaciones sincónicamente durante la ejecución de sentencias, por lo que
+ * se requiere sondeo para recogerlas.
  */
 public class SeatSyncService {
 
@@ -44,15 +44,15 @@ public class SeatSyncService {
     private Consumer<Integer> seatUpdateCallback;
     private volatile boolean running;
 
-    /** Production constructor — uses live DB connection and JavaFX Platform.runLater. */
+    /** Constructor de producción — usa conexión BD activa y JavaFX Platform.runLater. */
     public SeatSyncService() {
         this.connFactory = DatabaseConfig::getConnection;
         this.uiRunner = Platform::runLater;
     }
 
     /**
-     * Test constructor — allows injecting a stub connection factory and a synchronous
-     * UI runner ({@code Runnable::run}) to avoid requiring DB or JavaFX toolkit in tests.
+     * Constructor de prueba — permite inyectar una fábrica de conexiones stub y un
+     * ejecutor de UI síncrono ({@code Runnable::run}) para evitar requerir BD o toolkit JavaFX en pruebas.
      */
     SeatSyncService(ConnectionFactory connFactory, Consumer<Runnable> uiRunner) {
         this.connFactory = connFactory;
@@ -60,10 +60,10 @@ public class SeatSyncService {
     }
 
     /**
-     * Opens a dedicated LISTEN connection, executes {@code LISTEN seat_update},
-     * and starts the background polling thread.
+     * Abre una conexión LISTEN dedicada, ejecuta {@code LISTEN seat_update},
+     * e inicia el hilo de sondeo en segundo plano.
      *
-     * @param callback invoked on the JavaFX thread with the updated seat ID
+     * @param callback invocado en el hilo JavaFX con el ID de asiento actualizado
      */
     public void startListening(Consumer<Integer> callback) {
         this.seatUpdateCallback = callback;
@@ -151,8 +151,8 @@ public class SeatSyncService {
     }
 
     /**
-     * Shuts down the polling thread and closes the dedicated LISTEN connection.
-     * Safe to call when the service has not been started (idempotent).
+     * Detiene el hilo de sondeo y cierra la conexión LISTEN dedicada.
+     * Seguro de llamar cuando el servicio no ha sido iniciado (idempotente).
      */
     public void stopListening() {
         running = false;

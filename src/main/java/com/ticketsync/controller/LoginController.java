@@ -18,20 +18,19 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * FXML controller for the login screen ({@code LoginView.fxml}).
+ * Controlador FXML para la pantalla de inicio de sesión ({@code LoginView.fxml}).
  *
- * <p>Binds JavaFX UI controls to a {@link LoginViewModel} and delegates
- * authentication to {@link AuthenticationService}. The actual
- * {@code authService.login()} call is executed on a background
- * {@link Task} thread so the FX application thread is never blocked.
+ * <p>Enlaza los controles de la UI de JavaFX a un {@link LoginViewModel} y delega
+ * la autenticación a {@link AuthenticationService}. La llamada real a
+ * {@code authService.login()} se ejecuta en un hilo {@link Task} en segundo plano
+ * para que el hilo de la aplicación FX nunca sea bloqueado.
  *
- * <p>On successful authentication the controller navigates to either the
- * admin dashboard view or the vendor POS view based on the authenticated
- * user's role.
+ * <p>Tras una autenticación exitosa, el controlador navega a la vista del panel de
+ * administración o a la vista del POS del vendedor, según el rol del usuario autenticado.
  */
 public class LoginController {
 
-    /** Creates a new {@code LoginController} instance (invoked by FXMLLoader via reflection). */
+    /** Crea una nueva instancia de {@code LoginController} (invocada por FXMLLoader mediante reflexión). */
     public LoginController() {
     }
 
@@ -53,11 +52,10 @@ public class LoginController {
     private LoginViewModel viewModel;
 
     /**
-     * Initialises the controller after the FXML root has been fully
-     * processed.
+     * Inicializa el controlador después de que la raíz FXML ha sido completamente procesada.
      *
-     * <p>Instantiates the {@link LoginViewModel} and establishes
-     * bidirectional bindings between UI controls and ViewModel properties.
+     * <p>Instancia el {@link LoginViewModel} y establece
+     * enlaces bidireccionales entre los controles de UI y las propiedades del ViewModel.
      */
     @FXML
     public void initialize() {
@@ -76,12 +74,12 @@ public class LoginController {
     }
 
     /**
-     * Handles the login action triggered by the login button or Enter key
-     * on the password field.
+     * Maneja la acción de inicio de sesión activada por el botón de inicio de sesión o la tecla Enter
+     * en el campo de contraseña.
      *
-     * <p>Validates that a username has been entered, then submits an
-     * authentication {@link Task} on a new daemon thread. UI controls are
-     * disabled for the duration of the task to prevent double-submission.
+     * <p>Valida que se haya ingresado un nombre de usuario, luego envía una
+     * {@link Task} de autenticación en un nuevo hilo demonio. Los controles de UI se
+     * deshabilitan durante la tarea para prevenir el doble envío.
      */
     @FXML
     private void handleLogin() {
@@ -140,16 +138,16 @@ public class LoginController {
     }
 
     /**
-     * Navigates to the appropriate view for the authenticated user's role.
+     * Navega a la vista apropiada para el rol del usuario autenticado.
      *
-     * <p>This method runs on the FX application thread (invoked from
-     * {@code Task.setOnSucceeded}). It sets the current user in
-     * {@link SessionContext} on the FX thread before loading the target
-     * FXML so that controllers such as {@code AdminDashboardController}
-     * can read the session via {@code SessionContext.getCurrentUser()}
-     * during their {@code initialize()} lifecycle method.
+     * <p>Este método se ejecuta en el hilo de la aplicación FX (invocado desde
+     * {@code Task.setOnSucceeded}). Establece el usuario actual en
+     * {@link SessionContext} en el hilo FX antes de cargar el FXML destino
+     * para que controladores como {@code AdminDashboardController}
+     * puedan leer la sesión mediante {@code SessionContext.getCurrentUser()}
+     * durante su método de ciclo de vida {@code initialize()}.
      *
-     * @param user the authenticated {@link User}; must not be {@code null}
+     * @param user el {@link User} autenticado; no debe ser {@code null}
      */
     private void navigateToRoleView(User user) {
         String role = user.getRole();
@@ -159,13 +157,13 @@ public class LoginController {
             return;
         }
         try {
-            // Populate the FX thread's ThreadLocal so AdminDashboardController.initialize()
-            // can read the session. AuthenticationService.login() runs on a background Task
-            // thread and sets the user there, but this method runs on the FX thread.
+            // Popula el ThreadLocal del hilo FX para que AdminDashboardController.initialize()
+            // pueda leer la sesión. AuthenticationService.login() se ejecuta en un hilo Task
+            // en segundo plano y establece el usuario allí, pero este método se ejecuta en el hilo FX.
             try {
                 SessionContext.setCurrentUser(user);
             } catch (IllegalArgumentException ex) {
-                // user is guaranteed non-null here; this branch is unreachable in practice
+                // user está garantizado como no nulo aquí; esta rama es inalcanzable en la práctica
                 LOGGER.error("Unexpected null user passed to navigateToRoleView", ex);
                 viewModel.errorMessageProperty().set("A system error occurred. Please try again.");
                 return;

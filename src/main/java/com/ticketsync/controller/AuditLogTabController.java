@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Read-only admin reporting surface backed by the {@code audit_log} table.
+ * Superficie de reporte administrativo de solo lectura respaldada por la tabla {@code audit_log}.
  */
 public class AuditLogTabController {
 
@@ -75,8 +75,8 @@ public class AuditLogTabController {
     @FXML private TableColumn<AuditLog, String> detailsColumn;
 
     /**
-     * Creates a new AuditLogTabController using the production {@link AuditService}.
-     * Instantiated by FXMLLoader via reflection.
+     * Crea un nuevo AuditLogTabController usando el {@link AuditService} de producción.
+     * Instanciado por FXMLLoader mediante reflexión.
      */
     public AuditLogTabController() {
         this(new AuditService());
@@ -87,8 +87,8 @@ public class AuditLogTabController {
     }
 
     /**
-     * FXML lifecycle method; binds table columns and loads initial audit data.
-     * Invoked by FXMLLoader after all {@code @FXML} fields are injected.
+     * Método de ciclo de vida FXML; enlaza las columnas de la tabla y carga los datos de auditoría iniciales.
+     * Invocado por FXMLLoader después de que todos los campos {@code @FXML} son inyectados.
      */
     @FXML
     public void initialize() {
@@ -146,10 +146,10 @@ public class AuditLogTabController {
     }
 
     /**
-     * Sets the authenticated admin user and triggers an initial data load.
+     * Establece el usuario administrador autenticado y activa una carga de datos inicial.
      *
-     * @param admin currently logged-in user; must have ADMIN role
-     * @throws SecurityException if the user is null or does not have ADMIN role
+     * @param admin usuario actualmente autenticado; debe tener rol ADMIN
+     * @throws SecurityException si el usuario es nulo o no tiene rol ADMIN
      */
     public void setAdminUser(User admin) {
         if (admin == null || !"ADMIN".equalsIgnoreCase(admin.getRole())) {
@@ -162,18 +162,18 @@ public class AuditLogTabController {
     }
 
     /**
-     * Registers a supplier that indicates whether this tab is currently active.
-     * Used to defer data loading when the tab is not visible.
+     * Registra un proveedor que indica si esta pestaña está actualmente activa.
+     * Se usa para diferir la carga de datos cuando la pestaña no es visible.
      *
-     * @param isActive supplier returning {@code true} when this tab is selected; must not be null
+     * @param isActive proveedor que retorna {@code true} cuando esta pestaña está seleccionada; no debe ser nulo
      */
     public void setTabActiveCheck(Supplier<Boolean> isActive) {
         this.isTabActive = isActive != null ? isActive : () -> true;
     }
 
     /**
-     * Called by the parent dashboard controller when this tab becomes the selected tab.
-     * Refreshes audit log data if an admin user has been set.
+     * Llamado por el controlador padre del panel cuando esta pestaña se convierte en la pestaña seleccionada.
+     * Actualiza los datos del registro de auditoría si se ha establecido un usuario administrador.
      */
     public void onTabActivated() {
         if (currentAdminUser != null && isTabActive.get()) {
@@ -187,14 +187,14 @@ public class AuditLogTabController {
     }
 
     /**
-     * Loads audit log entries filtered by the given parameters.
-     * Package-private to allow direct invocation from unit tests.
+     * Carga las entradas del registro de auditoría filtradas por los parámetros dados.
+     * Con visibilidad de paquete para permitir la invocación directa desde pruebas unitarias.
      *
-     * @param window        time window to query; defaults to {@code LAST_7_DAYS} when null
-     * @param actionFilter  action name to filter by, or {@code null} / "All Actions" for no filter
-     * @param usernameFilter username to filter by (case-insensitive), or null for no filter
-     * @return filtered list of audit log entries, sorted by timestamp descending
-     * @throws SQLException if the database query fails
+     * @param window        ventana de tiempo a consultar; por defecto {@code LAST_7_DAYS} cuando es nulo
+     * @param actionFilter  nombre de acción por el que filtrar, o {@code null} / "All Actions" para sin filtro
+     * @param usernameFilter nombre de usuario por el que filtrar (sin distinción de mayúsculas), o nulo para sin filtro
+     * @return lista filtrada de entradas del registro de auditoría, ordenada por marca de tiempo descendente
+     * @throws SQLException si la consulta a la base de datos falla
      */
     List<AuditLog> loadAuditEntries(TimeWindow window, String actionFilter, String usernameFilter)
             throws SQLException {
@@ -207,11 +207,11 @@ public class AuditLogTabController {
     }
 
     /**
-     * Builds a human-readable status message for the given list of audit entries.
-     * Package-private to allow unit testing without a JavaFX runtime.
+     * Construye un mensaje de estado legible por humanos para la lista de entradas de auditoría dada.
+     * Con visibilidad de paquete para permitir pruebas unitarias sin un runtime de JavaFX.
      *
-     * @param entries list of loaded audit log entries; may be null or empty
-     * @return status message describing the number of entries loaded
+     * @param entries lista de entradas del registro de auditoría cargadas; puede ser nula o vacía
+     * @return mensaje de estado que describe el número de entradas cargadas
      */
     String buildStatusMessage(List<AuditLog> entries) {
         if (entries == null || entries.isEmpty()) {

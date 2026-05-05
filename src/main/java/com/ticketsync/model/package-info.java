@@ -1,21 +1,21 @@
 /**
- * Domain model classes representing business entities.
+ * Clases del modelo de dominio que representan entidades de negocio.
  * 
- * <h2>Purpose</h2>
- * Pure Java POJOs mapping to database table schemas. Model classes have NO business logic,
- * NO database access, and NO JavaFX dependencies.
+ * <h2>Propósito</h2>
+ * POJOs de Java puro que mapean a los esquemas de tablas de la base de datos. Las clases del modelo NO tienen
+ * lógica de negocio, NO acceden a la base de datos y NO tienen dependencias de JavaFX.
  * 
- * <h2>Design Principles</h2>
+ * <h2>Principios de Diseño</h2>
  * <ul>
- *   <li>Each class maps to a database table (User maps to users, Event maps to events, etc.)</li>
- *   <li>Fields match database column names (camelCase in Java, snake_case in SQL)</li>
- *   <li>Immutability not enforced (JavaFX requires mutable beans for TableView binding)</li>
- *   <li>Primary keys are int types matching PostgreSQL SERIAL columns</li>
- *   <li>All classes implement equals(), hashCode(), and toString()</li>
+ *   <li>Cada clase mapea a una tabla de la base de datos (User a users, Event a events, etc.)</li>
+ *   <li>Los campos coinciden con los nombres de columna de la base de datos (camelCase en Java, snake_case en SQL)</li>
+ *   <li>La inmutabilidad no se aplica (JavaFX requiere beans mutables para el binding con TableView)</li>
+ *   <li>Las claves primarias son de tipo int correspondiendo a columnas SERIAL de PostgreSQL</li>
+ *   <li>Todas las clases implementan equals(), hashCode() y toString()</li>
  * </ul>
  * 
- * <h2>Usage Example</h2>
- * Create a new user entity, set properties, and persist via DAO.
+ * <h2>Ejemplo de Uso</h2>
+ * Crear una nueva entidad de usuario, establecer propiedades y persistir vía DAO.
  * 
  * @see com.ticketsync.dao
  * @see com.ticketsync.viewmodel

@@ -11,18 +11,18 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Immutable value object holding all fields needed to render a purchase receipt.
+ * Objeto de valor inmutable que contiene todos los campos necesarios para renderizar un recibo de compra.
  *
- * <p>Instances are created via {@link #fromSale(Sale, List)} or directly through
- * the canonical record constructor. The compact constructor validates and normalises
- * each component so that every {@code PurchaseReceiptDetails} is guaranteed to be
- * non-null and display-ready.
+ * <p>Las instancias se crean vía {@link #fromSale(Sale, List)} o directamente a través del
+ * constructor canónico del record. El constructor compacto valida y normaliza
+ * cada componente para que cada {@code PurchaseReceiptDetails} esté garantizado de ser
+ * no-null y listo para mostrar.
  *
- * @param transactionId  formatted transaction identifier (e.g. {@code TXN-20240101-120000-BBOOTH})
- * @param timestampText  human-readable sale timestamp (e.g. {@code January 1, 2024 12:00:00})
- * @param seatLines      unmodifiable list of seat descriptions included in the receipt
- * @param totalPriceText formatted total price (e.g. {@code EUR15.00})
- * @param boothId        normalised booth identifier; never {@code null}
+ * @param transactionId  identificador de transacción formateado (p.ej. {@code TXN-20240101-120000-BBOOTH})
+ * @param timestampText  timestamp de venta legible por humanos (p.ej. {@code January 1, 2024 12:00:00})
+ * @param seatLines      lista no modificable de descripciones de asientos incluidos en el recibo
+ * @param totalPriceText precio total formateado (p.ej. {@code EUR15.00})
+ * @param boothId        identificador de cabina normalizado; nunca {@code null}
  */
 public record PurchaseReceiptDetails(
         String transactionId,
@@ -38,9 +38,9 @@ public record PurchaseReceiptDetails(
             DateTimeFormatter.ofPattern("MMMM d, yyyy HH:mm:ss", Locale.ENGLISH);
 
     /**
-     * Compact constructor: validates required fields and normalises {@code boothId}.
+     * Constructor compacto: valida campos requeridos y normaliza {@code boothId}.
      *
-     * @throws NullPointerException if any required field is {@code null}
+     * @throws NullPointerException si algún campo requerido es {@code null}
      */
     public PurchaseReceiptDetails {
         transactionId = Objects.requireNonNull(transactionId, "transactionId must not be null");
@@ -51,11 +51,11 @@ public record PurchaseReceiptDetails(
     }
 
     /**
-     * Builds a {@code PurchaseReceiptDetails} from a completed sale.
+     * Construye un {@code PurchaseReceiptDetails} a partir de una venta completada.
      *
-     * @param sale      the completed sale; must not be {@code null}
-     * @param seatLines human-readable seat descriptions to include on the receipt
-     * @return a fully populated receipt details object; never {@code null}
+     * @param sale      la venta completada; no debe ser {@code null}
+     * @param seatLines descripciones de asientos legibles por humanos para incluir en el recibo
+     * @return un objeto de detalles de recibo completamente poblado; nunca {@code null}
      */
     public static PurchaseReceiptDetails fromSale(Sale sale, List<String> seatLines) {
         Objects.requireNonNull(sale, "sale must not be null");
@@ -69,12 +69,12 @@ public record PurchaseReceiptDetails(
     }
 
     /**
-     * Formats the transaction ID string for the given sale.
+     * Formatea la cadena de ID de transacción para la venta dada.
      *
-     * <p>Format: {@code TXN-<yyyyMMdd-HHmmss>-B<boothSuffix>}.
+     * <p>Formato: {@code TXN-<yyyyMMdd-HHmmss>-B<sufijoCabina>}.
      *
-     * @param sale the completed sale; must not be {@code null}
-     * @return formatted transaction ID; never {@code null}
+     * @param sale la venta completada; no debe ser {@code null}
+     * @return ID de transacción formateado; nunca {@code null}
      */
     public static String formatTransactionId(Sale sale) {
         Objects.requireNonNull(sale, "sale must not be null");
@@ -83,10 +83,10 @@ public record PurchaseReceiptDetails(
     }
 
     /**
-     * Formats a {@link LocalDateTime} as a human-readable receipt timestamp.
+     * Formatea un {@link LocalDateTime} como un timestamp de recibo legible por humanos.
      *
-     * @param timestamp the timestamp to format; must not be {@code null}
-     * @return formatted string such as {@code January 1, 2024 12:00:00}
+     * @param timestamp el timestamp a formatear; no debe ser {@code null}
+     * @return cadena formateada como {@code January 1, 2024 12:00:00}
      */
     public static String formatTimestamp(LocalDateTime timestamp) {
         return Objects.requireNonNull(timestamp, "timestamp must not be null").format(HUMAN_TIMESTAMP);

@@ -11,30 +11,30 @@ import javafx.scene.control.TextField;
 import java.util.List;
 
 /**
- * FXML controller for the user create/edit dialog ({@code UserFormView.fxml}).
+ * Controlador FXML para el diálogo de creación/edición de usuario ({@code UserFormView.fxml}).
  *
- * <p>Operates in two modes controlled by {@link Mode}:
+ * <p>Opera en dos modos controlados por {@link Mode}:
  * <ul>
- *   <li>{@link Mode#CREATE} — all fields visible and editable; validates
- *       username, password length, password confirmation, and role.</li>
- *   <li>{@link Mode#EDIT} — username shown read-only, password fields hidden;
- *       validates only that a role is selected.</li>
+ *   <li>{@link Mode#CREATE} — todos los campos visibles y editables; valida
+ *       nombre de usuario, longitud de contraseña, confirmación de contraseña y rol.</li>
+ *   <li>{@link Mode#EDIT} — nombre de usuario mostrado como solo lectura, campos de contraseña ocultos;
+ *       valida únicamente que se haya seleccionado un rol.</li>
  * </ul>
  *
- * <p>The dialog container (owned by {@code AdminDashboardController}) attaches
- * an event filter to the OK button that calls {@link #validate()} before
- * allowing the dialog to close, keeping all validation logic here.
+ * <p>El contenedor del diálogo (propiedad de {@code AdminDashboardController}) adjunta
+ * un filtro de eventos al botón Aceptar que llama a {@link #validate()} antes de
+ * permitir que el diálogo se cierre, manteniendo toda la lógica de validación aquí.
  */
 public class UserFormController {
 
-    /** Creates a new UserFormController; instantiated by FXMLLoader. */
+    /** Crea un nuevo UserFormController; instanciado por FXMLLoader. */
     public UserFormController() { }
 
-    /** Operational mode that determines which fields are active and what is validated. */
+    /** Modo operacional que determina qué campos están activos y qué se valida. */
     public enum Mode {
-        /** All fields are active; both username and password must be supplied. */
+        /** Todos los campos están activos; tanto el nombre de usuario como la contraseña deben proporcionarse. */
         CREATE,
-        /** Username is read-only; password fields are hidden; only role is editable. */
+        /** El nombre de usuario es de solo lectura; los campos de contraseña están ocultos; solo el rol es editable. */
         EDIT
     }
 
@@ -65,10 +65,10 @@ public class UserFormController {
     
 
     /**
-     * Initialises the controller after FXML injection.
+     * Inicializa el controlador después de la inyección FXML.
      *
-     * <p>Populates the role combo-box with the accepted role values and sets
-     * a placeholder prompt.
+     * <p>Rellena el combo-box de roles con los valores de rol aceptados y establece
+     * un prompt de marcador de posición.
      */
     @FXML
     public void initialize() {
@@ -77,14 +77,14 @@ public class UserFormController {
     }
 
     /**
-     * Sets the operational mode for this form.
+     * Establece el modo operacional para este formulario.
      *
-     * <p>In {@link Mode#EDIT} the username field is made read-only and both
-     * password rows are hidden so that the admin can change the role only.
-     * In {@link Mode#CREATE} all fields are shown and editable (default state
-     * after FXML initialisation).
+     * <p>En {@link Mode#EDIT} el campo de nombre de usuario se establece como solo lectura y ambas
+     * filas de contraseña se ocultan para que el administrador solo pueda cambiar el rol.
+     * En {@link Mode#CREATE} todos los campos se muestran y son editables (estado predeterminado
+     * después de la inicialización FXML).
      *
-     * @param mode the mode to apply; must not be {@code null}
+     * @param mode el modo a aplicar; no debe ser {@code null}
      */
     public void setMode(Mode mode) {
         this.mode = mode;
@@ -98,11 +98,11 @@ public class UserFormController {
     }
 
     /**
-     * Pre-populates the form fields with the data from an existing user.
+     * Rellena previamente los campos del formulario con los datos de un usuario existente.
      *
-     * <p>Should only be called in {@link Mode#EDIT} after {@link #setMode(Mode)}.
+     * <p>Solo debe llamarse en {@link Mode#EDIT} después de {@link #setMode(Mode)}.
      *
-     * @param user the user whose data should be displayed; must not be {@code null}
+     * @param user el usuario cuyos datos deben mostrarse; no debe ser {@code null}
      */
     public void setUser(User user) {
         usernameField.setText(user.getUsername());
@@ -110,14 +110,13 @@ public class UserFormController {
     }
 
     /**
-     * Validates the form contents according to the current mode.
+     * Valida el contenido del formulario según el modo actual.
      *
-     * <p>On failure the error label is made visible with an explanatory message
-     * and {@code false} is returned so the dialog container can suppress the
-     * close event. On success the error label is hidden and {@code true} is
-     * returned.
+     * <p>En caso de fallo, la etiqueta de error se hace visible con un mensaje explicativo
+     * y se retorna {@code false} para que el contenedor del diálogo pueda suprimir el
+     * evento de cierre. En caso de éxito, la etiqueta de error se oculta y se retorna {@code true}.
      *
-     * @return {@code true} if all validations pass; {@code false} otherwise
+     * @return {@code true} si todas las validaciones pasan; {@code false} en caso contrario
      */
     public boolean validate() {
         if (mode == Mode.CREATE) {
@@ -143,21 +142,21 @@ public class UserFormController {
     }
 
     /**
-     * Returns the username entered in the form, trimmed of leading/trailing whitespace.
+     * Retorna el nombre de usuario ingresado en el formulario, recortado de espacios en blanco al inicio/final.
      *
-     * @return the trimmed username string
+     * @return la cadena de nombre de usuario recortada
      */
     public String getUsername() {
         return usernameField.getText().trim();
     }
 
     /**
-     * Returns the password entered in the password field.
+     * Retorna la contraseña ingresada en el campo de contraseña.
      *
-     * <p>In {@link Mode#EDIT} the password fields are hidden; this method
-     * returns an empty string in that case.
+     * <p>En {@link Mode#EDIT} los campos de contraseña están ocultos; este método
+     * retorna una cadena vacía en ese caso.
      *
-     * @return the password string, or {@code ""} in EDIT mode
+     * @return la cadena de contraseña, o {@code ""} en modo EDIT
      */
     public String getPassword() {
         if (mode == Mode.EDIT) {
@@ -167,16 +166,16 @@ public class UserFormController {
     }
 
     /**
-     * Returns the role currently selected in the combo-box.
+     * Retorna el rol actualmente seleccionado en el combo-box.
      *
-     * @return the selected role string, or {@code null} if none is selected
+     * @return la cadena del rol seleccionado, o {@code null} si no hay ninguno seleccionado
      */
     public String getSelectedRole() {
         return roleComboBox.getValue();
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Métodos privados auxiliares
     // -------------------------------------------------------------------------
 
     private void setPasswordRowVisible(boolean visible) {
@@ -192,10 +191,10 @@ public class UserFormController {
     }
 
     /**
-     * Displays a validation error sourced externally (e.g. from a database
-     * uniqueness check performed by the calling controller).
+     * Muestra un error de validación proveniente de forma externa (por ejemplo, de una
+     * comprobación de unicidad en la base de datos realizada por el controlador llamante).
      *
-     * @param message the error message to display; must not be {@code null}
+     * @param message el mensaje de error a mostrar; no debe ser {@code null}
      */
     public void showExternalError(String message) {
         showError(message);

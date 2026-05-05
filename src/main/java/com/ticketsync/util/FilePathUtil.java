@@ -7,14 +7,14 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Centralized filesystem path handling for runtime directories.
+ * Manejo centralizado de rutas del sistema de archivos para directorios en tiempo de ejecución.
  *
- * <p>Uses {@link Path#of(String, String...)} consistently; on Java 21 this is the
- * same filesystem resolution strategy as {@code Paths.get(...)}.
+ * <p>Usa {@link Path#of(String, String...)} de forma consistente; en Java 21 esta es la
+ * misma estrategia de resolución del sistema de archivos que {@code Paths.get(...)}.
  */
 public final class FilePathUtil {
 
-    /** System property key for overriding the tickets output directory. */
+    /** Clave de propiedad del sistema para sobreescribir el directorio de salida de tickets. */
     public static final String TICKETS_DIRECTORY_PROPERTY = "ticketsync.tickets.dir";
     static final String CONFIG_DIRECTORY_PROPERTY = "ticketsync.config.dir";
     static final String LOG_FILE_PROPERTY = "ticketsync.log.file";
@@ -24,81 +24,81 @@ public final class FilePathUtil {
     }
 
     /**
-     * Returns the current user's home directory.
+     * Devuelve el directorio home del usuario actual.
      *
-     * @return absolute, normalised path to the user's home directory
+     * @return ruta absoluta y normalizada al directorio home del usuario
      */
     public static Path getUserHomeDirectory() {
         return normalize(Path.of(System.getProperty("user.home", ".")));
     }
 
     /**
-     * Returns the application's home directory for the current OS.
+     * Devuelve el directorio home de la aplicación para el sistema operativo actual.
      *
-     * <p>On Windows this is {@code C:\TicketSync}; on other platforms it is
+     * <p>En Windows es {@code C:\TicketSync}; en otras plataformas es
      * {@code ~/ticketsync}.
      *
-     * @return absolute, normalised path to the application home directory
+     * @return ruta absoluta y normalizada al directorio home de la aplicación
      */
     public static Path getAppHomeDirectory() {
         return resolveAppHomeDirectory(getUserHomeDirectory(), System.getProperty("os.name", ""));
     }
 
     /**
-     * Returns the application's log output directory.
+     * Devuelve el directorio de salida de logs de la aplicación.
      *
-     * @return absolute, normalised path to the logs directory
+     * @return ruta absoluta y normalizada al directorio de logs
      */
     public static Path getLogsDirectory() {
         return resolveLogsDirectory(getAppHomeDirectory());
     }
 
     /**
-     * Returns the application's configuration directory.
+     * Devuelve el directorio de configuración de la aplicación.
      *
-     * @return absolute, normalised path to {@code ~/.ticketsync/config}
+     * @return ruta absoluta y normalizada a {@code ~/.ticketsync/config}
      */
     public static Path getConfigDirectory() {
         return resolveConfigDirectory(getUserHomeDirectory());
     }
 
     /**
-     * Returns the path to the JDBC properties file.
+     * Devuelve la ruta al archivo de propiedades JDBC.
      *
-     * @return absolute, normalised path to {@code ~/.ticketsync/config/jdbc.properties}
+     * @return ruta absoluta y normalizada a {@code ~/.ticketsync/config/jdbc.properties}
      */
     public static Path getJdbcPropertiesPath() {
         return getConfigDirectory().resolve("jdbc.properties").normalize();
     }
 
     /**
-     * Returns the tickets output directory.
+     * Devuelve el directorio de salida de tickets.
      *
-     * <p>Falls back to {@code ./tickets} relative to the working directory when the
-     * {@value #TICKETS_DIRECTORY_PROPERTY} system property is not set.
+     * <p>Recurre a {@code ./tickets} relativo al directorio de trabajo cuando la
+     * propiedad del sistema {@value #TICKETS_DIRECTORY_PROPERTY} no está configurada.
      *
-     * @return absolute, normalised path to the tickets directory
+     * @return ruta absoluta y normalizada al directorio de tickets
      */
     public static Path getTicketsDirectory() {
         return resolveTicketsDirectory(System.getProperty(TICKETS_DIRECTORY_PROPERTY));
     }
 
     /**
-     * Creates all intermediate directories for the given path, if they do not already exist.
+     * Crea todos los directorios intermedios para la ruta dada, si no existen.
      *
-     * @param path the directory path to create; must not be {@code null}
-     * @return the normalised, absolute path that was created or already existed
-     * @throws IOException if the directories cannot be created
+     * @param path la ruta del directorio a crear; no debe ser {@code null}
+     * @return la ruta normalizada y absoluta que fue creada o ya existía
+     * @throws IOException si los directorios no se pueden crear
      */
     public static Path ensureDirectoryExists(Path path) throws IOException {
         return Files.createDirectories(normalize(path));
     }
 
     /**
-     * Initialises the Log4j runtime system properties used by the logging configuration.
+     * Inicializa las propiedades del sistema de ejecución de Log4j usadas por la configuración de logging.
      *
-     * <p>Must be called once before any logging occurs. Called by {@code App}'s
-     * static initialiser to guarantee early execution.
+     * <p>Debe llamarse una vez antes de que ocurra cualquier registro. Lo llama el inicializador
+     * estático de {@code App} para garantizar una ejecución temprana.
      */
     public static void initializeRuntimeProperties() {
         Path logsDirectory = getLogsDirectory();
@@ -108,9 +108,10 @@ public final class FilePathUtil {
     }
 
     /**
-     * Ensures the application runtime directories (logs and config) exist, creating them if necessary.
+     * Asegura que los directorios de ejecución de la aplicación (logs y configuración) existan,
+     * creándolos si es necesario.
      *
-     * @throws IOException if any directory cannot be created
+     * @throws IOException si cualquier directorio no puede ser creado
      */
     public static void ensureApplicationDirectories() throws IOException {
         ensureDirectoryExists(getLogsDirectory());

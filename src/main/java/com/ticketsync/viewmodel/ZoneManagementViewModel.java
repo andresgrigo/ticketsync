@@ -13,19 +13,19 @@ import javafx.collections.ObservableList;
 import java.util.List;
 
 /**
- * Presentation-layer state for the zone management table within the Admin Dashboard Seating tab.
+ * Estado de la capa de presentación para la tabla de gestión de zonas de la pestaña Asientos del Panel de Administración.
  *
- * <p>Holds an {@link ObservableList} of {@link Zone} objects that the
- * {@code AdminDashboardController} binds to its zones {@code TableView}.
- * Changes to the list are automatically reflected in the UI through JavaFX
- * property bindings.
+ * <p>Mantiene una {@link ObservableList} de objetos {@link Zone} que el
+ * {@code AdminDashboardController} enlaza a su {@code TableView} de zonas.
+ * Los cambios en la lista se reflejan automáticamente en la UI mediante
+ * los enlaces de propiedades de JavaFX.
  *
- * <p>This class has no reference to JavaFX UI controls and can therefore be
- * tested without initialising the JavaFX toolkit.
+ * <p>Esta clase no tiene referencia a controles de la UI de JavaFX y por tanto puede ser
+ * probada sin inicializar el toolkit de JavaFX.
  */
 public class ZoneManagementViewModel {
 
-    /** Creates a new ZoneManagementViewModel with an empty zone list. */
+    /** Crea un nuevo ZoneManagementViewModel con una lista de zonas vacía. */
     public ZoneManagementViewModel() { }
 
     private final ObservableList<Zone> zones = FXCollections.observableArrayList();
@@ -34,45 +34,45 @@ public class ZoneManagementViewModel {
     private final StringProperty statusMessage = new SimpleStringProperty("");
 
     /**
-     * Returns the observable list of zones displayed in the table.
+     * Retorna la lista observable de zonas mostradas en la tabla.
      *
-     * @return the observable zones list; never {@code null}
+     * @return la lista observable de zonas; nunca {@code null}
      */
     public ObservableList<Zone> zonesProperty() {
         return zones;
     }
 
     /**
-     * Returns the currently selected zone property.
+     * Retorna la propiedad de la zona actualmente seleccionada.
      *
-     * @return the selectedZone property
+     * @return la propiedad selectedZone
      */
     public ObjectProperty<Zone> selectedZoneProperty() {
         return selectedZone;
     }
 
     /**
-     * Returns the loading flag property.
+     * Retorna la propiedad indicadora de carga.
      *
-     * @return the loading property
+     * @return la propiedad loading
      */
     public BooleanProperty loadingProperty() {
         return loading;
     }
 
     /**
-     * Returns the status message property.
+     * Retorna la propiedad de mensaje de estado.
      *
-     * @return the statusMessage property
+     * @return la propiedad statusMessage
      */
     public StringProperty statusMessageProperty() {
         return statusMessage;
     }
 
     /**
-     * Replaces the contents of the zones list with the supplied list.
+     * Reemplaza el contenido de la lista de zonas con la lista proporcionada.
      *
-     * @param newZones the new list of zones; may be {@code null} (treated as empty)
+     * @param newZones la nueva lista de zonas; puede ser {@code null} (tratado como vacío)
      */
     public void setZones(List<Zone> newZones) {
         zones.clear();
@@ -82,27 +82,27 @@ public class ZoneManagementViewModel {
     }
 
     /**
-     * Appends a zone to the observable list.
+     * Agrega una zona a la lista observable.
      *
-     * @param zone the zone to add; must not be {@code null}
+     * @param zone la zona a agregar; no debe ser {@code null}
      */
     public void addZone(Zone zone) {
         zones.add(zone);
     }
 
     /**
-     * Removes the zone with the matching {@code zoneId} from the observable list.
+     * Elimina la zona con el {@code zoneId} coincidente de la lista observable.
      *
-     * @param zone the zone to remove; matched by {@code zoneId}
+     * @param zone la zona a eliminar; igualada por {@code zoneId}
      */
     public void removeZone(Zone zone) {
         zones.removeIf(z -> z.getZoneId() == zone.getZoneId());
     }
 
     /**
-     * Replaces the zone with the matching {@code zoneId} in the observable list.
+     * Reemplaza la zona con el {@code zoneId} coincidente en la lista observable.
      *
-     * @param zone the updated zone; matched and replaced by {@code zoneId}
+     * @param zone la zona actualizada; igualada y reemplazada por {@code zoneId}
      */
     public void updateZone(Zone zone) {
         for (int i = 0; i < zones.size(); i++) {

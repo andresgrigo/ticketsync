@@ -33,16 +33,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * FXML controller for the events management tab within the Admin Dashboard.
+ * Controlador FXML para la pestaña de gestión de eventos del Panel de Administración.
  *
- * <p>Displays a {@link javafx.scene.control.TableView} of {@link Event} objects and
- * provides actions to create, edit, delete, and toggle the active state of events.
- * Delegates all event CRUD operations to {@link EventService} and uses
- * {@link EventManagementViewModel} to manage observable state.
+ * <p>Muestra un {@link javafx.scene.control.TableView} de objetos {@link Event} y
+ * proporciona acciones para crear, editar, eliminar y alternar el estado activo de los eventos.
+ * Delega todas las operaciones CRUD de eventos a {@link EventService} y usa
+ * {@link EventManagementViewModel} para gestionar el estado observable.
  */
 public class EventsTabController {
 
-    /** Creates a new {@code EventsTabController} instance (invoked by FXMLLoader via reflection). */
+    /** Crea una nueva instancia de {@code EventsTabController} (invocada por FXMLLoader mediante reflexión). */
     public EventsTabController() {
     }
 
@@ -66,11 +66,11 @@ public class EventsTabController {
     @FXML private Label eventsStatusLabel;
 
     /**
-     * Initialises the controller after FXML injection.
+     * Inicializa el controlador después de la inyección FXML.
      *
-     * <p>Configures table column cell-value factories, status cell styling,
-     * binds the events table to the view-model observable list, and wires
-     * button enabled states to the table selection.
+     * <p>Configura las fábricas de valores de celda de las columnas, el estilo de celdas de estado,
+     * enlaza la tabla de eventos a la lista observable del view-model y conecta
+     * los estados habilitados de los botones a la selección de la tabla.
      */
     @FXML
     public void initialize() {
@@ -137,9 +137,9 @@ public class EventsTabController {
     }
 
     /**
-     * Called by the shell controller once the admin identity is known.
+     * Llamado por el controlador shell una vez que la identidad del administrador es conocida.
      *
-     * @param admin the authenticated administrator user; must not be {@code null}
+     * @param admin el usuario administrador autenticado; no debe ser {@code null}
      */
     public void setAdminUser(User admin) {
         this.currentAdminUser = admin;

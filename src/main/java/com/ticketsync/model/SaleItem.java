@@ -4,47 +4,47 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * Represents a single seat within a sale transaction.
- * Maps to the 'sale_items' database table.
+ * Representa un asiento individual dentro de una transacción de venta.
+ * Mapea a la tabla de base de datos 'sale_items'.
  * 
- * <h2>Junction Table</h2>
- * This class represents the many-to-many relationship between Sales and Seats.
- * Each SaleItem links one seat to one sale, recording the price paid at time of purchase.
+ * <h2>Tabla de Unión</h2>
+ * Esta clase representa la relación muchos-a-muchos entre Sales y Seats.
+ * Cada SaleItem vincula un asiento a una venta, registrando el precio pagado al momento de la compra.
  * 
- * <h2>Price History</h2>
- * The {@code pricePaid} field preserves historical pricing even if zone prices change later.
- * This ensures accurate financial reporting and audit trails.
+ * <h2>Historial de Precios</h2>
+ * El campo {@code pricePaid} preserva el historial de precios incluso si los precios de zona cambian después.
+ * Esto garantiza reportes financieros precisos y rastros de auditoría.
  * 
  * @see com.ticketsync.dao.SaleDAO
  * @see Sale
  * @see Seat
  */
 public class SaleItem {
-    /** Primary key from sale_items.sale_item_id column. */
+    /** Clave primaria de la columna sale_items.sale_item_id. */
     private int saleItemId;
     
-    /** Foreign key to sales.sale_id. */
+    /** Clave foránea a sales.sale_id. */
     private int saleId;
     
-    /** Foreign key to seats.seat_id. */
+    /** Clave foránea a seats.seat_id. */
     private int seatId;
     
-    /** Price at time of purchase (historical record). */
+    /** Precio al momento de la compra (registro histórico). */
     private BigDecimal pricePaid;
     
     /**
-     * Default constructor for JDBC mapping.
+     * Constructor por defecto para mapeo JDBC.
      */
     public SaleItem() {
     }
     
     /**
-     * Constructs a SaleItem with all fields.
+     * Construye un SaleItem con todos los campos.
      * 
-     * @param saleItemId Primary key
-     * @param saleId Sale this item belongs to
-     * @param seatId Seat that was sold
-     * @param pricePaid Price paid for this seat
+     * @param saleItemId Clave primaria
+     * @param saleId Venta a la que pertenece este ítem
+     * @param seatId Asiento que fue vendido
+     * @param pricePaid Precio pagado por este asiento
      */
     public SaleItem(int saleItemId, int saleId, int seatId, BigDecimal pricePaid) {
         this.saleItemId = saleItemId;
@@ -53,87 +53,87 @@ public class SaleItem {
         this.pricePaid = pricePaid;
     }
     
-    // Getters and Setters
+    // Getters y Setters
 
     /**
-     * Returns the sale item ID.
+     * Devuelve el ID del ítem de venta.
      *
-     * @return the sale item ID
+     * @return el ID del ítem de venta
      */
     public int getSaleItemId() {
         return saleItemId;
     }
 
     /**
-     * Sets the sale item ID.
+     * Establece el ID del ítem de venta.
      *
-     * @param saleItemId the sale item ID
+     * @param saleItemId el ID del ítem de venta
      */
     public void setSaleItemId(int saleItemId) {
         this.saleItemId = saleItemId;
     }
 
     /**
-     * Returns the sale ID this item belongs to.
+     * Devuelve el ID de la venta a la que pertenece este ítem.
      *
-     * @return the sale ID
+     * @return el ID de la venta
      */
     public int getSaleId() {
         return saleId;
     }
 
     /**
-     * Sets the sale ID this item belongs to.
+     * Establece el ID de la venta a la que pertenece este ítem.
      *
-     * @param saleId the sale ID
+     * @param saleId el ID de la venta
      */
     public void setSaleId(int saleId) {
         this.saleId = saleId;
     }
 
     /**
-     * Returns the seat ID associated with this sale item.
+     * Devuelve el ID del asiento asociado a este ítem de venta.
      *
-     * @return the seat ID
+     * @return el ID del asiento
      */
     public int getSeatId() {
         return seatId;
     }
 
     /**
-     * Sets the seat ID associated with this sale item.
+     * Establece el ID del asiento asociado a este ítem de venta.
      *
-     * @param seatId the seat ID
+     * @param seatId el ID del asiento
      */
     public void setSeatId(int seatId) {
         this.seatId = seatId;
     }
 
     /**
-     * Returns the price paid for this seat.
+     * Devuelve el precio pagado por este asiento.
      *
-     * @return the price paid; never {@code null}
+     * @return el precio pagado; nunca {@code null}
      */
     public BigDecimal getPricePaid() {
         return pricePaid;
     }
 
     /**
-     * Sets the price paid for this seat.
+     * Establece el precio pagado por este asiento.
      *
-     * @param pricePaid the price paid
+     * @param pricePaid el precio pagado
      */
     public void setPricePaid(BigDecimal pricePaid) {
         this.pricePaid = pricePaid;
     }
     
-    // Utility Methods
+    // Métodos de Utilidad
     
     /**
-     * Compares sale items based on primary key.
+     * Compara ítems de venta basado en la clave primaria.
      * 
-     * @param o Object to compare
-     * @return true if same saleItemId, false otherwise
+     * @param o Objeto a comparar
+     * @return true si tienen el mismo saleItemId, false en caso contrario
      */
     @Override
     public boolean equals(Object o) {
@@ -148,9 +148,9 @@ public class SaleItem {
     }
     
     /**
-     * Hash based on primary key.
+     * Hash basado en la clave primaria.
      * 
-     * @return Hash code
+     * @return Código hash
      */
     @Override
     public int hashCode() {
@@ -158,9 +158,9 @@ public class SaleItem {
     }
     
     /**
-     * String representation for debugging.
+     * Representación en cadena para depuración.
      * 
-     * @return String representation
+     * @return Representación en cadena
      */
     @Override
     public String toString() {

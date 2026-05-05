@@ -15,13 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * JDBC implementation of {@link AuditDAO}.
+ * Implementación JDBC de {@link AuditDAO}.
  */
 public class AuditDAOImpl implements AuditDAO {
 
     private static final Logger LOGGER = LogManager.getLogger(AuditDAOImpl.class);
 
-    /** Creates a new AuditDAOImpl using the production connection factory. */
+    /** Crea un nuevo AuditDAOImpl usando la fábrica de conexiones de producción. */
     public AuditDAOImpl() { }
 
     private static final String SQL_INSERT =

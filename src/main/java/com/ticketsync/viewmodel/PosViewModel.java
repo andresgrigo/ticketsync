@@ -33,41 +33,41 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Presentation-layer state for the Vendor POS event selector.
+ * Estado de la capa de presentación para el selector de eventos del POS del Vendedor.
  *
- * <p>Holds the observable list of all active events and a displayed
- * {@link ObservableList} that the ComboBox binds to. Filtering is implemented by
- * repopulating the displayed list via {@link #filterEvents(String)}; this avoids
- * using {@code FilteredList.setPredicate()} which triggers a JavaFX 21 bug
- * ({@code ReadOnlyUnbackedObservableList.subList()} reads a stale size during
- * a ComboBox click-dispatch and throws {@code IndexOutOfBoundsException}).
+ * <p>Mantiene la lista observable de todos los eventos activos y una
+ * {@link ObservableList} mostrada a la que el ComboBox se enlaza. El filtrado se implementa
+ * repoblando la lista mostrada mediante {@link #filterEvents(String)}; esto evita
+ * usar {@code FilteredList.setPredicate()} que activa un error de JavaFX 21
+ * ({@code ReadOnlyUnbackedObservableList.subList()} lee un tamaño desactualizado durante
+ * el despacho de clic del ComboBox y lanza {@code IndexOutOfBoundsException}).
  *
- * <p>This class has no reference to JavaFX UI controls and can therefore be
- * tested without initialising the JavaFX toolkit.
+ * <p>Esta clase no tiene referencia a controles de la UI de JavaFX y por tanto puede ser
+ * probada sin inicializar el toolkit de JavaFX.
  *
- * <p>("POS Main View with Seat Map") will consume
- * {@link #selectedEventProperty()} to drive seat loading. Retrieve this
- * view-model from the controller via {@code PosController#getViewModel()}.
+ * <p>("Vista Principal del POS con Mapa de Asientos") consumirá
+ * {@link #selectedEventProperty()} para controlar la carga de asientos. Recupere este
+ * view-model del controlador mediante {@code PosController#getViewModel()}.
  */
 public class PosViewModel {
 
     private static final DateTimeFormatter SYNC_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
-     * Represents the overall system health visible to the POS operator.
+     * Representa el estado general de salud del sistema visible para el operador del POS.
      *
-     * <p>Mirrors {@link com.ticketsync.util.DatabaseHealthMonitor.RuntimeStatus} but
-     * adds the transient {@link #RESTORED} state used to drive the "connection restored"
-     * notification banner.
+     * <p>Refleja {@link com.ticketsync.util.DatabaseHealthMonitor.RuntimeStatus} pero
+     * agrega el estado transitorio {@link #RESTORED} utilizado para activar el banner
+     * de notificación "conexión restaurada".
      */
     public enum SystemHealthState {
-        /** Normal operating state; the database is reachable and purchases are allowed. */
+        /** Estado de operación normal; la base de datos es accesible y las compras están permitidas. */
         HEALTHY,
-        /** Database unreachable; the POS is in read-only / no-sell fail-safe mode. */
+        /** Base de datos no accesible; el POS está en modo de seguridad de solo lectura / sin ventas. */
         FAIL_SAFE,
-        /** Previous heartbeat failed; the monitor is actively retrying the connection. */
+        /** El latido previo falló; el monitor está reintentando activamente la conexión. */
         RECONNECTING,
-        /** Transient state signalling that connectivity was just restored; transitions to {@link #HEALTHY}. */
+        /** Estado transitorio que indica que la conectividad acaba de restaurarse; transiciona a {@link #HEALTHY}. */
         RESTORED
     }
 
@@ -91,8 +91,8 @@ public class PosViewModel {
     private final Supplier<LocalDateTime> timestampSupplier;
 
     /**
-     * Creates a production {@code PosViewModel} wired to the singleton
-     * {@link com.ticketsync.util.DatabaseHealthMonitor} and the system clock.
+     * Crea un {@code PosViewModel} de producción conectado al singleton
+     * {@link com.ticketsync.util.DatabaseHealthMonitor} y al reloj del sistema.
      */
     public PosViewModel() {
         this(
@@ -105,13 +105,13 @@ public class PosViewModel {
     }
 
     /**
-     * Creates a {@code PosViewModel} with a custom database-connected observable and timestamp supplier.
+     * Crea un {@code PosViewModel} con un observable de conexión de base de datos personalizado y proveedor de marca de tiempo.
      *
-     * <p>Used in tests to supply a controlled {@code ObservableBooleanValue} without starting the
-     * real {@link com.ticketsync.util.DatabaseHealthMonitor}.
+     * <p>Usado en pruebas para proporcionar un {@code ObservableBooleanValue} controlado sin iniciar el
+     * {@link com.ticketsync.util.DatabaseHealthMonitor} real.
      *
-     * @param databaseConnected observable boolean that is {@code true} when the DB is reachable
-     * @param timestampSupplier supplier used to generate "last sync" timestamp strings
+     * @param databaseConnected observable booleano que es {@code true} cuando la BD es accesible
+     * @param timestampSupplier proveedor utilizado para generar cadenas de marca de tiempo de "última sincronización"
      */
     public PosViewModel(ObservableBooleanValue databaseConnected, Supplier<LocalDateTime> timestampSupplier) {
         this(
@@ -124,13 +124,13 @@ public class PosViewModel {
     }
 
     /**
-     * Full-control constructor used in unit tests.
+     * Constructor de control total utilizado en pruebas unitarias.
      *
-     * @param databaseConnected    observable boolean; {@code true} when DB is reachable
-     * @param runtimeStatus        observable runtime status from the health monitor
-     * @param retryAttemptCount    observable retry counter exposed by the health monitor
-     * @param retryIntervalSeconds observable current check interval in seconds
-     * @param timestampSupplier    supplier used to generate "last sync" timestamp strings
+     * @param databaseConnected    observable booleano; {@code true} cuando la BD es accesible
+     * @param runtimeStatus        estado de ejecución observable del monitor de salud
+     * @param retryAttemptCount    contador de reintentos observable expuesto por el monitor de salud
+     * @param retryIntervalSeconds intervalo de verificación actual observable en segundos
+     * @param timestampSupplier    proveedor utilizado para generar cadenas de marca de tiempo de "última sincronización"
      */
     public PosViewModel(
             ObservableBooleanValue databaseConnected,
@@ -174,22 +174,22 @@ public class PosViewModel {
     }
 
     /**
-     * Returns the displayed events list that the {@code ComboBox} binds to.
+     * Retorna la lista de eventos mostrados a la que el {@code ComboBox} se enlaza.
      *
-     * <p>Updated by {@link #setEvents(List)} on load and by
-     * {@link #filterEvents(String)} whenever the user types in the search field.
+     * <p>Actualizada por {@link #setEvents(List)} al cargar y por
+     * {@link #filterEvents(String)} cuando el usuario escribe en el campo de búsqueda.
      *
-     * @return the displayed events list; never {@code null}
+     * @return la lista de eventos mostrados; nunca {@code null}
      */
     public ObservableList<Event> getFilteredEvents() {
         return displayedEvents;
     }
 
     /**
-     * Replaces the backing list with the supplied events and resets the filter
-     * predicate so that all items are visible after a fresh load.
+     * Reemplaza la lista de respaldo con los eventos proporcionados y restablece el predicado
+     * de filtro para que todos los elementos sean visibles después de una carga nueva.
      *
-     * @param events the new list of active events; must not be {@code null}
+     * @param events la nueva lista de eventos activos; no debe ser {@code null}
      */
     public void setEvents(List<Event> events) {
         allEvents.setAll(events);
@@ -197,14 +197,14 @@ public class PosViewModel {
     }
 
     /**
-     * Repopulates the displayed list with events whose name contains {@code query}
-     * (case-insensitive). Passing a blank or {@code null} query restores all events.
+     * Repuebla la lista mostrada con eventos cuyo nombre contiene {@code query}
+     * (sin distinción de mayúsculas). Pasar una consulta en blanco o {@code null} restaura todos los eventos.
      *
-     * <p>Uses {@link ObservableList#setAll} rather than {@code FilteredList.setPredicate()}
-     * to avoid a JavaFX 21 crash caused by predicate changes firing during ComboBox
-     * click-dispatch while {@code ReadOnlyUnbackedObservableList} still holds a stale size.
+     * <p>Usa {@link ObservableList#setAll} en lugar de {@code FilteredList.setPredicate()}
+     * para evitar un fallo de JavaFX 21 causado por cambios de predicado que se disparan durante el
+     * despacho de clic del ComboBox mientras {@code ReadOnlyUnbackedObservableList} aún mantiene un tamaño desactualizado.
      *
-     * @param query the text typed by the user; may be {@code null} or blank
+     * @param query el texto escrito por el usuario; puede ser {@code null} o estar en blanco
      */
     public void filterEvents(String query) {
         if (query == null || query.isBlank()) {
@@ -220,145 +220,145 @@ public class PosViewModel {
     }
 
     /**
-     * Returns the selected event property.
+     * Retorna la propiedad del evento seleccionado.
      *
-     * <p>Bound to the ComboBox selection model so that downstream controllers
-     * (seat-map POS) can observe changes without querying the
-     * ComboBox directly.
+     * <p>Enlazada al modelo de selección del ComboBox para que los controladores
+     * descendentes (POS de mapa de asientos) puedan observar cambios sin consultar
+     * el ComboBox directamente.
      *
-     * @return the selectedEvent property; never {@code null}
+     * @return la propiedad selectedEvent; nunca {@code null}
      */
     public ObjectProperty<Event> selectedEventProperty() {
         return selectedEvent;
     }
 
     /**
-     * Returns a read-only view of the purchase-enabled property.
+     * Retorna una vista de solo lectura de la propiedad de compra habilitada.
      *
-     * <p>This property is bound to {@link DatabaseHealthMonitor#connectedProperty()}.
-     * It becomes {@code false} automatically when the database goes offline
-     * (fail-safe mode) and re-enables when connectivity is restored.
+     * <p>Esta propiedad está enlazada a {@link DatabaseHealthMonitor#connectedProperty()}.
+     * Se convierte en {@code false} automáticamente cuando la base de datos se desconecta
+     * (modo de seguridad) y se vuelve a habilitar cuando se restaura la conectividad.
      *
-     * @return the purchaseEnabled property; never {@code null}
+     * @return la propiedad purchaseEnabled; nunca {@code null}
      */
     public ReadOnlyBooleanProperty purchaseEnabledProperty() {
         return purchaseEnabled.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property indicating whether the database is healthy.
+     * Retorna una propiedad de solo lectura que indica si la base de datos está en buen estado.
      *
-     * @return the databaseHealthy property; never {@code null}
+     * @return la propiedad databaseHealthy; nunca {@code null}
      */
     public ReadOnlyBooleanProperty databaseHealthyProperty() {
         return databaseHealthy.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the number of available seats for the selected event.
+     * Retorna una propiedad de solo lectura que contiene el número de asientos disponibles para el evento seleccionado.
      *
-     * @return the availableSeatCount property; never {@code null}
+     * @return la propiedad availableSeatCount; nunca {@code null}
      */
     public ReadOnlyIntegerProperty availableSeatCountProperty() {
         return availableSeatCount.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the current system health state.
+     * Retorna una propiedad de solo lectura que contiene el estado de salud del sistema actual.
      *
-     * @return the systemHealthState property; never {@code null}
+     * @return la propiedad systemHealthState; nunca {@code null}
      */
     public ReadOnlyObjectProperty<SystemHealthState> systemHealthStateProperty() {
         return systemHealthState.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the display text for the selected event.
+     * Retorna una propiedad de solo lectura que contiene el texto de visualización del evento seleccionado.
      *
-     * @return the selectedEventText property; never {@code null}
+     * @return la propiedad selectedEventText; nunca {@code null}
      */
     public ReadOnlyStringProperty selectedEventTextProperty() {
         return selectedEventText.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the formatted available-seat count text.
+     * Retorna una propiedad de solo lectura que contiene el texto de conteo de asientos disponibles formateado.
      *
-     * @return the availableSeatCountText property; never {@code null}
+     * @return la propiedad availableSeatCountText; nunca {@code null}
      */
     public ReadOnlyStringProperty availableSeatCountTextProperty() {
         return availableSeatCountText.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the formatted booth ID text.
+     * Retorna una propiedad de solo lectura que contiene el texto de ID de cabina formateado.
      *
-     * @return the boothIdText property; never {@code null}
+     * @return la propiedad boothIdText; nunca {@code null}
      */
     public ReadOnlyStringProperty boothIdTextProperty() {
         return boothIdText.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the database connection status text.
+     * Retorna una propiedad de solo lectura que contiene el texto de estado de conexión de la base de datos.
      *
-     * @return the databaseStatusText property; never {@code null}
+     * @return la propiedad databaseStatusText; nunca {@code null}
      */
     public ReadOnlyStringProperty databaseStatusTextProperty() {
         return databaseStatusText.getReadOnlyProperty();
     }
     /**
-     * Returns a read-only property holding the health badge display text (e.g. "HEALTHY").
+     * Retorna una propiedad de solo lectura que contiene el texto de visualización de la insignia de salud (p. ej. "HEALTHY").
      *
-     * @return the systemHealthBadgeText property; never {@code null}
+     * @return la propiedad systemHealthBadgeText; nunca {@code null}
      */
     public ReadOnlyStringProperty systemHealthBadgeTextProperty() {
         return systemHealthBadgeText.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the system health banner text shown to the operator.
+     * Retorna una propiedad de solo lectura que contiene el texto del banner de salud del sistema mostrado al operador.
      *
-     * @return the systemHealthBannerText property; never {@code null}
+     * @return la propiedad systemHealthBannerText; nunca {@code null}
      */
     public ReadOnlyStringProperty systemHealthBannerTextProperty() {
         return systemHealthBannerText.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property indicating whether the system health banner should be shown.
+     * Retorna una propiedad de solo lectura que indica si el banner de salud del sistema debe mostrarse.
      *
-     * @return the systemHealthBannerVisible property; never {@code null}
+     * @return la propiedad systemHealthBannerVisible; nunca {@code null}
      */
     public ReadOnlyBooleanProperty systemHealthBannerVisibleProperty() {
         return systemHealthBannerVisible.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the human-readable reason why purchases are blocked,
-     * or an empty string when purchases are allowed.
+     * Retorna una propiedad de solo lectura que contiene la razón legible por humanos por la que las compras están bloqueadas,
+     * o una cadena vacía cuando las compras están permitidas.
      *
-     * @return the purchaseBlockedReasonText property; never {@code null}
+     * @return la propiedad purchaseBlockedReasonText; nunca {@code null}
      */
     public ReadOnlyStringProperty purchaseBlockedReasonTextProperty() {
         return purchaseBlockedReasonText.getReadOnlyProperty();
     }
 
     /**
-     * Returns a read-only property holding the formatted timestamp of the last successful seat sync.
+     * Retorna una propiedad de solo lectura que contiene la marca de tiempo formateada de la última sincronización exitosa de asientos.
      *
-     * @return the lastSyncTimestampText property; never {@code null}
+     * @return la propiedad lastSyncTimestampText; nunca {@code null}
      */
     public ReadOnlyStringProperty lastSyncTimestampTextProperty() {
         return lastSyncTimestampText.getReadOnlyProperty();
     }
 
     /**
-     * Updates the booth ID displayed in the header bar.
+     * Actualiza el ID de cabina mostrado en la barra de encabezado.
      *
-     * <p>If {@code boothId} is {@code null} or blank the display reverts to "Booth: Unassigned".
+     * <p>Si {@code boothId} es {@code null} o está en blanco, la visualización vuelve a "Booth: Unassigned".
      *
-     * @param boothId the booth identifier string; may be {@code null}
+     * @param boothId la cadena de identificador de cabina; puede ser {@code null}
      */
     public void setBoothId(String boothId) {
         if (boothId == null || boothId.isBlank()) {
@@ -369,12 +369,12 @@ public class PosViewModel {
     }
 
     /**
-     * Updates the available-seat count from a freshly loaded seat list.
+     * Actualiza el conteo de asientos disponibles a partir de una lista de asientos recién cargada.
      *
-     * <p>Counts only seats with status {@link com.ticketsync.model.SeatStatus#AVAILABLE}.
-     * A {@code null} list is treated as zero available seats.
+     * <p>Cuenta solo asientos con estado {@link com.ticketsync.model.SeatStatus#AVAILABLE}.
+     * Una lista {@code null} se trata como cero asientos disponibles.
      *
-     * @param seats the current seat list for the selected event; may be {@code null}
+     * @param seats la lista de asientos actual para el evento seleccionado; puede ser {@code null}
      */
     public void updateAvailableSeatCount(List<Seat> seats) {
         long availableCount = seats == null
@@ -384,18 +384,18 @@ public class PosViewModel {
     }
 
     /**
-     * Updates the "last sync" timestamp text to the current instant provided by the
-     * configured timestamp supplier.
+     * Actualiza el texto de marca de tiempo de "última sincronización" al instante actual proporcionado
+     * por el proveedor de marca de tiempo configurado.
      */
     public void markLastSyncNow() {
         lastSyncTimestampText.set("Last Sync: " + timestampSupplier.get().format(SYNC_TIMESTAMP_FORMATTER));
     }
 
     /**
-     * Transitions the health state from {@link SystemHealthState#RESTORED} back to
-     * {@link SystemHealthState#HEALTHY} once the caller has displayed the restoration notice.
+     * Hace la transición del estado de salud de {@link SystemHealthState#RESTORED} de vuelta a
+     * {@link SystemHealthState#HEALTHY} una vez que el llamador ha mostrado el aviso de restauración.
      *
-     * <p>If the current state is not {@code RESTORED} this method is a no-op.
+     * <p>Si el estado actual no es {@code RESTORED}, este método no hace nada.
      */
     public void acknowledgeRestoredState() {
         if (systemHealthState.get() == SystemHealthState.RESTORED) {

@@ -6,19 +6,19 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
 /**
- * Presentation-layer state for the login screen.
+ * Estado de la capa de presentación para la pantalla de inicio de sesión.
  *
- * <p>Holds observable JavaFX properties for username, password, in-progress
- * state, and error message. The {@link com.ticketsync.controller.LoginController}
- * binds UI controls to these properties so that all state changes are
- * automatically reflected in the view.
+ * <p>Mantiene propiedades JavaFX observables para el nombre de usuario, la contraseña,
+ * el estado en progreso y el mensaje de error. El {@link com.ticketsync.controller.LoginController}
+ * enlaza los controles de la UI a estas propiedades para que todos los cambios de estado
+ * se reflejen automáticamente en la vista.
  *
- * <p>This class has no reference to JavaFX UI controls and therefore can be
- * tested without initialising the JavaFX toolkit.
+ * <p>Esta clase no tiene referencia a controles de la UI de JavaFX y por tanto puede ser
+ * probada sin inicializar el toolkit de JavaFX.
  */
 public class LoginViewModel {
 
-    /** Creates a new {@code LoginViewModel} with empty property values. */
+    /** Crea un nuevo {@code LoginViewModel} con valores de propiedad vacíos. */
     public LoginViewModel() {
     }
 
@@ -28,52 +28,52 @@ public class LoginViewModel {
     private final StringProperty errorMessage = new SimpleStringProperty("");
 
     /**
-     * Returns the observable username property.
+     * Retorna la propiedad observable del nombre de usuario.
      *
-     * @return username property bound bidirectionally to the username field
+     * @return propiedad de nombre de usuario enlazada bidireccionalmente al campo de nombre de usuario
      */
     public StringProperty usernameProperty() {
         return username;
     }
 
     /**
-     * Returns the observable password property.
+     * Retorna la propiedad observable de la contraseña.
      *
-     * @return password property bound bidirectionally to the password field
+     * @return propiedad de contraseña enlazada bidireccionalmente al campo de contraseña
      */
     public StringProperty passwordProperty() {
         return password;
     }
 
     /**
-     * Returns the observable login-in-progress property.
+     * Retorna la propiedad observable de inicio de sesión en progreso.
      *
-     * <p>When {@code true}, the login button and credential fields are disabled
-     * to prevent double-submission.
+     * <p>Cuando es {@code true}, el botón de inicio de sesión y los campos de credenciales
+     * se deshabilitan para prevenir el doble envío.
      *
-     * @return loginInProgress property
+     * @return propiedad loginInProgress
      */
     public BooleanProperty loginInProgressProperty() {
         return loginInProgress;
     }
 
     /**
-     * Returns the observable error message property.
+     * Retorna la propiedad observable del mensaje de error.
      *
-     * <p>When non-empty, the error label in the view becomes visible and
-     * displays this text.
+     * <p>Cuando no está vacía, la etiqueta de error en la vista se hace visible
+     * y muestra este texto.
      *
-     * @return errorMessage property
+     * @return propiedad errorMessage
      */
     public StringProperty errorMessageProperty() {
         return errorMessage;
     }
 
     /**
-     * Clears the current error message.
+     * Limpia el mensaje de error actual.
      *
-     * <p>Hides the error label in the view by setting the message to an
-     * empty string.
+     * <p>Oculta la etiqueta de error en la vista estableciendo el mensaje como
+     * cadena vacía.
      */
     public void resetError() {
         errorMessage.set("");

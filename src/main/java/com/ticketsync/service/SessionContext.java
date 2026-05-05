@@ -5,50 +5,50 @@ import com.ticketsync.model.User;
 import java.util.Optional;
 
 /**
- * Thread-local session context providing role-based access control state for the
- * currently authenticated user.
+ * Contexto de sesión thread-local que proporciona estado de control de acceso basado en roles
+ * para el usuario actualmente autenticado.
  *
- * <p>This class is non-instantiable. All methods are static and operate on a
- * per-thread {@link ThreadLocal} storage, making it safe to use across
- * concurrent request-handling threads without synchronisation.
+ * <p>Esta clase no es instanciable. Todos los métodos son estáticos y operan sobre almacenamiento
+ * {@link ThreadLocal} por hilo, haciéndolo seguro para usar en hilos de manejo de solicitudes
+ * concurrentes sin sincronización.
  *
- * <p><strong>Usage pattern:</strong>
+ * <p><strong>Patrón de uso:</strong>
  * <pre>{@code
- * // After successful login:
+ * // Tras un inicio de sesión exitoso:
  * SessionContext.setCurrentUser(user);
  *
- * // In a controller or service:
+ * // En un controlador o servicio:
  * Optional<User> user = SessionContext.getCurrentUser();
  * boolean isAdmin = SessionContext.hasRole("ADMIN");
  *
- * // On logout:
+ * // Al cerrar sesión:
  * SessionContext.clearCurrentUser();
  * }</pre>
  *
- * <p><strong>Thread-pool note:</strong> Always call {@link #clearCurrentUser()} when
- * the user's operation is complete. Using {@code remove()} (not {@code set(null)})
- * ensures the entry is fully removed from the thread-local table, preventing memory
- * leaks in thread-pool environments such as HikariCP's connection threads.
+ * <p><strong>Nota sobre pools de hilos:</strong> Llame siempre a {@link #clearCurrentUser()} cuando
+ * la operación del usuario se complete. Usar {@code remove()} (no {@code set(null)})
+ * garantiza que la entrada se elimine completamente de la tabla thread-local, previniendo fugas
+ * de memoria en entornos de pool de hilos como los hilos de conexión de HikariCP.
  *
  * @see AuthenticationService
  */
 public final class SessionContext {
 
     /**
-     * Per-thread storage for the currently authenticated {@link User}.
-     * Starts empty; populated by {@link #setCurrentUser(User)}.
+     * Almacenamiento por hilo para el {@link User} actualmente autenticado.
+     * Comienza vacío; se puebla por {@link #setCurrentUser(User)}.
      */
     private static final ThreadLocal<User> CURRENT_USER = new ThreadLocal<>();
 
-    /** Private constructor — this utility class must not be instantiated. */
+    /** Constructor privado — esta clase de utilidad no debe ser instanciada. */
     private SessionContext() {
     }
 
     /**
-     * Stores the given {@link User} as the currently authenticated user for this thread.
+     * Almacena el {@link User} dado como el usuario autenticado actualmente para este hilo.
      *
-     * @param user the authenticated user to store; must not be {@code null}
-     * @throws IllegalArgumentException if {@code user} is {@code null}
+     * @param user el usuario autenticado a almacenar; no debe ser {@code null}
+     * @throws IllegalArgumentException si {@code user} es {@code null}
      */
     public static void setCurrentUser(User user) {
         if (user == null) {
@@ -58,35 +58,35 @@ public final class SessionContext {
     }
 
     /**
-     * Returns the currently authenticated user for this thread.
+     * Devuelve el usuario actualmente autenticado para este hilo.
      *
-     * @return an {@link Optional} containing the logged-in {@link User},
-     *         or {@link Optional#empty()} if no user is currently authenticated
+     * @return un {@link Optional} con el {@link User} que tiene sesión iniciada,
+     *         o {@link Optional#empty()} si ningún usuario está autenticado actualmente
      */
     public static Optional<User> getCurrentUser() {
         return Optional.ofNullable(CURRENT_USER.get());
     }
 
     /**
-     * Removes the current user session for this thread.
+     * Elimina la sesión del usuario actual para este hilo.
      *
-     * <p>Calls {@link ThreadLocal#remove()} rather than {@code set(null)} to fully
-     * remove the thread-local entry and avoid memory leaks in thread-pool environments.
+     * <p>Llama a {@link ThreadLocal#remove()} en lugar de {@code set(null)} para eliminar
+     * completamente la entrada thread-local y evitar fugas de memoria en entornos de pool de hilos.
      */
     public static void clearCurrentUser() {
         CURRENT_USER.remove();
     }
 
     /**
-     * Returns {@code true} if the currently authenticated user has the specified role.
+     * Devuelve {@code true} si el usuario actualmente autenticado tiene el rol especificado.
      *
-     * <p>Role comparison is case-insensitive (e.g., {@code "admin"} matches {@code "ADMIN"}).
-     * Returns {@code false} when no user is logged in or when {@code role} is {@code null}.
+     * <p>La comparación de rol es insensible a mayúsculas (p.ej., {@code "admin"} coincide con {@code "ADMIN"}).
+     * Devuelve {@code false} cuando ningún usuario tiene sesión iniciada o cuando {@code role} es {@code null}.
      *
-     * @param role the role name to check (e.g., {@code "ADMIN"}, {@code "VENDOR"});
-     *             if {@code null}, returns {@code false} without throwing
-     * @return {@code true} if the current user's role matches {@code role}
-     *         (case-insensitive); {@code false} otherwise
+     * @param role el nombre del rol a comprobar (p.ej., {@code "ADMIN"}, {@code "VENDOR"});
+     *             si es {@code null}, devuelve {@code false} sin lanzar excepción
+     * @return {@code true} si el rol del usuario actual coincide con {@code role}
+     *         (insensible a mayúsculas); {@code false} en caso contrario
      */
     public static boolean hasRole(String role) {
         if (role == null) {

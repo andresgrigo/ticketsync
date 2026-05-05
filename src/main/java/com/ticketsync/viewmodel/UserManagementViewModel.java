@@ -13,19 +13,19 @@ import javafx.collections.ObservableList;
 import java.util.List;
 
 /**
- * Presentation-layer state for the user management table within the Admin Dashboard.
+ * Estado de la capa de presentación para la tabla de gestión de usuarios del Panel de Administración.
  *
- * <p>Holds an {@link ObservableList} of {@link User} objects that the
- * {@code AdminDashboardController} binds to its {@code TableView}. Changes
- * to the list are automatically reflected in the UI through JavaFX property
- * bindings.
+ * <p>Mantiene una {@link ObservableList} de objetos {@link User} que el
+ * {@code AdminDashboardController} enlaza a su {@code TableView}. Los cambios
+ * en la lista se reflejan automáticamente en la UI mediante los enlaces de
+ * propiedades de JavaFX.
  *
- * <p>This class has no reference to JavaFX UI controls and can therefore be
- * tested without initialising the JavaFX toolkit.
+ * <p>Esta clase no tiene referencia a controles de la UI de JavaFX y por tanto puede ser
+ * probada sin inicializar el toolkit de JavaFX.
  */
 public class UserManagementViewModel {
 
-    /** Creates a new UserManagementViewModel with an empty user list. */
+    /** Crea un nuevo UserManagementViewModel con una lista de usuarios vacía. */
     public UserManagementViewModel() { }
 
     private final ObservableList<User> users = FXCollections.observableArrayList();
@@ -34,54 +34,54 @@ public class UserManagementViewModel {
     private final ObjectProperty<User> selectedUser = new SimpleObjectProperty<>(null);
 
     /**
-     * Returns the observable list of users displayed in the table.
+     * Retorna la lista observable de usuarios mostrados en la tabla.
      *
-     * @return the observable users list; never {@code null}
+     * @return la lista observable de usuarios; nunca {@code null}
      */
     public ObservableList<User> usersProperty() {
         return users;
     }
 
     /**
-     * Returns the loading flag property.
+     * Retorna la propiedad indicadora de carga.
      *
-     * <p>When {@code true}, a background data-loading operation is in progress.
+     * <p>Cuando es {@code true}, una operación de carga de datos en segundo plano está en progreso.
      *
-     * @return the loading property
+     * @return la propiedad loading
      */
     public BooleanProperty loadingProperty() {
         return loading;
     }
 
     /**
-     * Returns the status message property used to display loading or error text.
+     * Retorna la propiedad de mensaje de estado utilizada para mostrar texto de carga o error.
      *
-     * @return the statusMessage property
+     * @return la propiedad statusMessage
      */
     public StringProperty statusMessageProperty() {
         return statusMessage;
     }
 
     /**
-     * Returns the currently selected user property.
+     * Retorna la propiedad del usuario actualmente seleccionado.
      *
-     * <p>Bound to the {@code TableView} selection model so that controller
-     * action handlers can retrieve the selected row without querying the
-     * table directly.
+     * <p>Enlazada al modelo de selección del {@code TableView} para que los manejadores
+     * de acciones del controlador puedan recuperar la fila seleccionada sin consultar
+     * la tabla directamente.
      *
-     * @return the selectedUser property
+     * @return la propiedad selectedUser
      */
     public ObjectProperty<User> selectedUserProperty() {
         return selectedUser;
     }
 
     /**
-     * Replaces the contents of the users list with the supplied list.
+     * Reemplaza el contenido de la lista de usuarios con la lista proporcionada.
      *
-     * <p>The existing list is cleared first so that any previously loaded
-     * data is discarded before repopulating.
+     * <p>La lista existente se limpia primero para que los datos previamente cargados
+     * sean descartados antes de repoblar.
      *
-     * @param list the new list of users to display; must not be {@code null}
+     * @param list la nueva lista de usuarios a mostrar; no debe ser {@code null}
      */
     public void setUsers(List<User> list) {
         users.clear();
@@ -89,28 +89,28 @@ public class UserManagementViewModel {
     }
 
     /**
-     * Appends a single user to the end of the observable list.
+     * Agrega un único usuario al final de la lista observable.
      *
-     * @param user the user to add; must not be {@code null}
+     * @param user el usuario a agregar; no debe ser {@code null}
      */
     public void addUser(User user) {
         users.add(user);
     }
 
     /**
-     * Removes the user whose {@code userId} matches the supplied user.
+     * Elimina el usuario cuyo {@code userId} coincide con el usuario proporcionado.
      *
-     * @param user the user to remove; matched by {@code userId}
+     * @param user el usuario a eliminar; igualado por {@code userId}
      */
     public void removeUser(User user) {
         users.removeIf(u -> u.getUserId() == user.getUserId());
     }
 
     /**
-     * Replaces the list entry whose {@code userId} matches that of the
-     * supplied user with the new user object.
+     * Reemplaza la entrada de la lista cuyo {@code userId} coincide con el del
+     * usuario proporcionado con el nuevo objeto de usuario.
      *
-     * @param updated the updated user; matched and replaced by {@code userId}
+     * @param updated el usuario actualizado; igualado y reemplazado por {@code userId}
      */
     public void updateUser(User updated) {
         for (int i = 0; i < users.size(); i++) {

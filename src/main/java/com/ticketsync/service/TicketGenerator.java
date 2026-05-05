@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Generates printable ticket PDFs as in-memory bytes for downstream printing or fallback saving.
+ * Genera PDFs de boletos imprimibles como bytes en memoria para impresión posterior o guardado alternativo.
  */
 public class TicketGenerator {
 
@@ -70,7 +70,7 @@ public class TicketGenerator {
     private final ConnectionFactory connFactory;
 
     /**
-     * Creates a new TicketGenerator using production DAO and database connection.
+     * Crea un nuevo TicketGenerator usando DAO de producción y conexión de base de datos.
      */
     public TicketGenerator() {
         this(new EventDAOImpl(), new SeatDAOImpl(), new ZoneDAOImpl(), DatabaseConfig::getConnection);
@@ -84,12 +84,12 @@ public class TicketGenerator {
     }
 
     /**
-     * Generates a ticket PDF as in-memory bytes for the given sale and its line items.
+     * Genera un PDF de boleto como bytes en memoria para la venta dada y sus ítems de línea.
      *
-     * @param sale  the completed sale record; must not be null
-     * @param items the list of seat line items included in the sale; must not be null or empty
-     * @return raw PDF bytes ready for printing or file persistence
-     * @throws TicketGenerationException if data cannot be loaded or the PDF cannot be rendered
+     * @param sale  el registro de venta completada; no debe ser null
+     * @param items la lista de ítems de asiento incluidos en la venta; no debe ser null ni estar vacía
+     * @return bytes PDF crudos listos para imprimir o persistencia en archivo
+     * @throws TicketGenerationException si los datos no pueden cargarse o el PDF no puede renderizarse
      */
     public byte[] generateTicket(Sale sale, List<SaleItem> items) throws TicketGenerationException {
         Sale validatedSale = validateSale(sale);

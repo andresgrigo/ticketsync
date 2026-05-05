@@ -32,35 +32,35 @@ import java.util.Optional;
 public interface SeatDAO {
     
     /**
-     * Finds a seat by primary key.
-     * 
-     * @param conn Active database connection
-     * @param seatId Primary key of seat to retrieve
-     * @return Optional containing Seat if found, empty otherwise
-     * @throws SQLException if database access error occurs
-     * @throws IllegalArgumentException if seatId is zero or negative
+     * Encuentra un asiento por clave primaria.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param seatId Clave primaria del asiento a recuperar
+     * @return Optional que contiene Seat si se encontró, vacío en caso contrario
+     * @throws SQLException si ocurre un error de acceso a la base de datos
+     * @throws IllegalArgumentException si seatId es cero o negativo
      */
     Optional<Seat> findById(Connection conn, int seatId) throws SQLException;
     
     /**
-     * Retrieves all seats for a specific zone.
-     * Used in admin seating layout editor.
-     * 
-     * @param conn Active database connection
-     * @param zoneId Zone ID to retrieve seats for
-     * @return List of seats in zone, empty list if none exist
-     * @throws SQLException if database access error occurs
+     * Recupera todos los asientos de una zona específica.
+     * Utilizado en el editor de plano de asientos del administrador.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param zoneId ID de zona para recuperar asientos
+     * @return Lista de asientos en la zona, lista vacía si no existen
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     List<Seat> findByZoneId(Connection conn, int zoneId) throws SQLException;
     
     /**
-     * Retrieves all seats for a specific event (across all zones).
-     * Used in vendor POS seat map display.
-     * 
-     * @param conn Active database connection
-     * @param eventId Event ID to retrieve seats for
-     * @return List of seats for event, empty list if none exist
-     * @throws SQLException if database access error occurs
+     * Recupera todos los asientos de un evento específico (en todas las zonas).
+     * Utilizado en la visualización del mapa de asientos del POS del vendedor.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param eventId ID del evento para recuperar asientos
+     * @return Lista de asientos del evento, lista vacía si no existen
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     List<Seat> findByEventId(Connection conn, int eventId) throws SQLException;
     
@@ -97,44 +97,44 @@ public interface SeatDAO {
     List<Seat> selectForUpdate(Connection conn, List<Integer> seatIds) throws SQLException;
     
     /**
-     * Atomically updates seat status and sale reference.
-     * Used in purchase transaction to mark seats as SOLD.
-     * 
-     * <p>This method is called AFTER {@link #selectForUpdate} in the transaction.
-     * 
-     * @param conn Active database connection
-     * @param seatIds List of seat IDs to update
-     * @param status New seat status (typically SOLD)
-     * @param saleId Sale ID to associate with seats (null for AVAILABLE/DISABLED/RESERVED status)
-     * @throws SQLException if database access error occurs
-     * @throws IllegalArgumentException if seatIds is null or empty, status is null, or status is
-     *         SOLD with a null saleId
+     * Actualiza atómicamente el estado del asiento y la referencia de venta.
+     * Utilizado en la transacción de compra para marcar asientos como SOLD.
+     *
+     * <p>Este método se llama DESPUÉS de {@link #selectForUpdate} en la transacción.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param seatIds Lista de IDs de asientos a actualizar
+     * @param status Nuevo estado del asiento (generalmente SOLD)
+     * @param saleId ID de venta para asociar con asientos (null para estado AVAILABLE/DISABLED/RESERVED)
+     * @throws SQLException si ocurre un error de acceso a la base de datos
+     * @throws IllegalArgumentException si seatIds es null o vacía, status es null, o status es
+     *         SOLD con saleId null
      */
     void updateStatus(Connection conn, List<Integer> seatIds, SeatStatus status, Integer saleId)
             throws SQLException;
     
     /**
-     * Inserts a new seat into the database.
-     * Used in admin seating layout editor.
-     * 
-     * @param conn Active database connection
-     * @param seat Seat object to insert (seatId field is ignored; database generates the key)
-     * @return Generated seat_id from database
-     * @throws SQLException if database access error or constraint violation occurs
-     * @throws IllegalArgumentException if seat is null
+     * Inserta un nuevo asiento en la base de datos.
+     * Utilizado en el editor de plano de asientos del administrador.
+     *
+     * @param conn Conexión de base de datos activa
+     * @param seat Objeto Seat a insertar (el campo seatId se ignora; la base de datos genera la clave)
+     * @return seat_id generado por la base de datos
+     * @throws SQLException si ocurre un error de acceso a la base de datos o violación de restricción
+     * @throws IllegalArgumentException si seat es null
      */
     int insert(Connection conn, Seat seat) throws SQLException;
     
     /**
-     * Deletes a seat from the database.
-     * Used in admin seating layout editor when removing seats.
-     * 
-     * <p><strong>Note:</strong> Deletion may fail due to foreign key constraints
-     * if seat has been sold (sale_id foreign key).
-     * 
-     * @param conn Active database connection
-     * @param seatId Primary key of seat to delete
-     * @throws SQLException if database access error or constraint violation occurs
+     * Elimina un asiento de la base de datos.
+     * Utilizado en el editor de plano de asientos del administrador cuando se eliminan asientos.
+     *
+     * <p><strong>Nota:</strong> La eliminación puede fallar debido a restricciones de clave foránea
+     * si el asiento ha sido vendido (clave foránea sale_id).
+     *
+     * @param conn Conexión de base de datos activa
+     * @param seatId Clave primaria del asiento a eliminar
+     * @throws SQLException si ocurre un error de acceso a la base de datos o violación de restricción
      */
     void delete(Connection conn, int seatId) throws SQLException;
 }

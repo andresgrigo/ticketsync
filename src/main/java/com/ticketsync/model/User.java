@@ -4,51 +4,51 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Represents a system user with role-based access control.
- * Maps to the 'users' database table.
+ * Representa un usuario del sistema con control de acceso basado en roles.
+ * Mapea a la tabla de base de datos 'users'.
  * 
  * <h2>Roles</h2>
  * <ul>
- *   <li>ADMIN: Full system access (user management, event config, seating layout, sales reports)</li>
- *   <li>VENDOR: Point-of-sale access only (event selection, seat purchase, ticket printing)</li>
+ *   <li>ADMIN: Acceso completo al sistema (gestión de usuarios, configuración de eventos, plano de asientos, informes de ventas)</li>
+ *   <li>VENDOR: Solo acceso al punto de venta (selección de eventos, compra de asientos, impresión de tickets)</li>
  * </ul>
  * 
- * <h2>Security</h2>
- * The {@code passwordHash} field stores BCrypt hashed passwords, never plaintext.
- * Password hashing uses BCrypt (jBCrypt).
+ * <h2>Seguridad</h2>
+ * El campo {@code passwordHash} almacena contraseñas hasheadas con BCrypt, nunca en texto plano.
+ * El hash de contraseñas usa BCrypt (jBCrypt).
  * 
  * @see com.ticketsync.dao.UserDAO
  */
 public class User {
-    /** Primary key from users.user_id column. */
+    /** Clave primaria de la columna users.user_id. */
     private int userId;
     
-    /** Unique username for login authentication. */
+    /** Nombre de usuario único para autenticación de inicio de sesión. */
     private String username;
     
-    /** BCrypt hashed password (never plaintext). */
+    /** Contraseña hasheada con BCrypt (nunca en texto plano). */
     private String passwordHash;
     
-    /** User role: "ADMIN" or "VENDOR". */
+    /** Rol del usuario: "ADMIN" o "VENDOR". */
     private String role;
     
-    /** Timestamp when user account was created. */
+    /** Marca de tiempo de cuando se creó la cuenta del usuario. */
     private LocalDateTime createdAt;
     
     /**
-     * Default constructor for JDBC mapping.
+     * Constructor por defecto para mapeo JDBC.
      */
     public User() {
     }
     
     /**
-     * Constructs a User with all fields.
+     * Construye un User con todos los campos.
      * 
-     * @param userId Primary key
-     * @param username Login username
-     * @param passwordHash BCrypt hashed password
-     * @param role User role ("ADMIN" or "VENDOR")
-     * @param createdAt Account creation timestamp
+     * @param userId Clave primaria
+     * @param username Nombre de usuario de inicio de sesión
+     * @param passwordHash Contraseña hasheada con BCrypt
+     * @param role Rol del usuario ("ADMIN" o "VENDOR")
+     * @param createdAt Marca de tiempo de creación de la cuenta
      */
     public User(int userId, String username, String passwordHash, String role, LocalDateTime createdAt) {
         this.userId = userId;
@@ -58,57 +58,57 @@ public class User {
         this.createdAt = createdAt;
     }
     
-    // Getters and Setters
+    // Getters y Setters
 
     /**
-     * Returns the user identifier.
+     * Devuelve el identificador del usuario.
      *
-     * @return database-generated primary key
+     * @return clave primaria generada por la base de datos
      */
     public int getUserId() {
         return userId;
     }
 
     /**
-     * Sets the user identifier.
+     * Establece el identificador del usuario.
      *
-     * @param userId database-generated primary key
+     * @param userId clave primaria generada por la base de datos
      */
     public void setUserId(int userId) {
         this.userId = userId;
     }
 
     /**
-     * Returns the login username.
+     * Devuelve el nombre de usuario de inicio de sesión.
      *
-     * @return unique username string
+     * @return cadena de nombre de usuario único
      */
     public String getUsername() {
         return username;
     }
 
     /**
-     * Sets the login username.
+     * Establece el nombre de usuario de inicio de sesión.
      *
-     * @param username unique username; must not be null
+     * @param username nombre de usuario único; no debe ser null
      */
     public void setUsername(String username) {
         this.username = username;
     }
 
     /**
-     * Returns the BCrypt password hash.
+     * Devuelve el hash de contraseña BCrypt.
      *
-     * @return BCrypt-hashed password string; never plaintext
+     * @return cadena de contraseña hasheada con BCrypt; nunca en texto plano
      */
     public String getPasswordHash() {
         return passwordHash;
     }
     
     /**
-     * Sets the BCrypt password hash.
+     * Establece el hash de contraseña BCrypt.
      *
-     * @param passwordHash BCrypt-hashed password; must not be null or empty
+     * @param passwordHash contraseña hasheada con BCrypt; no debe ser null ni vacía
      */
     public void setPasswordHash(String passwordHash) {
         if (passwordHash == null || passwordHash.isEmpty()) {
@@ -118,48 +118,48 @@ public class User {
     }
     
     /**
-     * Returns the user role.
+     * Devuelve el rol del usuario.
      *
-     * @return role string, either {@code "ADMIN"} or {@code "VENDOR"}
+     * @return cadena de rol, ya sea {@code "ADMIN"} o {@code "VENDOR"}
      */
     public String getRole() {
         return role;
     }
 
     /**
-     * Sets the user role.
+     * Establece el rol del usuario.
      *
-     * @param role role string; expected to be {@code "ADMIN"} or {@code "VENDOR"}
+     * @param role cadena de rol; se espera que sea {@code "ADMIN"} o {@code "VENDOR"}
      */
     public void setRole(String role) {
         this.role = role;
     }
 
     /**
-     * Returns the account creation timestamp.
+     * Devuelve la marca de tiempo de creación de la cuenta.
      *
-     * @return date and time when the user account was created
+     * @return fecha y hora de cuando se creó la cuenta del usuario
      */
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     /**
-     * Sets the account creation timestamp.
+     * Establece la marca de tiempo de creación de la cuenta.
      *
-     * @param createdAt date and time of account creation; may be null
+     * @param createdAt fecha y hora de creación de la cuenta; puede ser null
      */
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
     
-    // Utility Methods
+    // Métodos de Utilidad
     
     /**
-     * Compares users based on primary key.
+     * Compara usuarios basado en la clave primaria.
      * 
-     * @param o Object to compare
-     * @return true if same userId, false otherwise
+     * @param o Objeto a comparar
+     * @return true si tienen el mismo userId, false en caso contrario
      */
     @Override
     public boolean equals(Object o) {
@@ -174,9 +174,9 @@ public class User {
     }
     
     /**
-     * Hash based on primary key.
+     * Hash basado en la clave primaria.
      * 
-     * @return Hash code
+     * @return Código hash
      */
     @Override
     public int hashCode() {
@@ -184,9 +184,9 @@ public class User {
     }
     
     /**
-     * String representation for debugging (excludes password hash for security).
+     * Representación en cadena para depuración (excluye el hash de contraseña por seguridad).
      * 
-     * @return String representation
+     * @return Representación en cadena
      */
     @Override
     public String toString() {

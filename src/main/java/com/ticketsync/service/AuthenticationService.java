@@ -13,30 +13,30 @@ import java.sql.SQLException;
 import java.util.Optional;
 
 /**
- * Service responsible for user authentication and session lifecycle management.
+ * Servicio responsable de la autenticación de usuarios y gestión del ciclo de vida de la sesión.
  *
- * <p>Orchestrates the login workflow by coordinating {@link UserDAO} lookups,
- * BCrypt password verification via {@link PasswordHasher}, and session state
- * storage in {@link SessionContext}.
+ * <p>Orquesta el flujo de trabajo de inicio de sesión coordinando consultas de {@link UserDAO},
+ * verificación de contraseñas BCrypt vía {@link PasswordHasher} y almacenamiento del estado
+ * de sesión en {@link SessionContext}.
  *
- * <h2>Security</h2>
+ * <h2>Seguridad</h2>
  * <ul>
- *   <li>Failed login attempts are logged with a single generic warning regardless
- *       of the failure reason (missing user vs wrong password) to prevent
- *       username-enumeration attacks.</li>
- *   <li>Passwords are never logged.</li>
+ *   <li>Los intentos de inicio de sesión fallidos se registran con una advertencia genérica
+ *       independientemente de la razón del fallo (usuario inexistente vs. contraseña incorrecta)
+ *       para prevenir ataques de enumeración de nombres de usuario.</li>
+ *   <li>Las contraseñas nunca se registran.</li>
  * </ul>
  *
- * <h2>Usage</h2>
+ * <h2>Uso</h2>
  * <pre>{@code
  * AuthenticationService authService = new AuthenticationService();
  *
  * Optional<User> user = authService.login("admin", "admin123");
  * if (user.isPresent()) {
- *     // Authenticated — SessionContext is now populated
+ *     // Autenticado — SessionContext ahora está poblado
  * }
  *
- * authService.logout();  // Clears SessionContext
+ * authService.logout();  // Limpia SessionContext
  * }</pre>
  *
  * @see SessionContext
@@ -46,32 +46,32 @@ public class AuthenticationService {
 
     private static final Logger LOGGER = LogManager.getLogger(AuthenticationService.class);
 
-    /** DAO used to look up users from the database. */
+    /** DAO usado para buscar usuarios en la base de datos. */
     private final UserDAO userDAO;
     private final AuditService auditService;
     private final ConnectionFactory connFactory;
 
     /**
-     * Production constructor — creates a live {@link UserDAOImpl} instance.
+     * Constructor de producción — crea una instancia activa de {@link UserDAOImpl}.
      */
     public AuthenticationService() {
         this(new UserDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
-     * Package-private constructor for test injection.
+     * Constructor de paquete para inyección en pruebas.
      *
-     * <p>Allows unit tests to supply a mock or stub {@link UserDAO} without
-     * requiring a live database connection.
+     * <p>Permite a las pruebas unitarias suministrar un {@link UserDAO} simulado o stub
+     * sin requerir una conexión activa a la base de datos.
      *
-     * @param userDAO the DAO implementation to use; must not be {@code null}
+     * @param userDAO la implementación DAO a usar; no debe ser {@code null}
      */
     AuthenticationService(UserDAO userDAO) {
         this(userDAO, AuditService.noop(), DatabaseConfig::getConnection);
     }
 
     /**
-     * Package-private constructor for full unit-test injection.
+     * Constructor de paquete para inyección completa en pruebas unitarias.
      */
     AuthenticationService(UserDAO userDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.userDAO = userDAO;
@@ -80,20 +80,20 @@ public class AuthenticationService {
     }
 
     /**
-     * Attempts to authenticate the given credentials against the database.
+     * Intenta autenticar las credenciales dadas contra la base de datos.
      *
-     * <p>On success the authenticated {@link User} is stored in {@link SessionContext}
-     * and returned wrapped in a non-empty {@link Optional}. On any failure (user not
-     * found, wrong password) an empty {@link Optional} is returned and a single generic
-     * warning is logged — the same message for both cases to prevent username enumeration.
+     * <p>En caso de éxito, el {@link User} autenticado se almacena en {@link SessionContext}
+     * y se devuelve envuelto en un {@link Optional} no vacío. En cualquier fallo (usuario no
+     * encontrado, contraseña incorrecta) se devuelve un {@link Optional} vacío y se registra
+     * una advertencia genérica — el mismo mensaje para ambos casos para prevenir enumeración
+     * de nombres de usuario.
      *
-     * @param username the username to authenticate; must not be {@code null} or blank
-     * @param password the plaintext password to verify; must not be {@code null}
-     * @return a non-empty {@link Optional} containing the authenticated {@link User}
-     *         on success, or {@link Optional#empty()} on any failure
-     * @throws IllegalArgumentException if {@code username} is null/blank or
-     *                                  {@code password} is null or blank
-     * @throws SQLException if a database access error occurs
+     * @param username el nombre de usuario a autenticar; no debe ser {@code null} ni estar en blanco
+     * @param password la contraseña en texto plano a verificar; no debe ser {@code null}
+     * @return un {@link Optional} no vacío con el {@link User} autenticado en caso de éxito,
+     *         o {@link Optional#empty()} en cualquier fallo
+     * @throws IllegalArgumentException si {@code username} es null/blanco o {@code password} es null o blanco
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     public Optional<User> login(String username, String password) throws SQLException {
         if (username == null || username.isBlank()) {
@@ -120,17 +120,18 @@ public class AuthenticationService {
             }
         }
 
-        // Generic warning — must NOT distinguish "user not found" from "wrong password"
-        // to prevent log-based username enumeration.
+            // Advertencia genérica — NO debe distinguir "usuario no encontrado" de "contraseña incorrecta"
+            // para prevenir enumeración de nombres de usuario basada en registros.
         LOGGER.warn("Authentication failed for username: {}", username);
         auditService.logLoginFailure(username);
         return Optional.empty();
     }
 
     /**
-     * Logs out the currently authenticated user and clears the session context.
+     * Cierra la sesión del usuario autenticado actualmente y limpia el contexto de sesión.
      *
-     * <p>If no user is currently logged in this method is a no-op (no exception thrown).
+     * <p>Si ningún usuario tiene sesión iniciada este método es una operación sin efecto (no
+     * lanza excepción).
      */
     public void logout() {
         SessionContext.getCurrentUser()

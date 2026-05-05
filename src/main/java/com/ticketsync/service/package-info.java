@@ -1,38 +1,38 @@
 /**
- * Business logic and transaction management layer.
- * 
- * <h2>Purpose</h2>
- * Service layer orchestrates DAO operations within transactions, enforces business rules,
- * and provides a clean API for ViewModels to execute domain operations.
- * 
- * <h2>Architectural Responsibilities</h2>
+ * Capa de lógica de negocio y gestión de transacciones.
+ *
+ * <h2>Propósito</h2>
+ * La capa de servicio orquesta operaciones DAO dentro de transacciones, aplica reglas de
+ * negocio y proporciona una API limpia para que los ViewModels ejecuten operaciones del dominio.
+ *
+ * <h2>Responsabilidades Arquitectónicas</h2>
  * <ul>
- *   <li>Transaction boundary management (Connection lifecycle control)</li>
- *   <li>Business rule enforcement (validation, authorization, workflow logic)</li>
- *   <li>DAO operation coordination (multi-table operations in single transaction)</li>
- *   <li>Exception handling and error translation</li>
- *   <li>Logging of business operations</li>
+ *   <li>Gestión de límites de transacción (control del ciclo de vida de Connection)</li>
+ *   <li>Aplicación de reglas de negocio (validación, autorización, lógica de flujo de trabajo)</li>
+ *   <li>Coordinación de operaciones DAO (operaciones multi-tabla en una sola transacción)</li>
+ *   <li>Manejo de excepciones y traducción de errores</li>
+ *   <li>Registro de operaciones de negocio</li>
  * </ul>
- * 
- * <h2>Transaction Management Pattern</h2>
- * Services MUST manually control transactions using Connection objects.
- * The Service layer acquires connections, sets isolation levels, coordinates
- * DAO operations, and handles commit/rollback.
- * 
- * <h2>Design Principles</h2>
+ *
+ * <h2>Patrón de Gestión de Transacciones</h2>
+ * Los servicios DEBEN controlar manualmente las transacciones usando objetos Connection.
+ * La capa de servicio adquiere conexiones, establece niveles de aislamiento, coordina
+ * operaciones DAO y gestiona commit/rollback.
+ *
+ * <h2>Principios de Diseño</h2>
  * <ul>
- *   <li>Each service class focuses on one aggregate root (UserService, EventService, etc.)</li>
- *   <li>Services inject DAO dependencies (via constructor for unit testing)</li>
- *   <li>Services do NOT expose Connection objects to ViewModels</li>
- *   <li>Business exceptions are domain-specific (not raw SQLExceptions)</li>
+ *   <li>Cada clase de servicio se centra en una raíz agregada (UserService, EventService, etc.)</li>
+ *   <li>Los servicios inyectan dependencias DAO (vía constructor para pruebas unitarias)</li>
+ *   <li>Los servicios NO exponen objetos Connection a los ViewModels</li>
+ *   <li>Las excepciones de negocio son específicas del dominio (no SQLExceptions crudas)</li>
  * </ul>
- * 
- * <h2>Testing Strategy</h2>
+ *
+ * <h2>Estrategia de Pruebas</h2>
  * <ul>
- *   <li>Unit Tests: Mock DAO interfaces with Mockito, test business logic in isolation</li>
- *   <li>Integration Tests: Real database connections to test transaction semantics</li>
+ *   <li>Pruebas Unitarias: Simular interfaces DAO con Mockito, probar lógica de negocio en aislamiento</li>
+ *   <li>Pruebas de Integración: Conexiones reales a BD para probar semántica de transacciones</li>
  * </ul>
- * 
+ *
  * @see com.ticketsync.dao
  * @see com.ticketsync.viewmodel
  */

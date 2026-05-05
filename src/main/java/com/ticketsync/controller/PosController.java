@@ -51,20 +51,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * FXML controller for the Vendor POS view ({@code PosView.fxml}).
+ * Controlador FXML para la vista del POS del Vendedor ({@code PosView.fxml}).
  *
- * <p>Loads active events asynchronously on a daemon background thread (FX
- * Application Thread is never blocked), wires the {@link PosViewModel} to the
- * editable {@code ComboBox} for real-time search filtering, and registers F1–F12
- * keyboard shortcuts that select events by index.
+ * <p>Carga eventos activos de forma asíncrona en un hilo daemon en segundo plano (el hilo
+ * de Aplicación FX nunca se bloquea), conecta el {@link PosViewModel} al
+ * {@code ComboBox} editable para filtrado en tiempo real, y registra atajos de teclado
+ * F1–F12 que seleccionan eventos por índice.
  *
- * <p>Downstream ("POS Main View with Seat Map") will obtain the same
- * view-model via {@link #getViewModel()} to observe
- * {@link PosViewModel#selectedEventProperty()} and drive seat loading.
+ * <p>El controlador descendente ("Vista Principal del POS con Mapa de Asientos") obtendrá el mismo
+ * view-model mediante {@link #getViewModel()} para observar
+ * {@link PosViewModel#selectedEventProperty()} y gestionar la carga de asientos.
  */
 public class PosController {
 
-    /** Creates a new {@code PosController} instance (invoked by FXMLLoader via reflection). */
+    /** Crea una nueva instancia de {@code PosController} (invocada por FXMLLoader mediante reflexión). */
     public PosController() {
     }
 
@@ -118,12 +118,12 @@ public class PosController {
     private final PauseTransition restoredBannerPause = new PauseTransition(Duration.seconds(4));
 
     /**
-     * Initialises the POS view on the FX Application Thread.
+     * Inicializa la vista del POS en el hilo de Aplicación FX.
      *
-     * <p>Reads the authenticated user from {@link SessionContext} (safe here
-     * because {@code LoginController.navigateToRoleView()} sets the context on
-     * the FX thread before loading this FXML), configures the ComboBox, binds
-     * labels, attaches F1–F12 shortcuts, and starts the asynchronous event-load.
+     * <p>Lee el usuario autenticado de {@link SessionContext} (seguro aquí porque
+     * {@code LoginController.navigateToRoleView()} establece el contexto en el hilo FX
+     * antes de cargar este FXML), configura el ComboBox, enlaza etiquetas,
+     * adjunta atajos F1–F12, e inicia la carga asíncrona de eventos.
      */
     @FXML
     public void initialize() {
@@ -209,16 +209,17 @@ public class PosController {
     }
 
     /**
-     * Configures the event selector: a separate {@link TextField} drives filtering
-     * while a non-editable {@link ComboBox} handles selection.
+     * Configura el selector de eventos: un {@link TextField} separado gestiona el filtrado
+     * mientras que un {@link ComboBox} no editable gestiona la selección.
      *
-     * <p>Keeping the two controls separate is the only reliable pattern in JavaFX 21:
-     * an editable ComboBox with a mutable items list crashes with
-     * {@code IndexOutOfBoundsException} because the {@code StringConverter} updates
-     * the editor text synchronously during the popup click-dispatch, mutating the
-     * items list while {@code ListViewBehavior} still holds a reference to the old
-     * size. A standalone {@code TextField} fires its listener only on user keystrokes,
-     * never during a ComboBox click, so the two event streams never collide.
+     * <p>Mantener los dos controles separados es el único patrón confiable en JavaFX 21:
+     * un ComboBox editable con una lista de elementos mutable falla con
+     * {@code IndexOutOfBoundsException} porque el {@code StringConverter} actualiza
+     * el texto del editor de forma síncrona durante el despacho del clic del popup, mutando
+     * la lista de elementos mientras {@code ListViewBehavior} aún mantiene una referencia al
+     * tamaño anterior. Un {@code TextField} independiente dispara su listener solo en pulsaciones
+     * del usuario, nunca durante un clic del ComboBox, por lo que los dos flujos de eventos
+     * nunca colisionan.
      */
     private void configureComboBox() {
         eventComboBox.setItems(viewModel.getFilteredEvents());
@@ -250,13 +251,13 @@ public class PosController {
             }
         });
 
-        // Sync ComboBox selection into viewModel via listener (not .bind()) so the property
-        // remains writable for downstream consumers.
+        // Sincronizar la selección del ComboBox en el viewModel mediante listener (no .bind()) para que la propiedad
+        // permanezca escribible para los consumidores posteriores.
         eventComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) ->
                 viewModel.selectedEventProperty().set(newVal));
 
-        // Typing in the search field filters the ComboBox items and opens/closes the popup.
-        // This listener is completely decoupled from ComboBox click events.
+        // Escribir en el campo de búsqueda filtra los elementos del ComboBox y abre/cierra el popup.
+        // Este listener está completamente desacoplado de los eventos de clic del ComboBox.
         eventSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
             viewModel.filterEvents(newVal);
             if (newVal.isEmpty()) {
@@ -266,8 +267,8 @@ public class PosController {
             }
         });
 
-        // After a selection is committed, clear the search field so the full list
-        // is visible on the next open. Deferred to let the popup close first.
+            // Después de confirmar una selección, limpiar el campo de búsqueda para que la lista completa
+            // sea visible en la siguiente apertura. Diferido para permitir que el popup se cierre primero.
         eventComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 Platform.runLater(eventSearchField::clear);
@@ -276,8 +277,8 @@ public class PosController {
     }
 
     /**
-     * Binds {@code selectedEventLabel} text to the currently selected event and
-     * sets the initial hidden state for {@code noEventsLabel}.
+     * Enlaza el texto de {@code selectedEventLabel} al evento actualmente seleccionado y
+     * establece el estado inicial oculto de {@code noEventsLabel}.
      */
     private void bindLabels() {
         eventContextLabel.textProperty().bind(viewModel.selectedEventTextProperty());
@@ -287,7 +288,7 @@ public class PosController {
         systemHealthBadgeLabel.textProperty().bind(viewModel.systemHealthBadgeTextProperty());
         systemHealthBannerLabel.textProperty().bind(viewModel.systemHealthBannerTextProperty());
 
-        // noEventsLabel visibility is controlled by loadActiveEventsAsync after load completes
+        // La visibilidad de noEventsLabel es controlada por loadActiveEventsAsync tras completar la carga
         noEventsLabel.setVisible(false);
         noEventsLabel.setManaged(false);
     }
@@ -314,12 +315,12 @@ public class PosController {
     }
 
     /**
-     * Loads active events on a daemon background thread.
+     * Carga eventos activos en un hilo daemon en segundo plano.
      *
-     * <p>The {@link SessionContext} {@code ThreadLocal} is captured on the FX
-     * thread and injected into the {@code Task}'s thread — the same
-     * capture-and-inject pattern used in ({@code AdminDashboardController}).
-     * The FX Application Thread is never blocked.
+     * <p>El {@code ThreadLocal} de {@link SessionContext} se captura en el hilo FX
+     * y se inyecta en el hilo de la {@code Task} — el mismo patrón de captura e inyección
+     * utilizado en ({@code AdminDashboardController}).
+     * El hilo de Aplicación FX nunca se bloquea.
      */
     private void loadActiveEventsAsync() {
         eventStatusLabel.setText("Loading events...");
@@ -359,14 +360,14 @@ public class PosController {
     }
 
     /**
-     * Handles F1–F12 key events, selecting the event at the corresponding
-     * zero-based index in the current filtered list.
+     * Maneja eventos de teclado F1–F12, seleccionando el evento en el índice de base cero
+     * correspondiente de la lista filtrada actual.
      *
-     * <p>Pressing F<em>n</em> when fewer than <em>n</em> events are present
-     * performs no action. The key event is consumed to suppress default OS
-     * behaviour (e.g., focus the browser help panel).
+     * <p>Presionar F<em>n</em> cuando hay menos de <em>n</em> eventos presentes
+     * no realiza ninguna acción. El evento de tecla se consume para suprimir el
+     * comportamiento predeterminado del SO (por ejemplo, enfocar el panel de ayuda del navegador).
      *
-     * @param event the key-pressed event captured by the scene event filter
+     * @param event el evento de tecla presionada capturado por el filtro de eventos de la escena
      */
     private void handleFunctionKeyShortcut(KeyEvent event) {
         int index = -1;
@@ -393,7 +394,7 @@ public class PosController {
     }
 
     /**
-     * Handles the Logout button: clears the session and navigates back to the login screen.
+     * Maneja el botón de Cierre de sesión: limpia la sesión y navega de regreso a la pantalla de inicio de sesión.
      */
     @FXML
     private void handleLogout() {
@@ -407,21 +408,21 @@ public class PosController {
     }
 
     /**
-     * Returns the {@link PosViewModel} for consumption by downstream controllers
-     * (e.g., seat-map integration).
+     * Retorna el {@link PosViewModel} para consumo por los controladores posteriores
+     * (por ejemplo, integración del mapa de asientos).
      *
-     * @return the view-model instance; never {@code null} after successful initialisation
+     * @return la instancia del view-model; nunca {@code null} después de una inicialización exitosa
      */
     public PosViewModel getViewModel() {
         return viewModel;
     }
 
     /**
-     * Releases background resources held by this controller.
+     * Libera los recursos en segundo plano mantenidos por este controlador.
      *
-     * <p>Stops the seat-sync coordinator, disposes the selection-panel
-     * controller, and shuts down the background executor. Safe to call
-     * multiple times; subsequent calls after the first are no-ops.
+     * <p>Detiene el coordinador de sincronización de asientos, destruye el controlador
+     * del panel de selección y apaga el ejecutor en segundo plano. Es seguro llamarlo
+     * varias veces; las llamadas posteriores a la primera son ignoradas.
      */
     public void dispose() {
         if (disposed) {

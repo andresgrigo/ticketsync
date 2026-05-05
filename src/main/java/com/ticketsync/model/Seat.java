@@ -3,58 +3,58 @@ package com.ticketsync.model;
 import java.util.Objects;
 
 /**
- * Represents a single seat within a zone with availability status.
- * Maps to the 'seats' database table.
+ * Representa un asiento individual dentro de una zona con estado de disponibilidad.
+ * Mapea a la tabla de base de datos 'seats'.
  * 
- * <h2>Status Transitions</h2>
+ * <h2>Transiciones de Estado</h2>
  * <ul>
- *   <li>AVAILABLE → SOLD (atomic transaction)</li>
- *   <li>AVAILABLE ↔ DISABLED (admin toggle)</li>
- *   <li>RESERVED (future enhancement, not MVP)</li>
+ *   <li>AVAILABLE → SOLD (transacción atómica)</li>
+ *   <li>AVAILABLE ↔ DISABLED (cambio de administrador)</li>
+ *   <li>RESERVED (mejora futura, no MVP)</li>
  * </ul>
  * 
- * <h2>Concurrency Control</h2>
- * Seat status updates use pessimistic locking (SELECT FOR UPDATE) in SERIALIZABLE transactions
- * to prevent overselling. See {@link com.ticketsync.dao.SeatDAO#selectForUpdate}.
+ * <h2>Control de Concurrencia</h2>
+ * Las actualizaciones de estado de asientos usan bloqueo pesimista (SELECT FOR UPDATE) en transacciones
+ * SERIALIZABLE para prevenir la sobreventar. Ver {@link com.ticketsync.dao.SeatDAO#selectForUpdate}.
  * 
  * @see com.ticketsync.dao.SeatDAO
  * @see SeatStatus
  * @see Zone
  */
 public class Seat {
-    /** Primary key from seats.seat_id column. */
+    /** Clave primaria de la columna seats.seat_id. */
     private int seatId;
     
-    /** Foreign key to zones.zone_id. */
+    /** Clave foránea a zones.zone_id. */
     private int zoneId;
     
-    /** Row identifier (e.g., "A", "12", "Main"). */
+    /** Identificador de fila (ej., "A", "12", "Main"). */
     private String rowNumber;
     
-    /** Seat number within row (e.g., "1", "23B"). */
+    /** Número de asiento dentro de la fila (ej., "1", "23B"). */
     private String seatNumber;
     
-    /** Current availability status. */
+    /** Estado actual de disponibilidad. */
     private SeatStatus status;
     
-    /** Foreign key to sales.sale_id (null if not sold). */
+    /** Clave foránea a sales.sale_id (null si no está vendido). */
     private Integer saleId;
     
     /**
-     * Default constructor for JDBC mapping.
+     * Constructor por defecto para mapeo JDBC.
      */
     public Seat() {
     }
     
     /**
-     * Constructs a Seat with all fields.
+     * Construye un Seat con todos los campos.
      * 
-     * @param seatId Primary key
-     * @param zoneId Zone this seat belongs to
-     * @param rowNumber Row identifier
-     * @param seatNumber Seat number within row
-     * @param status Availability status
-     * @param saleId Sale ID if sold, null otherwise
+     * @param seatId Clave primaria
+     * @param zoneId Zona a la que pertenece este asiento
+     * @param rowNumber Identificador de fila
+     * @param seatNumber Número de asiento dentro de la fila
+     * @param status Estado de disponibilidad
+     * @param saleId ID de venta si fue vendido, null en caso contrario
      */
     public Seat(int seatId, int zoneId, String rowNumber, String seatNumber,
             SeatStatus status, Integer saleId) {
@@ -66,58 +66,58 @@ public class Seat {
         this.saleId = saleId;
     }
     
-    // Getters and Setters
+    // Getters y Setters
 
     /**
-     * Returns the seat ID.
+     * Devuelve el ID del asiento.
      *
-     * @return the seat ID
+     * @return el ID del asiento
      */
     public int getSeatId() {
         return seatId;
     }
 
     /**
-     * Sets the seat ID.
+     * Establece el ID del asiento.
      *
-     * @param seatId the seat ID
+     * @param seatId el ID del asiento
      */
     public void setSeatId(int seatId) {
         this.seatId = seatId;
     }
 
     /**
-     * Returns the zone ID this seat belongs to.
+     * Devuelve el ID de zona al que pertenece este asiento.
      *
-     * @return the zone ID
+     * @return el ID de zona
      */
     public int getZoneId() {
         return zoneId;
     }
 
     /**
-     * Sets the zone ID this seat belongs to.
+     * Establece el ID de zona al que pertenece este asiento.
      *
-     * @param zoneId the zone ID
+     * @param zoneId el ID de zona
      */
     public void setZoneId(int zoneId) {
         this.zoneId = zoneId;
     }
 
     /**
-     * Returns the row label for this seat.
+     * Devuelve la etiqueta de fila para este asiento.
      *
-     * @return the row label; never {@code null}
+     * @return la etiqueta de fila; nunca {@code null}
      */
     public String getRowNumber() {
         return rowNumber;
     }
 
     /**
-     * Sets the row label for this seat.
+     * Establece la etiqueta de fila para este asiento.
      *
-     * @param rowNumber the row label; must not be {@code null} or blank
-     * @throws IllegalArgumentException if {@code rowNumber} is {@code null} or blank
+     * @param rowNumber la etiqueta de fila; no debe ser {@code null} ni estar en blanco
+     * @throws IllegalArgumentException si {@code rowNumber} es {@code null} o está en blanco
      */
     public void setRowNumber(String rowNumber) {
         if (rowNumber == null || rowNumber.trim().isEmpty()) {
@@ -127,19 +127,19 @@ public class Seat {
     }
     
     /**
-     * Returns the seat number within its row.
+     * Devuelve el número de asiento dentro de su fila.
      *
-     * @return the seat number; never {@code null}
+     * @return el número de asiento; nunca {@code null}
      */
     public String getSeatNumber() {
         return seatNumber;
     }
 
     /**
-     * Sets the seat number within its row.
+     * Establece el número de asiento dentro de su fila.
      *
-     * @param seatNumber the seat number; must not be {@code null} or blank
-     * @throws IllegalArgumentException if {@code seatNumber} is {@code null} or blank
+     * @param seatNumber el número de asiento; no debe ser {@code null} ni estar en blanco
+     * @throws IllegalArgumentException si {@code seatNumber} es {@code null} o está en blanco
      */
     public void setSeatNumber(String seatNumber) {
         if (seatNumber == null || seatNumber.trim().isEmpty()) {
@@ -149,19 +149,19 @@ public class Seat {
     }
     
     /**
-     * Returns the current booking status of the seat.
+     * Devuelve el estado actual de reserva del asiento.
      *
-     * @return the seat status; never {@code null}
+     * @return el estado del asiento; nunca {@code null}
      */
     public SeatStatus getStatus() {
         return status;
     }
 
     /**
-     * Sets the booking status of the seat.
+     * Establece el estado de reserva del asiento.
      *
-     * @param status the new status; must not be {@code null}
-     * @throws IllegalArgumentException if {@code status} is {@code null}
+     * @param status el nuevo estado; no debe ser {@code null}
+     * @throws IllegalArgumentException si {@code status} es {@code null}
      */
     public void setStatus(SeatStatus status) {
         if (status == null) {
@@ -171,30 +171,30 @@ public class Seat {
     }
     
     /**
-     * Returns the sale ID associated with this seat, or {@code null} if not sold.
+     * Devuelve el ID de venta asociado con este asiento, o {@code null} si no fue vendido.
      *
-     * @return the sale ID; may be {@code null}
+     * @return el ID de venta; puede ser {@code null}
      */
     public Integer getSaleId() {
         return saleId;
     }
 
     /**
-     * Sets the sale ID associated with this seat.
+     * Establece el ID de venta asociado con este asiento.
      *
-     * @param saleId the sale ID; may be {@code null} to indicate the seat is not sold
+     * @param saleId el ID de venta; puede ser {@code null} para indicar que el asiento no está vendido
      */
     public void setSaleId(Integer saleId) {
         this.saleId = saleId;
     }
     
-    // Utility Methods
+    // Métodos de Utilidad
     
     /**
-     * Compares seats based on primary key.
+     * Compara asientos basado en la clave primaria.
      * 
-     * @param o Object to compare
-     * @return true if same seatId, false otherwise
+     * @param o Objeto a comparar
+     * @return true si tienen el mismo seatId, false en caso contrario
      */
     @Override
     public boolean equals(Object o) {
@@ -209,9 +209,9 @@ public class Seat {
     }
     
     /**
-     * Hash based on primary key.
+     * Hash basado en la clave primaria.
      * 
-     * @return Hash code
+     * @return Código hash
      */
     @Override
     public int hashCode() {
@@ -219,9 +219,9 @@ public class Seat {
     }
     
     /**
-     * String representation for debugging.
+     * Representación en cadena para depuración.
      * 
-     * @return String representation
+     * @return Representación en cadena
      */
     @Override
     public String toString() {

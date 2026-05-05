@@ -12,23 +12,23 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * JDBC implementation of {@link ZoneDAO} for the {@code zones} table.
+ * Implementación JDBC de {@link ZoneDAO} para la tabla {@code zones}.
  *
- * <p>All SQL is executed via {@link PreparedStatement} using {@code ?} placeholders.
- * No SQL is ever built by string concatenation, preventing SQL injection (OWASP A03).
+ * <p>Todo el SQL se ejecuta vía {@link PreparedStatement} usando marcadores {@code ?}.
+ * Nunca se construye SQL por concatenación de cadenas, previniendo inyección SQL (OWASP A03).
  *
- * <p>Callers are responsible for managing the {@link Connection} lifecycle (open,
- * commit/rollback, close). This class never closes the supplied connection.
+ * <p>Los llamadores son responsables de gestionar el ciclo de vida de {@link Connection} (abrir,
+ * commit/rollback, cerrar). Esta clase nunca cierra la conexión suministrada.
  *
  * @see ZoneDAO
  * @see com.ticketsync.model.Zone
  */
 public class ZoneDAOImpl implements ZoneDAO {
 
-    /** Creates a new ZoneDAOImpl using the production connection factory. */
+    /** Crea un nuevo ZoneDAOImpl usando la fábrica de conexiones de producción. */
     public ZoneDAOImpl() { }
 
-    // SQL constants
+    // Constantes SQL
     // -------------------------------------------------------------------------
 
     private static final String SQL_FIND_BY_ID =
@@ -47,13 +47,13 @@ public class ZoneDAOImpl implements ZoneDAO {
             "DELETE FROM zones WHERE zone_id = ?";
 
     // -------------------------------------------------------------------------
-    // Public interface methods
+    // Métodos públicos de interfaz
     // -------------------------------------------------------------------------
 
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalArgumentException if {@code zoneId} is zero or negative
+     * @throws IllegalArgumentException si {@code zoneId} es cero o negativo
      */
     @Override
     public Optional<Zone> findById(Connection conn, int zoneId) throws SQLException {
@@ -74,7 +74,7 @@ public class ZoneDAOImpl implements ZoneDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>Results are ordered by {@code zone_id ASC}.
+     * <p>Los resultados se ordenan por {@code zone_id ASC}.
      */
     @Override
     public List<Zone> findByEventId(Connection conn, int eventId) throws SQLException {
@@ -93,11 +93,11 @@ public class ZoneDAOImpl implements ZoneDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>The {@code zoneId} field of {@code zone} is ignored; the database-generated
-     * {@code zone_id} is returned. {@code event_id}, {@code name}, and {@code price}
-     * are written from the supplied {@link Zone}.
+     * <p>El campo {@code zoneId} de {@code zone} se ignora; el {@code zone_id} generado por la
+     * base de datos es devuelto. {@code event_id}, {@code name}, y {@code price}
+     * se escriben desde el {@link Zone} suministrado.
      *
-     * @throws IllegalArgumentException if {@code zone} is null
+     * @throws IllegalArgumentException si {@code zone} es null
      */
     @Override
     public int insert(Connection conn, Zone zone) throws SQLException {
@@ -121,11 +121,11 @@ public class ZoneDAOImpl implements ZoneDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>Updates {@code name} and {@code price} for the zone identified by
+     * <p>Actualiza {@code name} y {@code price} para la zona identificada por
      * {@code zone.getZoneId()}.
      *
-     * @throws IllegalArgumentException if {@code zone} is null or {@code zone.getZoneId()} is zero or negative
-     * @throws SQLException             if no row matches the given {@code zoneId}
+     * @throws IllegalArgumentException si {@code zone} es null o {@code zone.getZoneId()} es cero o negativo
+     * @throws SQLException             si ninguna fila coincide con el {@code zoneId} dado
      */
     @Override
     public void update(Connection conn, Zone zone) throws SQLException {
@@ -148,10 +148,10 @@ public class ZoneDAOImpl implements ZoneDAO {
     /**
      * {@inheritDoc}
      *
-     * <p>Associated seats are cascade-deleted by the DB constraint
-     * ({@code ON DELETE CASCADE} on the {@code seats.zone_id} FK).
+     * <p>Los asientos asociados son eliminados en cascada por la restricción de BD
+     * ({@code ON DELETE CASCADE} en la FK {@code seats.zone_id}).
      *
-     * @throws IllegalArgumentException if {@code zoneId} is zero or negative
+     * @throws IllegalArgumentException si {@code zoneId} es cero o negativo
      */
     @Override
     public void delete(Connection conn, int zoneId) throws SQLException {
@@ -165,15 +165,15 @@ public class ZoneDAOImpl implements ZoneDAO {
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Ayudantes privados
     // -------------------------------------------------------------------------
 
     /**
-     * Maps the current row of a {@link ResultSet} to a {@link Zone} object.
+     * Mapea la fila actual de un {@link ResultSet} a un objeto {@link Zone}.
      *
-     * @param rs ResultSet positioned on the current row
-     * @return populated {@link Zone} instance
-     * @throws SQLException if a column cannot be read
+     * @param rs ResultSet posicionado en la fila actual
+     * @return instancia de {@link Zone} poblada
+     * @throws SQLException si una columna no puede ser leída
      */
     private Zone mapRow(ResultSet rs) throws SQLException {
         Zone zone = new Zone();

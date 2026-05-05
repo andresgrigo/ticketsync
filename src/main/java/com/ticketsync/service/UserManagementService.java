@@ -13,19 +13,19 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Service class for admin user management operations.
+ * Clase de servicio para operaciones administrativas de gestión de usuarios.
  *
- * <p>Provides CRUD operations on the {@code users} table, delegating
- * persistence to {@link UserDAO}. All methods acquire their own
- * {@link Connection} via {@link DatabaseConfig#getConnection()} and
- * release it via try-with-resources.
+ * <p>Proporciona operaciones CRUD en la tabla {@code users}, delegando
+ * la persistencia a {@link UserDAO}. Todos los métodos adquieren su propia
+ * {@link Connection} vía {@link DatabaseConfig#getConnection()} y
+ * la liberan vía try-with-resources.
  *
- * <p>All mutating operations log an audit trail entry at INFO level so
- * that administrator actions are recorded in the application log file
- * until the dedicated {@code audit_log} table is available.
+ * <p>Todas las operaciones mutantes registran una entrada de rastro de auditoría al nivel INFO
+ * para que las acciones de administrador queden registradas en el archivo de log de la
+ * aplicación hasta que la tabla {@code audit_log} dedicada esté disponible.
  *
- * <p>Instances of this class are stateless and may be shared across
- * threads. The constructor performs no I/O.
+ * <p>Las instancias de esta clase no tienen estado y pueden compartirse entre
+ * hilos. El constructor no realiza I/O.
  */
 public class UserManagementService {
 
@@ -36,14 +36,14 @@ public class UserManagementService {
     private final ConnectionFactory connFactory;
 
     /**
-     * Production constructor.
+     * Constructor de producción.
      */
     public UserManagementService() {
         this(new UserDAOImpl(), new AuditService(), DatabaseConfig::getConnection);
     }
 
     /**
-     * Package-private constructor for full unit-test injection.
+     * Constructor de paquete para inyección completa en pruebas unitarias.
      */
     UserManagementService(UserDAO userDAO, AuditService auditService, ConnectionFactory connFactory) {
         this.userDAO = userDAO;
@@ -52,11 +52,11 @@ public class UserManagementService {
     }
 
     /**
-     * Returns all users stored in the {@code users} table, ordered by
-     * {@code user_id} ascending.
+     * Devuelve todos los usuarios almacenados en la tabla {@code users}, ordenados por
+     * {@code user_id} ascendente.
      *
-     * @return list of all users; never {@code null}, may be empty
-     * @throws SQLException if a database access error occurs
+     * @return lista de todos los usuarios; nunca {@code null}, puede estar vacía
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     public List<User> getAllUsers() throws SQLException {
         try (Connection conn = connFactory.get()) {
@@ -65,16 +65,16 @@ public class UserManagementService {
     }
 
     /**
-     * Returns {@code true} if a user with the given username already exists
-     * in the {@code users} table.
+     * Devuelve {@code true} si ya existe un usuario con el nombre de usuario dado
+     * en la tabla {@code users}.
      *
-     * <p>Intended for pre-flight validation in the Create User dialog so that
-     * the uniqueness error can be displayed inline without waiting for a
-     * database constraint violation.
+     * <p>Destinado a la validación previa en el diálogo de Crear Usuario para que
+     * el error de unicidad pueda mostrarse en línea sin esperar una
+     * violación de restricción de base de datos.
      *
-     * @param username the username to check; must not be {@code null}
-     * @return {@code true} if the username is taken; {@code false} otherwise
-     * @throws SQLException if a database access error occurs
+     * @param username el nombre de usuario a verificar; no debe ser {@code null}
+     * @return {@code true} si el nombre de usuario está tomado; {@code false} en caso contrario
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     public boolean usernameExists(String username) throws SQLException {
         try (Connection conn = connFactory.get()) {
@@ -83,20 +83,19 @@ public class UserManagementService {
     }
 
     /**
-     * Creates a new user with the supplied credentials and role.
+     * Crea un nuevo usuario con las credenciales y rol suministrados.
      *
-     * <p>The raw password is hashed with BCrypt (cost factor 12) before
-     * persisting. The method logs the creation at INFO level for audit
-     * purposes.
+     * <p>La contraseña bruta se hashea con BCrypt (factor de coste 12) antes
+     * de persistir. El método registra la creación al nivel INFO para propósitos de auditoría.
      *
-     * @param username      the desired username; must not be blank
-     * @param rawPassword   the plaintext password to hash; must not be blank
-     * @param role          the role to assign; must be {@code "ADMIN"} or {@code "VENDOR"}
-     * @param adminUsername the username of the administrator performing the action
-     * @return the generated {@code user_id} of the new record
-     * @throws IllegalArgumentException if {@code role} is not a recognised value
-     * @throws RuntimeException         if the username already exists (duplicate key)
-     * @throws SQLException             if any other database access error occurs
+     * @param username      el nombre de usuario deseado; no debe estar en blanco
+     * @param rawPassword   la contraseña en texto plano a hashear; no debe estar en blanco
+     * @param role          el rol a asignar; debe ser {@code "ADMIN"} o {@code "VENDOR"}
+     * @param adminUsername el nombre de usuario del administrador que realiza la acción
+     * @return el {@code user_id} generado del nuevo registro
+     * @throws IllegalArgumentException si {@code role} no es un valor reconocido
+     * @throws RuntimeException         si el nombre de usuario ya existe (clave duplicada)
+     * @throws SQLException             si ocurre cualquier otro error de acceso a la base de datos
      */
     public int createUser(String username, String rawPassword, String role, String adminUsername)
             throws SQLException {
@@ -117,16 +116,16 @@ public class UserManagementService {
     }
 
     /**
-     * Updates the role of an existing user.
+     * Actualiza el rol de un usuario existente.
      *
-     * <p>The username and password hash are preserved unchanged — only the
-     * role field is modified. The update is logged at INFO level.
+     * <p>El nombre de usuario y el hash de contraseña se preservan sin cambios — solo se
+     * modifica el campo de rol. La actualización se registra al nivel INFO.
      *
-     * @param existingUser  the current state of the user to update; must not be {@code null}
-     * @param newRole       the replacement role; must be {@code "ADMIN"} or {@code "VENDOR"}
-     * @param adminUsername the username of the administrator performing the action
-     * @throws IllegalArgumentException if {@code newRole} is not a recognised value
-     * @throws SQLException             if a database access error occurs
+     * @param existingUser  el estado actual del usuario a actualizar; no debe ser {@code null}
+     * @param newRole       el rol de reemplazo; debe ser {@code "ADMIN"} o {@code "VENDOR"}
+     * @param adminUsername el nombre de usuario del administrador que realiza la acción
+     * @throws IllegalArgumentException si {@code newRole} no es un valor reconocido
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
      */
     public void updateUserRole(User existingUser, String newRole, String adminUsername)
             throws SQLException {
@@ -147,15 +146,16 @@ public class UserManagementService {
     }
 
     /**
-     * Deletes the user with the given primary key.
+    /**
+     * Elimina el usuario con la clave primaria dada.
      *
-     * <p>The deletion is logged at INFO level. The caller is responsible for
-     * preventing deletion of the currently logged-in admin account.
+     * <p>La eliminación se registra al nivel INFO. El llamador es responsable de
+     * prevenir la eliminación de la cuenta de admin actualmente con sesión iniciada.
      *
-     * @param userId          the primary key of the user to delete
-     * @param deletedUsername the username of the deleted user (for audit logging)
-     * @param adminUsername   the username of the administrator performing the action
-     * @throws SQLException if a database access error occurs
+     * @param userId          la clave primaria del usuario a eliminar
+     * @param deletedUsername el nombre de usuario del usuario eliminado (para registro de auditoría)
+     * @param adminUsername   el nombre de usuario del administrador que realiza la acción
+     * @throws SQLException si ocurre un error de acceso a la base de datos
      */
     public void deleteUser(int userId, String deletedUsername, String adminUsername)
             throws SQLException {
@@ -167,10 +167,10 @@ public class UserManagementService {
     }
 
     /**
-     * Validates that the supplied role is one of the accepted values.
+     * Valida que el rol suministrado sea uno de los valores aceptados.
      *
-     * @param role the role string to validate
-     * @throws IllegalArgumentException if the role is not {@code "ADMIN"} or {@code "VENDOR"}
+     * @param role la cadena de rol a validar
+     * @throws IllegalArgumentException si el rol no es {@code "ADMIN"} ni {@code "VENDOR"}
      */
     private void validateRole(String role) {
         if (!"ADMIN".equals(role) && !"VENDOR".equals(role)) {

@@ -20,25 +20,25 @@ import java.net.URL;
 import javafx.scene.control.Alert;
 
 /**
- * JavaFX application entry point for TicketSync.
+ * Punto de entrada de la aplicación JavaFX para TicketSync.
  *
- * <p>Startup sequence:
+ * <p>Secuencia de inicio:
  * <ol>
- *   <li>Initialise application directories (logs, tickets) via {@link FilePathUtil}</li>
- *   <li>Test the database connection; show an error dialog and exit if it fails</li>
- *   <li>Start the {@link DatabaseHealthMonitor} background scheduler</li>
- *   <li>Load and display the Login scene</li>
+ *   <li>Inicializar directorios de la aplicación (logs, tickets) mediante {@link FilePathUtil}</li>
+ *   <li>Verificar la conexión a la base de datos; mostrar un diálogo de error y salir si falla</li>
+ *   <li>Iniciar el planificador en segundo plano {@link DatabaseHealthMonitor}</li>
+ *   <li>Cargar y mostrar la escena de inicio de sesión</li>
  * </ol>
  *
- * <p>Shutdown sequence (via {@link #stop()}): stops the health monitor and
- * closes the HikariCP connection pool before the JVM exits.
+ * <p>Secuencia de apagado (vía {@link #stop()}): detiene el monitor de salud y
+ * cierra el pool de conexiones HikariCP antes de que la JVM finalice.
  *
 
  * @since 1.0
  */
 public class App extends Application {
 
-    /** Creates a new {@code App} instance (invoked by the JavaFX runtime via reflection). */
+    /** Crea una nueva instancia de {@code App} (invocada por el entorno de ejecución JavaFX vía reflexión). */
     public App() {
     }
 
@@ -52,14 +52,14 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        // Install AtlantaFX before any Alert/Dialog is shown so even early startup errors are themed.
+        // Instalar AtlantaFX antes de mostrar cualquier Alert/Dialog para que los errores de inicio también tengan tema.
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         if (!ensureApplicationDirectories()) {
             return;
         }
         logStartupInformation();
 
-        // Check for missing TICKETSYNC_MASTER_KEY before class initialization fires
+        // Verificar si falta TICKETSYNC_MASTER_KEY antes de que se dispare la inicialización de clases
         try {
             if (!DatabaseConfig.testConnection()) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -71,6 +71,7 @@ public class App extends Application {
                 Platform.exit();
                 return;
             }
+            DatabaseConfig.migrateDatabase();
         } catch (ExceptionInInitializerError e) {
             Throwable cause = e.getCause();
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -86,6 +87,15 @@ public class App extends Application {
                 alert.setHeaderText("Cannot connect to the database");
                 alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
             }
+            alert.showAndWait();
+            Platform.exit();
+            return;
+        } catch (IllegalStateException e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogThemeHelper.apply(alert);
+            alert.setTitle("Database Migration Error");
+            alert.setHeaderText("Could not initialise database schema");
+            alert.setContentText("Flyway migration failed: " + e.getMessage());
             alert.showAndWait();
             Platform.exit();
             return;
@@ -143,10 +153,10 @@ public class App extends Application {
     }
 
     /**
-     * Replaces the root node of the main application scene.
+     * Reemplaza el nodo raíz de la escena principal de la aplicación.
      *
-     * @param fxml FXML file name (without extension) relative to the com/ticketsync resource path
-     * @throws IOException if the FXML resource cannot be found or loaded
+     * @param fxml nombre del archivo FXML (sin extensión) relativo a la ruta de recursos com/ticketsync
+     * @throws IOException si el recurso FXML no se puede encontrar o cargar
      */
     public static void setRoot(String fxml) throws IOException {
         scene.setRoot(loadFXML(fxml));
@@ -162,9 +172,9 @@ public class App extends Application {
     }
 
     /**
-     * Application entry point — delegates to {@link Application#launch(String...)}.
+     * Punto de entrada de la aplicación — delega a {@link Application#launch(String...)}.
      *
-     * @param args command-line arguments (currently unused)
+     * @param args argumentos de línea de comandos (actualmente no utilizados)
      */
     public static void main(String[] args) {
         launch();

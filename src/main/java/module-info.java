@@ -1,8 +1,8 @@
 /**
- * Main application module for the TicketSync point-of-sale system.
+ * Módulo principal de la aplicación TicketSync para punto de venta.
  *
- * <p>Declares all module dependencies and controls which packages are
- * exported or opened to the JavaFX runtime for reflection.
+ * <p>Declara todas las dependencias del módulo y controla qué paquetes
+ * se exportan o abren al entorno de ejecución de JavaFX para reflexión.
  */
 module com.ticketsync {
     requires javafx.controls;
@@ -12,6 +12,7 @@ module com.ticketsync {
     requires transitive java.sql;
     requires com.zaxxer.hikari;
     requires org.postgresql.jdbc;
+    requires flyway.core;
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
     requires jbcrypt;

@@ -4,15 +4,15 @@ import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.iv.RandomIvGenerator;
 
 /**
- * EncryptionUtil provides AES-256 PBE encryption utilities for TicketSync
- * configuration values using Jasypt.
+ * EncryptionUtil proporciona utilidades de cifrado AES-256 PBE para los valores
+ * de configuración de TicketSync usando Jasypt.
  *
- * <p>Values encrypted with this utility are wrapped in {@code ENC(...)} so
- * that {@link org.jasypt.properties.EncryptableProperties} can transparently
- * decrypt them when the configuration file is loaded.</p>
+ * <p>Los valores cifrados con esta utilidad se envuelven en {@code ENC(...)} para
+ * que {@link org.jasypt.properties.EncryptableProperties} pueda descifrarlos
+ * de forma transparente cuando se carga el archivo de configuración.</p>
  *
- * <p>The encryption algorithm used is {@code PBEWithHMACSHA512AndAES_256},
- * which requires Java 8 or later (built-in JCE).</p>
+ * <p>El algoritmo de cifrado utilizado es {@code PBEWithHMACSHA512AndAES_256},
+ * que requiere Java 8 o posterior (JCE integrado).</p>
  *
 
  * @version 1.0
@@ -27,11 +27,11 @@ public final class EncryptionUtil {
     }
 
     /**
-     * Creates and returns a configured {@link StandardPBEStringEncryptor} using
-     * the supplied master key and the {@code PBEWithHMACSHA512AndAES_256} algorithm.
+     * Crea y devuelve un {@link StandardPBEStringEncryptor} configurado usando
+     * la clave maestra proporcionada y el algoritmo {@code PBEWithHMACSHA512AndAES_256}.
      *
-     * @param masterKey the password/key used for encryption and decryption; must not be null or blank
-     * @return a fully configured, ready-to-use {@link StandardPBEStringEncryptor}
+     * @param masterKey la contraseña/clave usada para cifrar y descifrar; no debe ser null ni estar en blanco
+     * @return un {@link StandardPBEStringEncryptor} completamente configurado y listo para usar
      */
     public static StandardPBEStringEncryptor createEncryptor(String masterKey) {
         if (masterKey == null || masterKey.isBlank()) {
@@ -45,13 +45,13 @@ public final class EncryptionUtil {
     }
 
     /**
-     * Encrypts the given plaintext value using the supplied master key and returns
-     * the result wrapped in the Jasypt {@code ENC(...)} marker so it can be placed
-     * directly in a {@code .properties} file.
+     * Cifra el valor en texto plano dado usando la clave maestra proporcionada y devuelve
+     * el resultado envuelto en el marcador {@code ENC(...)} de Jasypt para que pueda
+     * colocarse directamente en un archivo {@code .properties}.
      *
-     * @param plaintext the value to encrypt; must not be null
-     * @param masterKey the password/key used for encryption; must not be null or blank
-     * @return the encrypted value in the form {@code ENC(encryptedValue)}
+     * @param plaintext el valor a cifrar; no debe ser null
+     * @param masterKey la contraseña/clave usada para el cifrado; no debe ser null ni estar en blanco
+     * @return el valor cifrado en la forma {@code ENC(valorCifrado)}
      */
     public static String encrypt(String plaintext, String masterKey) {
         if (plaintext == null) {
@@ -62,15 +62,15 @@ public final class EncryptionUtil {
     }
 
     /**
-     * Standalone command-line tool for generating {@code ENC(...)} values to place
-     * in {@code jdbc.properties}.
+     * Herramienta de línea de comandos independiente para generar valores {@code ENC(...)} para
+     * colocar en {@code jdbc.properties}.
      *
-     * <p>Usage:</p>
+     * <p>Uso:</p>
      * <pre>
-     *   java com.ticketsync.util.EncryptionUtil &lt;plaintext&gt; &lt;masterKey&gt;
+     *   java com.ticketsync.util.EncryptionUtil &lt;textoPlano&gt; &lt;claveMaestra&gt;
      * </pre>
      *
-     * @param args two arguments: {@code args[0]} = plaintext value, {@code args[1]} = master key
+     * @param args dos argumentos: {@code args[0]} = valor en texto plano, {@code args[1]} = clave maestra
      */
     public static void main(String[] args) {
         if (args.length != 2) {

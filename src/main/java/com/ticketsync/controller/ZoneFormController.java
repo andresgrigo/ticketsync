@@ -10,25 +10,25 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * FXML controller for the zone create/edit dialog ({@code ZoneFormView.fxml}).
+ * Controlador FXML para el diálogo de creación/edición de zona ({@code ZoneFormView.fxml}).
  *
- * <p>Operates in two modes controlled by {@link Mode}:
+ * <p>Opera en dos modos controlados por {@link Mode}:
  * <ul>
- *   <li>{@link Mode#CREATE} — fields empty; a new zone will be constructed from form values.</li>
- *   <li>{@link Mode#EDIT} — fields pre-populated from an existing zone; {@code zoneId} and
- *       {@code eventId} are preserved in the zone returned from {@link #getZoneFromForm()}.</li>
+ *   <li>{@link Mode#CREATE} — campos vacíos; se construirá una nueva zona a partir de los valores del formulario.</li>
+ *   <li>{@link Mode#EDIT} — campos prerrellenados desde una zona existente; {@code zoneId} y
+ *       {@code eventId} se preservan en la zona retornada por {@link #getZoneFromForm()}.</li>
  * </ul>
  */
 public class ZoneFormController {
 
-    /** Creates a new ZoneFormController; instantiated by FXMLLoader. */
+    /** Crea un nuevo ZoneFormController; instanciado por FXMLLoader. */
     public ZoneFormController() { }
 
-    /** Operational mode that determines pre-population behaviour. */
+    /** Modo operacional que determina el comportamiento de prerrellenado. */
     public enum Mode {
-        /** All fields empty; a new zone will be constructed from form values. */
+        /** Todos los campos vacíos; se construirá una nueva zona a partir de los valores del formulario. */
         CREATE,
-        /** All fields pre-populated from an existing zone; identity fields are preserved. */
+        /** Todos los campos prerrellenados desde una zona existente; los campos de identidad se preservan. */
         EDIT
     }
 
@@ -46,7 +46,7 @@ public class ZoneFormController {
 
     @FXML
     private void initialize() {
-        // Allow only digits and at most one decimal point
+        // Permitir solo dígitos y a lo sumo un punto decimal
         priceField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             if (newText.matches("\\d*\\.?\\d*")) {
@@ -57,20 +57,20 @@ public class ZoneFormController {
     }
 
     /**
-     * Sets the operational mode for this form.
+     * Establece el modo operacional para este formulario.
      *
-     * @param mode the mode to apply; must not be {@code null}
+     * @param mode el modo a aplicar; no debe ser {@code null}
      */
     public void setMode(Mode mode) {
         this.mode = mode;
     }
 
     /**
-     * Pre-populates the form fields with data from an existing zone.
+     * Rellena previamente los campos del formulario con los datos de una zona existente.
      *
-     * <p>Should be called in {@link Mode#EDIT} after {@link #setMode(Mode)}.
+     * <p>Debe llamarse en {@link Mode#EDIT} después de {@link #setMode(Mode)}.
      *
-     * @param zone the zone whose data should be displayed; must not be {@code null}
+     * @param zone la zona cuyos datos deben mostrarse; no debe ser {@code null}
      */
     public void setZone(Zone zone) {
         this.originalZone = zone;
@@ -79,16 +79,16 @@ public class ZoneFormController {
     }
 
     /**
-     * Validates the form contents.
+     * Valida el contenido del formulario.
      *
-     * <p>Validation rules:
+     * <p>Reglas de validación:
      * <ol>
-     *   <li>Name must not be blank.</li>
-     *   <li>Price must be parseable as a {@link BigDecimal}.</li>
-     *   <li>Price must be &gt; 0.</li>
+     *   <li>El nombre no debe estar en blanco.</li>
+     *   <li>El precio debe ser analizable como {@link BigDecimal}.</li>
+     *   <li>El precio debe ser &gt; 0.</li>
      * </ol>
      *
-     * @return {@code true} if all validations pass; {@code false} otherwise
+     * @return {@code true} si todas las validaciones pasan; {@code false} en caso contrario
      */
     public boolean validate() {
         if (nameField.getText() == null || nameField.getText().isBlank()) {
@@ -116,35 +116,35 @@ public class ZoneFormController {
     }
 
     /**
-     * Returns the trimmed zone name from the form.
+     * Retorna el nombre de zona recortado del formulario.
      *
-     * <p>Only call after {@link #validate()} returns {@code true}.
+     * <p>Solo llame después de que {@link #validate()} retorne {@code true}.
      *
-     * @return the trimmed name string
+     * @return la cadena de nombre recortada
      */
     public String getName() {
         return nameField.getText().strip();
     }
 
     /**
-     * Returns the price from the form as a {@link BigDecimal}.
+     * Retorna el precio del formulario como {@link BigDecimal}.
      *
-     * <p>Only call after {@link #validate()} returns {@code true}.
+     * <p>Solo llame después de que {@link #validate()} retorne {@code true}.
      *
-     * @return the parsed price
+     * @return el precio analizado
      */
     public BigDecimal getPrice() {
         return new BigDecimal(priceField.getText().strip()).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Constructs and returns a {@link Zone} from the current form values.
+     * Construye y retorna una {@link Zone} a partir de los valores actuales del formulario.
      *
-     * <p>In {@link Mode#EDIT} the returned zone preserves the original zone's
-     * {@code zoneId} and {@code eventId} so that {@code ZoneService.updateZone()}
-     * can identify the record to update.
+     * <p>En {@link Mode#EDIT} la zona retornada preserva el {@code zoneId} y {@code eventId}
+     * originales de la zona para que {@code ZoneService.updateZone()} pueda identificar
+     * el registro a actualizar.
      *
-     * @return the populated {@link Zone}; never {@code null}
+     * @return la {@link Zone} completada; nunca {@code null}
      */
     public Zone getZoneFromForm() {
         Zone zone = new Zone();

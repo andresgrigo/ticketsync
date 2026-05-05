@@ -21,23 +21,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Monitors database connectivity and exposes both the legacy
- * {@link ReadOnlyBooleanProperty} health signal and a richer runtime state model
- * for POS fail-safe messaging.
+ * Monitorea la conectividad de la base de datos y expone tanto la señal de salud
+ * {@link ReadOnlyBooleanProperty} heredada como un modelo de estado de ejecución más
+ * rico para mensajería en modo a prueba de fallos del POS.
  *
- * <p>A background daemon thread executes {@code SELECT 1} every 30 seconds.
- * If the query fails, the monitor switches to a 10-second retry interval for
- * faster recovery. Once connectivity is restored, the interval
- * returns to 30 seconds and normal operations resume automatically.
+ * <p>Un hilo daemon en segundo plano ejecuta {@code SELECT 1} cada 30 segundos.
+ * Si la consulta falla, el monitor cambia a un intervalo de reintento de 10 segundos
+ * para una recuperación más rápida. Una vez que se restaura la conectividad, el intervalo
+ * vuelve a 30 segundos y las operaciones normales se reanudan automáticamente.
  *
- * <p>ViewModels bind their {@code purchaseEnabled} property to
- * {@link #connectedProperty()} so that all purchase actions are automatically
- * disabled when the database goes offline (fail-safe mode).
+ * <p>Los ViewModels vinculan su propiedad {@code purchaseEnabled} a
+ * {@link #connectedProperty()} para que todas las acciones de compra se deshabiliten
+ * automáticamente cuando la base de datos se desconecta (modo a prueba de fallos).
  *
- * <p>This class is an eager static singleton. Obtain the shared instance via
- * {@link #getInstance()} and call {@link #start()} once after the initial DB
- * connection succeeds (in {@code App.start()}). Call {@link #shutdown()} in
- * {@code App.stop()} before closing the connection pool.
+ * <p>Esta clase es un singleton estático eager. Obtenga la instancia compartida mediante
+ * {@link #getInstance()} y llame a {@link #start()} una vez después de que la prueba
+ * inicial de conexión a la BD sea exitosa (en {@code App.start()}). Llame a {@link #shutdown()}
+ * en {@code App.stop()} antes de cerrar el pool de conexiones.
  */
 public class DatabaseHealthMonitor {
 
@@ -46,18 +46,18 @@ public class DatabaseHealthMonitor {
     private static final long HEALTHY_INTERVAL_SECONDS = 30;
     private static final long RETRY_INTERVAL_SECONDS   = 10;
 
-    /** Eager static singleton — initialized once at class-load time. */
+    /** Singleton estático eager — inicializado una vez en el momento de carga de la clase. */
     private static final DatabaseHealthMonitor INSTANCE = new DatabaseHealthMonitor();
 
     /**
-     * Represents the current runtime health state of the database connection.
+     * Representa el estado de salud actual en tiempo de ejecución de la conexión a la base de datos.
      */
     public enum RuntimeStatus {
-        /** Normal operating state; all database heartbeats are succeeding. */
+        /** Estado de operación normal; todos los latidos de la base de datos tienen éxito. */
         HEALTHY,
-        /** Database unreachable; application is in read-only/no-sell fail-safe mode. */
+        /** Base de datos inalcanzable; la aplicación está en modo de solo lectura/sin ventas a prueba de fallos. */
         FAIL_SAFE,
-        /** Previous heartbeat failed; actively retrying connection at reduced interval. */
+        /** El útimo latido falló; reintentando activamente la conexión a intervalo reducido. */
         RECONNECTING
     }
 
@@ -81,15 +81,15 @@ public class DatabaseHealthMonitor {
     private volatile boolean lastCheckFailed = false;
     private volatile int consecutiveFailureCount = 0;
 
-    /** Production constructor — uses live DB and JavaFX {@code Platform.runLater}. */
+    /** Constructor de producción — usa BD real y JavaFX {@code Platform.runLater}. */
     private DatabaseHealthMonitor() {
         this(DatabaseConfig::getConnection, Platform::runLater);
     }
 
     /**
-     * Test constructor — allows injecting a stub connection factory and a
-     * synchronous UI runner ({@code Runnable::run}) so that unit tests run
-     * without a live database or JavaFX toolkit.
+     * Constructor para pruebas — permite inyectar una fábrica de conexiones de prueba y un
+     * ejecutor de UI síncrono ({@code Runnable::run}) para que las pruebas unitarias funcionen
+     * sin una base de datos real ni el kit de herramientas JavaFX.
      */
     DatabaseHealthMonitor(ConnectionFactory connFactory, Consumer<Runnable> uiRunner) {
         this.connFactory = connFactory;
@@ -97,17 +97,17 @@ public class DatabaseHealthMonitor {
     }
 
     /**
-     * Returns the shared singleton instance.
+     * Devuelve la instancia singleton compartida.
      *
-     * @return the application-wide {@code DatabaseHealthMonitor} instance
+     * @return la instancia {@code DatabaseHealthMonitor} de toda la aplicación
      */
     public static DatabaseHealthMonitor getInstance() {
         return INSTANCE;
     }
 
     /**
-     * Starts the background health-check scheduler with an initial 30-second interval.
-     * Call this from {@code App.start()} after the initial DB connection test passes.
+     * Inicia el planificador de verificación de salud en segundo plano con un intervalo inicial de 30 segundos.
+     * Llame este método desde {@code App.start()} después de que la prueba inicial de conexión a la BD sea exitosa.
      */
     public void start() {
         scheduler     = createScheduler();
@@ -117,8 +117,8 @@ public class DatabaseHealthMonitor {
     }
 
     /**
-     * Stops the background scheduler.
-     * Call this from {@code App.stop()} before shutting down the connection pool.
+     * Detiene el planificador en segundo plano.
+     * Llame este método desde {@code App.stop()} antes de apagar el pool de conexiones.
      */
     public void shutdown() {
         if (scheduler != null) {
@@ -128,26 +128,26 @@ public class DatabaseHealthMonitor {
     }
 
     /**
-     * Returns a read-only view of the database-connected property.
-     * External callers may observe the value but cannot mutate it via this handle.
+     * Devuelve una vista de solo lectura de la propiedad de conexión a la base de datos.
+     * Las llamadas externas pueden observar el valor pero no pueden mutarlo a través de este manejador.
      *
-     * @return read-only boolean property; {@code true} when the database is reachable
+     * @return propiedad booleana de solo lectura; {@code true} cuando la base de datos es alcanzable
      */
     public ReadOnlyBooleanProperty connectedProperty() {
         return databaseConnected.getReadOnlyProperty();
     }
 
     /**
-     * Convenience boolean accessor — equivalent to {@code connectedProperty().get()}.
+     * Acceso booleano de conveniencia — equivalente a {@code connectedProperty().get()}.
      *
-     * @return {@code true} if the last database health check succeeded
+     * @return {@code true} si la última verificación de salud de la base de datos fue exitosa
      */
     public boolean isConnected() {
         return databaseConnected.get();
     }
 
     /**
-     * Returns the current runtime status property.
+     * Devuelve la propiedad del estado de ejecución actual.
      * Reflects whether the monitor is healthy, in fail-safe mode, or reconnecting.
      *
      * @return read-only property holding the current {@link RuntimeStatus}
