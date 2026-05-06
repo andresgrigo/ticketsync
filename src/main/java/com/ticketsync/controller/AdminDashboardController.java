@@ -4,10 +4,13 @@ import com.ticketsync.App;
 import com.ticketsync.model.User;
 import com.ticketsync.service.AuthenticationService;
 import com.ticketsync.service.SessionContext;
+import com.ticketsync.util.DatabaseHealthMonitor;
+import com.ticketsync.util.ThemeStyleHelper;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.HBox;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +26,9 @@ public class AdminDashboardController {
     private static final Logger LOGGER = LogManager.getLogger(AdminDashboardController.class);
 
     @FXML private Label loggedInUserLabel;
+    @FXML private Label systemHealthBadgeLabel;
+    @FXML private HBox systemHealthBanner;
+    @FXML private Label systemHealthBannerLabel;
     @FXML private TabPane mainTabPane;
     @FXML private Tab seatingTab;
     @FXML private Tab layoutViewTab;
@@ -82,6 +88,8 @@ public class AdminDashboardController {
                         auditLogTabContentController.onTabActivated();
                     }
                 });
+
+        bindDbHealthUI();
     }
 
     @FXML
@@ -100,5 +108,60 @@ public class AdminDashboardController {
         } catch (IOException ex) {
             LOGGER.error("Failed to navigate to LoginView", ex);
         }
+    }
+
+    private void bindDbHealthUI() {
+        DatabaseHealthMonitor monitor = DatabaseHealthMonitor.getInstance();
+        applyDbHealth(monitor.runtimeStatusProperty().get(), monitor.retryAttemptCountProperty().get());
+        monitor.runtimeStatusProperty().addListener((obs, oldVal, newVal) ->
+                applyDbHealth(newVal, monitor.retryAttemptCountProperty().get()));
+        monitor.retryAttemptCountProperty().addListener((obs, oldVal, newVal) ->
+                applyDbHealth(monitor.runtimeStatusProperty().get(), newVal.intValue()));
+    }
+
+    private void applyDbHealth(DatabaseHealthMonitor.RuntimeStatus status, int retryAttempts) {
+        DatabaseHealthMonitor.RuntimeStatus s =
+                status != null ? status : DatabaseHealthMonitor.RuntimeStatus.HEALTHY;
+        String cssClass;
+        String badgeText;
+        String bannerText;
+        boolean bannerVisible;
+        switch (s) {
+            case FAIL_SAFE -> {
+                cssClass = "health-fail-safe";
+                badgeText = "Fail-Safe Active";
+                bannerText = "Database offline. Admin operations may fail.";
+                bannerVisible = true;
+            }
+            case RECONNECTING -> {
+                int displayAttempt = Math.max(retryAttempts, 1);
+                cssClass = "health-reconnecting";
+                badgeText = "Reconnecting...";
+                bannerText = "Reconnecting to the database (attempt " + displayAttempt + "). Operations may fail.";
+                bannerVisible = true;
+            }
+            default -> {
+                cssClass = "health-healthy";
+                badgeText = "DB Connected";
+                bannerText = "";
+                bannerVisible = false;
+            }
+        }
+        ThemeStyleHelper.applyManagedStateClass(
+                systemHealthBadgeLabel.getStyleClass(),
+                "system-health-badge",
+                ThemeStyleHelper.HEALTH_STATE_CLASSES,
+                cssClass
+        );
+        ThemeStyleHelper.applyManagedStateClass(
+                systemHealthBanner.getStyleClass(),
+                "system-health-banner",
+                ThemeStyleHelper.HEALTH_STATE_CLASSES,
+                cssClass
+        );
+        systemHealthBadgeLabel.setText(badgeText);
+        systemHealthBannerLabel.setText(bannerText);
+        systemHealthBanner.setVisible(bannerVisible);
+        systemHealthBanner.setManaged(bannerVisible);
     }
 }

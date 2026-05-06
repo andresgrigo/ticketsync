@@ -8,26 +8,46 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
 <BorderPane prefWidth="900" prefHeight="650"
             xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.ticketsync.controller.AdminDashboardController">
 
-    <!-- TOP — Header bar -->
+    <!-- TOP — Header bar + database health banner -->
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="16"
-              styleClass="admin-header-bar">
-            <padding>
-                <Insets top="12" right="12" bottom="12" left="12"/>
-            </padding>
-            <Label text="TicketSync Admin"
-                   styleClass="admin-header-title"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="loggedInUserLabel"
-                   styleClass="admin-header-meta"/>
-            <Button fx:id="logoutButton" text="Logout" onAction="#handleLogout"/>
-        </HBox>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="16"
+                  styleClass="admin-header-bar">
+                <padding>
+                    <Insets top="12" right="12" bottom="12" left="12"/>
+                </padding>
+                <Label text="TicketSync Admin"
+                       styleClass="admin-header-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="systemHealthBadgeLabel"
+                       text="DB Connected"
+                       styleClass="system-health-badge"/>
+                <Label fx:id="loggedInUserLabel"
+                       styleClass="admin-header-meta"/>
+                <Button fx:id="logoutButton" text="Logout" onAction="#handleLogout"/>
+            </HBox>
+
+            <HBox fx:id="systemHealthBanner"
+                  spacing="10"
+                  alignment="CENTER_LEFT"
+                  visible="false"
+                  managed="false"
+                  styleClass="system-health-banner">
+                <padding>
+                    <Insets top="10" right="12" bottom="10" left="12"/>
+                </padding>
+                <Label fx:id="systemHealthBannerLabel"
+                       wrapText="true"
+                       styleClass="system-health-banner-label"/>
+            </HBox>
+        </VBox>
     </top>
 
     <!-- CENTER — TabPane -->
