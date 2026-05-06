@@ -5,6 +5,13 @@ target
 !.idea/runConfigurations/
 !.idea/runConfigurations/*.xml
 
+$DepsDir
+dist/lib/
+dist/app-image/
+dist/ticketsync.bat
+dist/ticketsync.sh
+!dist/*.zip
+
 # Log files
 logs/*.log
 logs/*.log.gz

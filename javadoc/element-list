@@ -1,0 +1,9 @@
+module:com.ticketsync
+com.ticketsync
+com.ticketsync.controller
+com.ticketsync.dao
+com.ticketsync.exception
+com.ticketsync.model
+com.ticketsync.service
+com.ticketsync.util
+com.ticketsync.viewmodel

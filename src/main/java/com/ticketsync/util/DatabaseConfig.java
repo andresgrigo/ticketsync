@@ -255,7 +255,7 @@ public final class DatabaseConfig {
     public static void migrateDatabase() {
         LOGGER.info("Applying Flyway database migrations...");
         try {
-            Flyway flyway = Flyway.configure()
+            Flyway flyway = Flyway.configure(DatabaseConfig.class.getClassLoader())
                     .dataSource(dataSource)
                     .locations("classpath:db/migration")
                     .baselineOnMigrate(true)

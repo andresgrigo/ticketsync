@@ -51,6 +51,11 @@
             <version>2.22.1</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>2.22.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
@@ -140,8 +145,10 @@
                 <version>3.6.3</version>
                 <configuration>
                     <source>21</source>
-                    <failOnError>false</failOnError>
+                    <failOnError>true</failOnError>
                     <failOnWarnings>true</failOnWarnings>
+                    <reportOutputDirectory>${project.basedir}</reportOutputDirectory>
+                    <destDir>javadoc</destDir>
                 </configuration>
             </plugin>
         </plugins>

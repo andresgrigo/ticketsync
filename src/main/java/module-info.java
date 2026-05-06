@@ -5,7 +5,7 @@
  * se exportan o abren al entorno de ejecución de JavaFX para reflexión.
  */
 module com.ticketsync {
-    requires javafx.controls;
+    requires transitive javafx.controls;
     requires javafx.fxml;
     requires transitive javafx.base;
     requires transitive javafx.graphics;
@@ -24,6 +24,7 @@ module com.ticketsync {
     opens com.ticketsync.util;
     opens com.ticketsync.controller to javafx.fxml;
     opens com.ticketsync.viewmodel;
+    opens db.migration;
     exports com.ticketsync;
     exports com.ticketsync.util;
     exports com.ticketsync.model;

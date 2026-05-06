@@ -44,6 +44,7 @@
  *   <li>Métodos CRUD: findById, findAll, insert, update, delete</li>
  *   <li>Variaciones de consulta: findByUsername, findByEventId, findActive</li>       
  *   <li>Operaciones especiales: selectForUpdate, insertSaleItems, updateStatus</li>
+ * </ul>
  * 
  * @see com.ticketsync.service
  * @see com.ticketsync.model

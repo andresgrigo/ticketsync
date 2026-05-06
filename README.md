@@ -1,180 +1,134 @@
 # TicketSync
 
-A cross-platform desktop ticket management system built with JavaFX 21 and PostgreSQL.
+Sistema de gestión de tickets de escritorio multiplataforma construido con JavaFX 21 y PostgreSQL. Permite la venta de entradas a través de múltiples taquillas físicas en red local, garantizando cero sobreventas mediante transacciones ACID.
 
-## Prerequisites
+---
 
-- Java 21 LTS (Eclipse Adoptium or equivalent)
-- Apache Maven 3.9+
-- PostgreSQL 15+ (or Docker Desktop for containerized database)
+## Tabla de contenidos
 
-## Database Setup
+1. [Requisitos previos](#1-requisitos-previos)
+2. [Configuración de la base de datos](#2-configuración-de-la-base-de-datos)
+3. [Variables de entorno](#3-variables-de-entorno)
+4. [Configuración de Maven (sólo desarrollo)](#4-configuración-de-maven-sólo-desarrollo)
+5. [Ejecutar en modo desarrollo](#5-ejecutar-en-modo-desarrollo)
+6. [Usuarios por defecto](#6-usuarios-por-defecto)
+7. [Empaquetado y distribución](#7-empaquetado-y-distribución)
+8. [Estructura del proyecto](#8-estructura-del-proyecto)
+9. [Preguntas frecuentes](#9-preguntas-frecuentes)
 
-TicketSync requires PostgreSQL 15 or higher for data persistence. You can use either Docker (recommended) or a local PostgreSQL installation.
+---
 
-### Option 1: Docker Compose (Recommended)
+## 1. Requisitos previos
 
-The easiest way to run PostgreSQL for development:
+| Herramienta | Versión mínima | Notas |
+|---|---|---|
+| Java (JDK) | 21 LTS | [Eclipse Adoptium](https://adoptium.net/) recomendado |
+| Apache Maven | 3.9+ | Solo necesario para desarrollo y compilación |
+| PostgreSQL | 15+ | O Docker Desktop para el contenedor de base de datos |
+| Docker Desktop | Cualquier versión actual | Opcional, pero recomendado para desarrollo |
+
+> **Nota:** Los usuarios finales que instalen el paquete distribuido (`dist/`) **no necesitan** Java ni Maven; la imagen jlink incluye el runtime completo.
+
+---
+
+## 2. Configuración de la base de datos
+
+TicketSync requiere PostgreSQL 15 o superior. Tienes dos opciones:
+
+### Opción A: Docker Compose (recomendada)
 
 ```bash
-# Start PostgreSQL container
-docker-compose up -d
+# Iniciar PostgreSQL en segundo plano
+docker compose up -d
 
-# Verify PostgreSQL is running
-docker-compose ps
+# Verificar que está corriendo
+docker compose ps
 
-# Stop PostgreSQL
-docker-compose down
+# Detener sin borrar datos
+docker compose down
 
-# Stop and remove data volumes (WARNING: deletes all data)
-docker-compose down -v
+# Detener y borrar todos los datos (¡irreversible!)
+docker compose down -v
 ```
 
-The Docker Compose configuration automatically:
-- Creates the `ticketsync` database
-- Sets up the `postgres` user with password `postgres`
-- Exposes PostgreSQL on `localhost:5432`
-- Persists data in a Docker volume
+Docker Compose crea automáticamente:
+- Base de datos `ticketsync`
+- Usuario `postgres` con contraseña `postgres`
+- Puerto `5432` expuesto en `localhost`
+- Volumen persistente `postgres_data`
 
-### Option 2: Local PostgreSQL Installation
+### Opción B: PostgreSQL local
 
-If you prefer installing PostgreSQL directly:
-
-**Windows:**
+**Windows (Chocolatey):**
 ```powershell
-# Using Chocolatey
 choco install postgresql15
-
-# Or download installer from postgresql.org
 ```
 
 **Linux (Ubuntu/Debian):**
 ```bash
-sudo apt-get update
 sudo apt-get install postgresql-15
 sudo systemctl start postgresql
 ```
 
-**macOS:**
+**macOS (Homebrew):**
 ```bash
-# Using Homebrew
 brew install postgresql@15
 brew services start postgresql@15
 ```
 
-**Create Database:**
+**Crear la base de datos:**
 ```bash
-# Connect to PostgreSQL
-psql -U postgres
-
-# Create database
-CREATE DATABASE ticketsync;
-
-# Exit psql
-\q
+psql -U postgres -c "CREATE DATABASE ticketsync;"
 ```
 
-### Apply Database Migrations
+### Migraciones de esquema
 
-After setting up PostgreSQL, apply Flyway migrations to create the schema:
+La aplicación aplica las migraciones Flyway **automáticamente al arrancar**. No es necesario ejecutar `mvn flyway:migrate` manualmente.
+
+Si prefieres aplicar las migraciones desde Maven (entornos CI/CD):
 
 ```bash
-# Apply all pending migrations
-mvn flyway:migrate
-
-# View migration history
-mvn flyway:info
-
-# Validate applied migrations
-mvn flyway:validate
+mvn flyway:migrate   # Aplica todas las migraciones pendientes
+mvn flyway:info      # Muestra el historial de migraciones
+mvn flyway:validate  # Valida las migraciones aplicadas
 ```
 
-**Expected Output:**
-```
-[INFO] Successfully applied 1 migration to schema "public", now at version v001
-```
+---
 
-### Database Connection Settings
+## 3. Variables de entorno
 
-The application connects to PostgreSQL using credentials stored in `src/main/resources/jdbc.properties`, encrypted with Jasypt. The decryption key is supplied at runtime via the `TICKETSYNC_MASTER_KEY` environment variable (see below).
+### `TICKETSYNC_MASTER_KEY` *(obligatoria)*
 
-Flyway migrations use separate credentials supplied via `~/.m2/settings.xml` (see [Maven Settings](#maven-settings) below). Default development values:
-- **URL:** `jdbc:postgresql://localhost:5432/ticketsync`
-- **User:** `postgres`
-- **Password:** `postgres`
-- **Port:** `5432` (default)
+Clave maestra para descifrar las credenciales de base de datos almacenadas en `jdbc.properties` (cifradas con Jasypt). La aplicación no arranca sin esta variable.
 
-## Connection Pooling
-
-TicketSync uses **HikariCP 5.1.0** for efficient database connection management. HikariCP is the industry-standard JDBC connection pool with superior performance and reliability.
-
-### Pool Configuration
-
-Each application instance (booth or admin client) maintains its own connection pool with the following configuration:
-
-- **Maximum Pool Size:** 5 connections (per application instance)
-- **Minimum Idle:** 2 connections (maintained warm for instant checkout)
-- **Connection Timeout:** 10 seconds
-- **Idle Timeout:** 5 minutes
-- **Max Lifetime:** 30 minutes
-
-**Why Connection Pooling?** Unlike typical single-user desktop apps, TicketSync requires concurrent database operations:
-- **1 persistent connection** for PostgreSQL LISTEN/NOTIFY (real-time seat updates)
-- **1-2 connections** for transaction processing
-- **1-2 connections** for concurrent queries and health checks
-
-With 10 booths running, the total PostgreSQL connection count is approximately 20-50 connections (well within PostgreSQL's default limit).
-
-### Performance
-
-- Connection checkout completes in **< 50ms** under normal load
-- Pool automatically manages connection lifecycle and health checks
-- Connections are validated using `SELECT 1` query before checkout
-
-### Usage Pattern
-
-```java
-Connection conn = null;
-try {
-    conn = DatabaseConfig.getConnection();
-    // Use connection for database operations
-} catch (SQLException e) {
-    // Handle error
-} finally {
-    if (conn != null) {
-        conn.close(); // Returns connection to pool
-    }
-}
-```
-
-**Important:** Calling `Connection.close()` returns the connection to the pool rather than closing the underlying PostgreSQL connection.
-
-## Environment Variables
-
-### `TICKETSYNC_MASTER_KEY`
-
-Required to start the application. This key is used by Jasypt to decrypt the database credentials in `jdbc.properties`.
-
-**Windows (PowerShell — session only):**
+**Windows — sesión actual (PowerShell):**
 ```powershell
-$env:TICKETSYNC_MASTER_KEY="your-secret-key"
+$env:TICKETSYNC_MASTER_KEY = "tu-clave-secreta"
 ```
 
-**Windows (permanent — system environment):**
+**Windows — permanente (todas las sesiones):**
 ```powershell
-[System.Environment]::SetEnvironmentVariable("TICKETSYNC_MASTER_KEY", "your-secret-key", "User")
+[System.Environment]::SetEnvironmentVariable("TICKETSYNC_MASTER_KEY", "tu-clave-secreta", "User")
 ```
 
-**Linux / macOS:**
+**Linux / macOS — sesión actual:**
 ```bash
-export TICKETSYNC_MASTER_KEY="your-secret-key"
+export TICKETSYNC_MASTER_KEY="tu-clave-secreta"
 ```
 
-The application will show an error dialog and refuse to start if this variable is not set.
+**Linux / macOS — permanente** (añadir a `~/.bashrc` o `~/.zshrc`):
+```bash
+echo 'export TICKETSYNC_MASTER_KEY="tu-clave-secreta"' >> ~/.bashrc
+source ~/.bashrc
+```
 
-## Maven Settings
+> La clave de desarrollo local por defecto es `changeme`. **Usa una clave segura en producción.**
 
-Flyway credentials are **not** stored in `pom.xml`. Instead, supply them in `~/.m2/settings.xml` so they are never committed to source control:
+---
+
+## 4. Configuración de Maven (sólo desarrollo)
+
+Las credenciales de Flyway se configuran en `~/.m2/settings.xml` para no exponerlas en el repositorio:
 
 ```xml
 <settings>
@@ -184,7 +138,7 @@ Flyway credentials are **not** stored in `pom.xml`. Instead, supply them in `~/.
             <properties>
                 <flyway.url>jdbc:postgresql://localhost:5432/ticketsync</flyway.url>
                 <flyway.user>postgres</flyway.user>
-                <flyway.password>your-db-password</flyway.password>
+                <flyway.password>postgres</flyway.password>
             </properties>
         </profile>
     </profiles>
@@ -194,78 +148,267 @@ Flyway credentials are **not** stored in `pom.xml`. Instead, supply them in `~/.
 </settings>
 ```
 
-This file is created at `C:\Users\<you>\.m2\settings.xml` on Windows or `~/.m2/settings.xml` on Linux/macOS and is **never committed to git**.
+Ruta del fichero:
+- **Windows:** `C:\Users\<tu-usuario>\.m2\settings.xml`
+- **Linux / macOS:** `~/.m2/settings.xml`
 
-## Build & Run
+---
 
-### Development Mode
+## 5. Ejecutar en modo desarrollo
 
 ```bash
-# Build and run the application
+# Establecer la variable de entorno (una vez por sesión)
+export TICKETSYNC_MASTER_KEY="changeme"   # Linux/macOS
+$env:TICKETSYNC_MASTER_KEY = "changeme"   # PowerShell
+
+# Arrancar la base de datos
+docker compose up -d
+
+# Compilar y ejecutar
 mvn clean javafx:run
 ```
 
-### Build Only
+### Referencia de comandos Maven
 
-```bash
-# Compile the project
-mvn clean compile
+| Comando | Descripción |
+|---|---|
+| `mvn clean compile` | Compilar fuentes Java |
+| `mvn clean javafx:run` | Ejecutar en modo desarrollo |
+| `mvn clean package` | Generar JAR |
+| `mvn clean javafx:jlink` | Crear imagen de runtime con jlink |
+| `mvn test` | Ejecutar tests unitarios |
+| `mvn flyway:migrate` | Aplicar migraciones pendientes |
+| `mvn flyway:info` | Ver historial de migraciones |
+| `mvn flyway:validate` | Validar migraciones aplicadas |
+| `mvn flyway:clean` | ⚠️ Eliminar todo el esquema (solo desarrollo) |
 
-# Package as JAR
-mvn clean package
+---
+
+## 6. Usuarios por defecto
+
+Estos usuarios se crean automáticamente al aplicar la primera migración. Son **exclusivos para desarrollo y pruebas**; cámbialos inmediatamente en cualquier entorno real.
+
+| Usuario | Contraseña | Rol | Descripción |
+|---|---|---|---|
+| `admin` | `admin123` | `ADMIN` | Acceso completo: gestión de eventos, zonas, usuarios y auditoría |
+| `vendor1` | `vendor123` | `VENDOR` | Acceso al punto de venta (POS) |
+
+> ⚠️ **Seguridad:** Cambia ambas contraseñas tras el primer inicio de sesión en cualquier entorno no-desarrollo. El panel de administración permite gestionar usuarios desde la pestaña *Usuarios*.
+
+---
+
+## 7. Empaquetado y distribución
+
+Hay dos modos de empaquetado:
+
+| Modo | Comando | Java en destino | Resultado |
+|---|---|---|---|
+| Portable (JARs + launcher) | `package.ps1` | ✅ Requerido (21+) | `dist/lib/` + `.bat` / `.sh` |
+| Imagen nativa (jpackage) | `package.ps1 -Installer` | ❌ No requerido | `dist/TicketSync-1.0.zip` |
+
+> ⚠️ **Por qué no se usa jlink:** varias dependencias (Jasypt, jBCrypt, Flyway) son *automatic modules* (JARs sin `module-info.class`) y jlink no puede incluirlos directamente.
+
+### Opción A — Distribución portable (requiere Java 21 en el destino)
+
+```powershell
+# Windows
+.\scripts\package.ps1
 ```
 
-### Create Custom Runtime Image (jlink)
-
-```bash
-# Create optimized runtime with jlink
-mvn clean javafx:jlink
+El resultado se generará en `dist/`:
+```
+dist/
+├── lib/               ← todos los JARs (app + dependencias + JavaFX con libs nativas)
+├── ticketsync.bat     ← launcher Windows
+└── ticketsync.sh      ← launcher Linux / macOS
 ```
 
-## Project Structure
+Para ejecutar:
+```powershell
+$env:TICKETSYNC_MASTER_KEY = "tu-clave"
+.\dist\ticketsync.bat
+```
+
+### Opción B — Imagen nativa autosuficiente con jpackage (recomendada)
+
+Incorpora un JRE completo: **el usuario final no necesita Java instalado**.
+
+```powershell
+.\scripts\package.ps1 -Installer
+```
+
+Genera:
+```
+dist/
+├── app-image/TicketSync/   ← imagen nativa con JRE embebido (no versionar)
+└── TicketSync-1.0.zip      ← ZIP listo para entregar ✅
+```
+
+Para ejecutar tras descomprimir el ZIP:
+```powershell
+$env:TICKETSYNC_MASTER_KEY = "tu-clave"
+.\TicketSync\TicketSync.exe
+```
+
+### Pasos completos para distribuir
+
+```
+1. docker compose up -d                          ← Arrancar PostgreSQL (solo build)
+2. $env:TICKETSYNC_MASTER_KEY = "tu-clave"       ← Variable de entorno
+3. .\scripts\package.ps1 -Installer              ← Compilar + generar ZIP
+4. Entregar dist\TicketSync-1.0.zip al usuario final
+   → Descomprimir
+   → set TICKETSYNC_MASTER_KEY=tu-clave
+   → Ejecutar TicketSync\TicketSync.exe
+   → La app aplica las migraciones automáticamente en el primer arranque
+```
+
+---
+
+## 8. Estructura del proyecto
 
 ```
 ticketsync/
-├── pom.xml                          # Maven build configuration
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   ├── module-info.java    # Java Platform Module System descriptor
-│   │   │   └── com/ticketsync/     # Application source code
-│   │   └── resources/
-│   │       └── com/ticketsync/     # FXML views and styles
-│   └── test/
-│       └── java/                    # JUnit test files
+├── docker-compose.yml               # Configuración de PostgreSQL para desarrollo
+├── pom.xml                          # Configuración de Maven
+├── scripts/
+│   ├── package.ps1                  # Empaquetado Windows (launcher + jpackage opcional)
+│   └── package.sh                   # Empaquetado Linux/macOS (launcher + jpackage opcional)
+└── src/
+    ├── main/
+    │   ├── java/
+    │   │   ├── module-info.java     # Descriptor del módulo JPMS
+    │   │   └── com/ticketsync/
+    │   │       ├── App.java         # Punto de entrada JavaFX
+    │   │       ├── controller/      # Controladores FXML
+    │   │       ├── dao/             # Capa de acceso a datos (patrón DAO)
+    │   │       ├── model/           # Entidades de dominio
+    │   │       ├── service/         # Lógica de negocio
+    │   │       ├── util/            # Utilidades (DatabaseConfig, etc.)
+    │   │       ├── viewmodel/       # ViewModels (patrón MVVM)
+    │   │       └── exception/       # Excepciones personalizadas
+    │   └── resources/
+    │       ├── jdbc.properties      # Credenciales cifradas con Jasypt
+    │       ├── log4j2.xml           # Configuración de logging
+    │       ├── com/ticketsync/      # Vistas FXML y estilos CSS
+    │       └── db/migration/        # Scripts SQL Flyway (V001–V005)
+    └── test/
+        └── java/                    # Tests JUnit 5
 ```
 
-## Technology Stack
+### Stack tecnológico
 
-- **Java:** 21 LTS
-- **UI Framework:** JavaFX 21.0.2
-- **Database:** PostgreSQL 15+ with JDBC 42.7.2
-- **Connection Pool:** HikariCP 5.1.0
-- **Migrations:** Flyway 10.8.1
-- **Build Tool:** Maven 3.9.14
-- **Testing:** JUnit 5.10.0
-- **Module System:** Java Platform Module System (JPMS)
+| Componente | Tecnología | Versión |
+|---|---|---|
+| Lenguaje | Java | 21 LTS |
+| UI | JavaFX + AtlantaFX | 21.0.2 / 2.1.0 |
+| Base de datos | PostgreSQL + JDBC | 15+ / 42.7.2 |
+| Pool de conexiones | HikariCP | 5.1.0 |
+| Migraciones | Flyway | 10.8.1 |
+| Cifrado config | Jasypt | 1.9.3 |
+| Generación PDF | Apache PDFBox | 3.0.1 |
+| Hashing contraseñas | jBCrypt | 0.4 |
+| Build | Maven | 3.9+ |
+| Tests | JUnit 5 + Mockito | 5.10.0 / 5.11.0 |
 
-## Maven Goals
+---
 
-| Goal | Description |
-|------|-------------|
-| `mvn clean compile` | Compile Java sources |
-| `mvn clean javafx:run` | Run the application in development mode |
-| `mvn clean package` | Package application as JAR |
-| `mvn clean javafx:jlink` | Create custom runtime image |
-| `mvn test` | Run unit tests |
-| `mvn flyway:migrate` | Apply pending database migrations |
-| `mvn flyway:info` | Display migration history |
-| `mvn flyway:validate` | Validate applied migrations |
-| `mvn flyway:clean` | ⚠️ Drop all database objects (dev only) |
+## 9. Preguntas frecuentes
 
-## Development
+### La aplicación no arranca y muestra "Missing Environment Variable"
 
-This project uses:
-- **MVVM Pattern:** Model-View-ViewModel architectural pattern
-- **FXML:** Declarative UI with FXML + Controllers
-- **Modular Java:** Java Platform Module System for strong encapsulation
+La variable `TICKETSYNC_MASTER_KEY` no está definida en el entorno actual. Establécela antes de ejecutar (ver [sección 3](#3-variables-de-entorno)).
+
+---
+
+### La aplicación no puede conectar a la base de datos
+
+Comprueba que PostgreSQL está corriendo y accesible en `localhost:5432`:
+
+```bash
+# Con Docker
+docker compose ps
+docker compose up -d   # si no está corriendo
+
+# Con psql
+psql -U postgres -h localhost -c "SELECT 1;"
+```
+
+Si usas una configuración de red diferente, crea el fichero `~/.ticketsync/config/jdbc.properties` con los valores correctos (sobreescribe los valores del classpath):
+
+```properties
+jdbc.url=jdbc:postgresql://mi-servidor:5432/ticketsync
+jdbc.username=mi-usuario
+jdbc.password=mi-contraseña
+```
+
+---
+
+### ¿Cómo cambio la contraseña de un usuario?
+
+Desde el panel de administración → pestaña **Usuarios** → selecciona el usuario → **Editar usuario**. La nueva contraseña se hashea con BCrypt (coste 12) automáticamente.
+
+También puedes hacerlo directamente en SQL si necesitas restablecer la contraseña del `admin`:
+
+```sql
+-- Genera un hash con una herramienta BCrypt (coste 12) y sustitúyelo aquí
+UPDATE users SET password_hash = '$2a$12$...' WHERE username = 'admin';
+```
+
+---
+
+### ¿Cómo creo más vendedores?
+
+Desde el panel de administración → pestaña **Usuarios** → **Crear usuario** → selecciona el rol `VENDOR`. Los vendedores solo tienen acceso al punto de venta (POS).
+
+---
+
+### Las migraciones de Flyway dan un error de checksum
+
+Si has modificado manualmente un fichero de migración ya aplicado:
+
+```bash
+mvn flyway:repair     # Recalcula los checksums en la tabla flyway_schema_history
+mvn flyway:validate   # Verifica que todo esté correcto
+```
+
+> ⚠️ Nunca modifiques una migración ya aplicada en producción; crea siempre una nueva migración.
+
+---
+
+### ¿Cómo genero un nuevo valor cifrado para jdbc.properties?
+
+Usa la clase `EncryptionUtil` del proyecto con tu clave maestra:
+
+```java
+// Llama al método encrypt de com.ticketsync.util.EncryptionUtil
+// para obtener el valor ENC() a pegar en jdbc.properties
+```
+
+O modifica `jdbc.properties` con la contraseña en texto plano durante el desarrollo local (no recomendado para producción):
+
+```properties
+jdbc.password=mi-contraseña-en-texto-plano
+```
+
+---
+
+### ¿La aplicación funciona sin conexión a internet?
+
+Sí. TicketSync está diseñado para operar en red local sin necesidad de internet. Solo requiere conectividad con el servidor PostgreSQL en la red local (o `localhost`).
+
+---
+
+### ¿Cuántas taquillas puede gestionar simultáneamente?
+
+Hasta 10 taquillas simultáneas (pool de 5 conexiones por instancia, ~50 conexiones totales). El sistema garantiza cero sobreventas mediante transacciones `SERIALIZABLE` en PostgreSQL y notificaciones en tiempo real por `LISTEN/NOTIFY`.
+
+---
+
+### ¿Dónde se guardan los logs de la aplicación?
+
+Los logs se guardan en `~/.ticketsync/logs/`:
+- **Windows:** `C:\Users\<usuario>\.ticketsync\logs\`
+- **Linux / macOS:** `~/.ticketsync/logs/`
+
+El nivel de log se configura en `src/main/resources/log4j2.xml`.
