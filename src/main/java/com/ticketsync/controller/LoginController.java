@@ -15,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.net.ConnectException;
+import java.sql.SQLTransientConnectionException;
 import java.util.Optional;
 
 /**
@@ -127,8 +129,13 @@ public class LoginController {
         });
 
         loginTask.setOnFailed(e -> {
-            LOGGER.error("Login task failed", loginTask.getException());
-            viewModel.errorMessageProperty().set("A system error occurred. Please try again.");
+            Throwable ex = loginTask.getException();
+            LOGGER.error("Login task failed", ex);
+            if (isDatabaseUnavailable(ex)) {
+                viewModel.errorMessageProperty().set("Cannot connect to the database. Please try again later.");
+            } else {
+                viewModel.errorMessageProperty().set("A system error occurred. Please try again.");
+            }
             viewModel.loginInProgressProperty().set(false);
         });
 
@@ -181,5 +188,15 @@ public class LoginController {
             LOGGER.error("Failed to navigate to role view for role: {}", role, ex);
             viewModel.errorMessageProperty().set("A system error occurred. Please try again.");
         }
+    }
+
+    private static boolean isDatabaseUnavailable(Throwable t) {
+        while (t != null) {
+            if (t instanceof SQLTransientConnectionException || t instanceof ConnectException) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 }
