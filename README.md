@@ -8,13 +8,12 @@ Sistema de gestión de tickets de escritorio multiplataforma construido con Java
 
 1. [Requisitos previos](#1-requisitos-previos)
 2. [Configuración de la base de datos](#2-configuración-de-la-base-de-datos)
-3. [Variables de entorno](#3-variables-de-entorno)
-4. [Configuración de Maven (sólo desarrollo)](#4-configuración-de-maven-sólo-desarrollo)
-5. [Ejecutar en modo desarrollo](#5-ejecutar-en-modo-desarrollo)
-6. [Usuarios por defecto](#6-usuarios-por-defecto)
-7. [Empaquetado y distribución](#7-empaquetado-y-distribución)
-8. [Estructura del proyecto](#8-estructura-del-proyecto)
-9. [Preguntas frecuentes](#9-preguntas-frecuentes)
+3. [Configuración de Maven (desarrollo)](#3-configuración-de-maven-desarrollo)
+4. [Ejecutar en modo desarrollo](#4-ejecutar-en-modo-desarrollo)
+5. [Usuarios por defecto](#5-usuarios-por-defecto)
+6. [Empaquetado y distribución](#6-empaquetado-y-distribución)
+7. [Estructura del proyecto](#7-estructura-del-proyecto)
+8. [Preguntas frecuentes](#8-preguntas-frecuentes)
 
 ---
 
@@ -95,38 +94,7 @@ mvn flyway:validate  # Valida las migraciones aplicadas
 
 ---
 
-## 3. Variables de entorno
-
-### `TICKETSYNC_MASTER_KEY` *(obligatoria)*
-
-Clave maestra para descifrar las credenciales de base de datos almacenadas en `jdbc.properties` (cifradas con Jasypt). La aplicación no arranca sin esta variable.
-
-**Windows — sesión actual (PowerShell):**
-```powershell
-$env:TICKETSYNC_MASTER_KEY = "tu-clave-secreta"
-```
-
-**Windows — permanente (todas las sesiones):**
-```powershell
-[System.Environment]::SetEnvironmentVariable("TICKETSYNC_MASTER_KEY", "tu-clave-secreta", "User")
-```
-
-**Linux / macOS — sesión actual:**
-```bash
-export TICKETSYNC_MASTER_KEY="tu-clave-secreta"
-```
-
-**Linux / macOS — permanente** (añadir a `~/.bashrc` o `~/.zshrc`):
-```bash
-echo 'export TICKETSYNC_MASTER_KEY="tu-clave-secreta"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-> La clave de desarrollo local por defecto es `changeme`. **Usa una clave segura en producción.**
-
----
-
-## 4. Configuración de Maven (sólo desarrollo)
+## 3. Configuración de Maven (desarrollo)
 
 Las credenciales de Flyway se configuran en `~/.m2/settings.xml` para no exponerlas en el repositorio:
 
@@ -154,13 +122,9 @@ Ruta del fichero:
 
 ---
 
-## 5. Ejecutar en modo desarrollo
+## 4. Ejecutar en modo desarrollo
 
 ```bash
-# Establecer la variable de entorno (una vez por sesión)
-export TICKETSYNC_MASTER_KEY="changeme"   # Linux/macOS
-$env:TICKETSYNC_MASTER_KEY = "changeme"   # PowerShell
-
 # Arrancar la base de datos
 docker compose up -d
 
@@ -184,7 +148,7 @@ mvn clean javafx:run
 
 ---
 
-## 6. Usuarios por defecto
+## 5. Usuarios por defecto
 
 Estos usuarios se crean automáticamente al aplicar la primera migración. Son **exclusivos para desarrollo y pruebas**; cámbialos inmediatamente en cualquier entorno real.
 
@@ -197,7 +161,7 @@ Estos usuarios se crean automáticamente al aplicar la primera migración. Son *
 
 ---
 
-## 7. Empaquetado y distribución
+## 6. Empaquetado y distribución
 
 Hay dos modos de empaquetado:
 
@@ -206,7 +170,7 @@ Hay dos modos de empaquetado:
 | Portable (JARs + launcher) | `package.ps1` | ✅ Requerido (21+) | `dist/lib/` + `.bat` / `.sh` |
 | Imagen nativa (jpackage) | `package.ps1 -Installer` | ❌ No requerido | `dist/TicketSync-1.0.zip` |
 
-> ⚠️ **Por qué no se usa jlink:** varias dependencias (Jasypt, jBCrypt, Flyway) son *automatic modules* (JARs sin `module-info.class`) y jlink no puede incluirlos directamente.
+> ⚠️ **Por qué no se usa jlink:** varias dependencias (jBCrypt, Flyway) son *automatic modules* (JARs sin `module-info.class`) y jlink no puede incluirlos directamente.
 
 ### Opción A — Distribución portable (requiere Java 21 en el destino)
 
@@ -225,7 +189,6 @@ dist/
 
 Para ejecutar:
 ```powershell
-$env:TICKETSYNC_MASTER_KEY = "tu-clave"
 .\dist\ticketsync.bat
 ```
 
@@ -246,7 +209,6 @@ dist/
 
 Para ejecutar tras descomprimir el ZIP:
 ```powershell
-$env:TICKETSYNC_MASTER_KEY = "tu-clave"
 .\TicketSync\TicketSync.exe
 ```
 
@@ -254,18 +216,16 @@ $env:TICKETSYNC_MASTER_KEY = "tu-clave"
 
 ```
 1. docker compose up -d                          ← Arrancar PostgreSQL (solo build)
-2. $env:TICKETSYNC_MASTER_KEY = "tu-clave"       ← Variable de entorno
-3. .\scripts\package.ps1 -Installer              ← Compilar + generar ZIP
-4. Entregar dist\TicketSync-1.0.zip al usuario final
+2. .\scripts\package.ps1 -Installer              ← Compilar + generar ZIP
+3. Entregar dist\TicketSync-1.0.zip al usuario final
    → Descomprimir
-   → set TICKETSYNC_MASTER_KEY=tu-clave
    → Ejecutar TicketSync\TicketSync.exe
    → La app aplica las migraciones automáticamente en el primer arranque
 ```
 
 ---
 
-## 8. Estructura del proyecto
+## 7. Estructura del proyecto
 
 ```
 ticketsync/
@@ -288,7 +248,7 @@ ticketsync/
     │   │       ├── viewmodel/       # ViewModels (patrón MVVM)
     │   │       └── exception/       # Excepciones personalizadas
     │   └── resources/
-    │       ├── jdbc.properties      # Credenciales cifradas con Jasypt
+    │       ├── jdbc.properties      # Credenciales de base de datos
     │       ├── log4j2.xml           # Configuración de logging
     │       ├── com/ticketsync/      # Vistas FXML y estilos CSS
     │       └── db/migration/        # Scripts SQL Flyway (V001–V005)
@@ -305,7 +265,6 @@ ticketsync/
 | Base de datos | PostgreSQL + JDBC | 15+ / 42.7.2 |
 | Pool de conexiones | HikariCP | 5.1.0 |
 | Migraciones | Flyway | 10.8.1 |
-| Cifrado config | Jasypt | 1.9.3 |
 | Generación PDF | Apache PDFBox | 3.0.1 |
 | Hashing contraseñas | jBCrypt | 0.4 |
 | Build | Maven | 3.9+ |
@@ -313,13 +272,7 @@ ticketsync/
 
 ---
 
-## 9. Preguntas frecuentes
-
-### La aplicación no arranca y muestra "Missing Environment Variable"
-
-La variable `TICKETSYNC_MASTER_KEY` no está definida en el entorno actual. Establécela antes de ejecutar (ver [sección 3](#3-variables-de-entorno)).
-
----
+## 8. Preguntas frecuentes
 
 ### La aplicación no puede conectar a la base de datos
 
@@ -373,23 +326,6 @@ mvn flyway:validate   # Verifica que todo esté correcto
 ```
 
 > ⚠️ Nunca modifiques una migración ya aplicada en producción; crea siempre una nueva migración.
-
----
-
-### ¿Cómo genero un nuevo valor cifrado para jdbc.properties?
-
-Usa la clase `EncryptionUtil` del proyecto con tu clave maestra:
-
-```java
-// Llama al método encrypt de com.ticketsync.util.EncryptionUtil
-// para obtener el valor ENC() a pegar en jdbc.properties
-```
-
-O modifica `jdbc.properties` con la contraseña en texto plano durante el desarrollo local (no recomendado para producción):
-
-```properties
-jdbc.password=mi-contraseña-en-texto-plano
-```
 
 ---
 

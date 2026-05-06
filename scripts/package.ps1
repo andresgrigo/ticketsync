@@ -47,12 +47,6 @@ Get-ChildItem $DepsDir -Filter "*.jar" | Copy-Item -Destination $LibDir
 $batLines = @(
     "@echo off",
     "REM TicketSync Launcher - requiere Java 21 instalado con JAVA_HOME configurado",
-    "if ""%TICKETSYNC_MASTER_KEY%""=="""" (",
-    "    echo ERROR: TICKETSYNC_MASTER_KEY no esta definida.",
-    "    echo Establecela con:  set TICKETSYNC_MASTER_KEY=tu-clave-secreta",
-    "    pause",
-    "    exit /b 1",
-    ")",
     "set DIR=%~dp0",
     """%JAVA_HOME%\bin\java"" --module-path ""%DIR%lib"" --add-modules ALL-MODULE-PATH -m com.ticketsync/com.ticketsync.App %*"
 )
@@ -60,10 +54,6 @@ $batLines -join "`r`n" | Out-File (Join-Path $OutDir "ticketsync.bat") -Encoding
 
 # Crear launcher Linux/macOS (.sh)
 $shContent = "#!/usr/bin/env bash`nset -euo pipefail`n" +
-    "if [ -z `"`${TICKETSYNC_MASTER_KEY:-}`" ]; then`n" +
-    "  echo `"ERROR: Establece TICKETSYNC_MASTER_KEY antes de ejecutar TicketSync.`" >&2`n" +
-    "  exit 1`n" +
-    "fi`n" +
     "DIR=`$(cd `"`$(dirname `"`${BASH_SOURCE[0]}`")`" && pwd)`n" +
     "exec java --module-path `"`$DIR/lib`" --add-modules ALL-MODULE-PATH -m com.ticketsync/com.ticketsync.App `"`$@`"`n"
 [System.IO.File]::WriteAllText((Resolve-Path $OutDir).Path + "\ticketsync.sh", $shContent, [System.Text.Encoding]::ASCII)
@@ -72,8 +62,7 @@ $total = (Get-ChildItem $LibDir -Filter "*.jar").Count
 Write-Host "`nDistribucion lista en: $((Resolve-Path $OutDir).Path) ($total JARs en lib/)" -ForegroundColor Green
 Write-Host ""
 Write-Host "Para ejecutar en Windows:"
-Write-Host "  1. set TICKETSYNC_MASTER_KEY=tu-clave"
-Write-Host "  2. dist\ticketsync.bat"
+Write-Host "  dist\ticketsync.bat"
 Write-Host ""
 Write-Host "NOTA: El sistema destino necesita Java 21+ instalado con JAVA_HOME configurado."
 
@@ -104,8 +93,7 @@ if ($Installer) {
     Write-Host "ZIP distribuible: $((Resolve-Path $ZipPath).Path)" -ForegroundColor Green
     Write-Host ""
     Write-Host "NOTA: El destino NO necesita Java instalado. Descomprimir y ejecutar:"
-    Write-Host "  1. set TICKETSYNC_MASTER_KEY=tu-clave"
-    Write-Host "  2. TicketSync\TicketSync.exe"
+    Write-Host "  TicketSync\TicketSync.exe"
 }
 
 Write-Host "`n=== Empaquetado completado ===" -ForegroundColor Cyan

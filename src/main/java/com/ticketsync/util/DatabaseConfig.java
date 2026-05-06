@@ -5,7 +5,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
-import org.jasypt.properties.EncryptableProperties;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,6 +13,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Properties;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -64,17 +64,9 @@ public final class DatabaseConfig {
     // Inicializador estático - se ejecuta una vez cuando se carga la clase
     static {
         try {
-            // Paso 1 — Leer y validar la clave maestra
-            String masterKey = System.getenv("TICKETSYNC_MASTER_KEY");
-            if (masterKey == null || masterKey.isBlank()) {
-                LOGGER.error("La variable de entorno TICKETSYNC_MASTER_KEY no está configurada — no se puede iniciar la aplicación");
-                throw new IllegalStateException("TICKETSYNC_MASTER_KEY environment variable is not set");
-            }
+            // Cargar jdbc.properties y configurar HikariCP
+            Properties props = loadJdbcProperties();
 
-            // Paso 2 — Crear el encriptador y cargar EncryptableProperties
-            EncryptableProperties props = loadJdbcProperties(masterKey);
-
-            // Paso 3 — Configurar HikariCP desde las propiedades descifradas
             String jdbcUrl = props.getProperty("jdbc.url");
             String jdbcUsername = props.getProperty("jdbc.username");
             String jdbcPassword = props.getProperty("jdbc.password");
@@ -85,7 +77,7 @@ public final class DatabaseConfig {
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl(jdbcUrl);
             config.setUsername(jdbcUsername);
-            config.setPassword(jdbcPassword); // decrypted transparently by EncryptableProperties
+            config.setPassword(jdbcPassword);
             config.setDriverClassName("org.postgresql.Driver");
 
             // Tamaño del pool para aplicación de escritorio con operaciones concurrentes:
@@ -128,8 +120,8 @@ public final class DatabaseConfig {
         throw new UnsupportedOperationException("DatabaseConfig is a utility class and cannot be instantiated");
     }
 
-    private static EncryptableProperties loadJdbcProperties(String masterKey) throws IOException {
-        EncryptableProperties props = loadBundledJdbcProperties(masterKey);
+    private static Properties loadJdbcProperties() throws IOException {
+        Properties props = loadBundledJdbcProperties();
         Path externalJdbcProperties = FilePathUtil.getJdbcPropertiesPath();
         if (Files.exists(externalJdbcProperties)) {
             byte[] configBytes = Files.readAllBytes(externalJdbcProperties);
@@ -144,8 +136,8 @@ public final class DatabaseConfig {
         return props;
     }
 
-    private static EncryptableProperties loadBundledJdbcProperties(String masterKey) throws IOException {
-        EncryptableProperties props = new EncryptableProperties(EncryptionUtil.createEncryptor(masterKey));
+    private static Properties loadBundledJdbcProperties() throws IOException {
+        Properties props = new Properties();
         try (InputStream inputStream = DatabaseConfig.class.getClassLoader().getResourceAsStream("jdbc.properties")) {
             if (inputStream == null) {
                 throw new IllegalStateException("jdbc.properties not found on classpath");

@@ -59,7 +59,7 @@ public class App extends Application {
         }
         logStartupInformation();
 
-        // Verificar si falta TICKETSYNC_MASTER_KEY antes de que se dispare la inicialización de clases
+        // Inicializar el pool de base de datos — lanza ExceptionInInitializerError si falla
         try {
             if (!DatabaseConfig.testConnection()) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -73,20 +73,11 @@ public class App extends Application {
             }
             DatabaseConfig.migrateDatabase();
         } catch (ExceptionInInitializerError e) {
-            Throwable cause = e.getCause();
             Alert alert = new Alert(Alert.AlertType.ERROR);
             DialogThemeHelper.apply(alert);
-            if (cause instanceof IllegalStateException && cause.getMessage() != null
-                    && cause.getMessage().contains("TICKETSYNC_MASTER_KEY")) {
-                alert.setTitle("Missing Environment Variable");
-                alert.setHeaderText("Missing required environment variable: TICKETSYNC_MASTER_KEY");
-                alert.setContentText(
-                        "Missing required environment variable: TICKETSYNC_MASTER_KEY. Set this variable before starting the application.");
-            } else {
-                alert.setTitle("Database Connection Error");
-                alert.setHeaderText("Cannot connect to the database");
-                alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
-            }
+            alert.setTitle("Database Connection Error");
+            alert.setHeaderText("Cannot connect to the database");
+            alert.setContentText("Failed to reach the database. Ensure PostgreSQL is running on localhost:5432.");
             alert.showAndWait();
             Platform.exit();
             return;
