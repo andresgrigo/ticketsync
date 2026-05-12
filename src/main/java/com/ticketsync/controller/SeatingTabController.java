@@ -315,6 +315,7 @@ public class SeatingTabController {
 
     /** Llamado por el shell cuando la pestaña de asientos está seleccionada. */
     public void onTabActivated() {
+        loadZonesEventSelectorAsync();
         Platform.runLater(this::renderSeatMap);
     }
 

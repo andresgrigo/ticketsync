@@ -161,6 +161,7 @@ public class LayoutViewTabController {
 
     /** Llamado por el shell cuando la pestaña de vista de distribución está seleccionada. */
     public void onTabActivated() {
+        loadLayoutEventsAsync();
         Event selectedEvent = layoutEventSelector.getSelectionModel().getSelectedItem();
         if (selectedEvent != null) {
             Platform.runLater(() -> loadLayoutViewAsync(selectedEvent));
