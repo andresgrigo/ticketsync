@@ -26,7 +26,7 @@ Sistema de gestión de tickets de escritorio multiplataforma construido con Java
 | PostgreSQL | 15+ | O Docker Desktop para el contenedor de base de datos |
 | Docker Desktop | Cualquier versión actual | Opcional, pero recomendado para desarrollo |
 
-> **Nota:** Los usuarios finales que instalen el paquete distribuido (`dist/`) **no necesitan** Java ni Maven; la imagen jlink incluye el runtime completo.
+> **Nota:** Los usuarios finales que instalen el paquete distribuido (`dist/`) no necesitan Java ni Maven; la imagen jlink incluye el runtime completo.
 
 ---
 
@@ -82,7 +82,7 @@ psql -U postgres -c "CREATE DATABASE ticketsync;"
 
 ### Migraciones de esquema
 
-La aplicación aplica las migraciones Flyway **automáticamente al arrancar**. No es necesario ejecutar `mvn flyway:migrate` manualmente.
+La aplicación aplica las migraciones Flyway automáticamente al arrancar. No es necesario ejecutar `mvn flyway:migrate` manualmente.
 
 Si prefieres aplicar las migraciones desde Maven (entornos CI/CD):
 
@@ -150,14 +150,14 @@ mvn clean javafx:run
 
 ## 5. Usuarios por defecto
 
-Estos usuarios se crean automáticamente al aplicar la primera migración. Son **exclusivos para desarrollo y pruebas**; cámbialos inmediatamente en cualquier entorno real.
+Estos usuarios se crean automáticamente al aplicar la primera migración. Son solo para desarrollo y pruebas; cámbialos antes de usar en cualquier entorno real.
 
 | Usuario | Contraseña | Rol | Descripción |
 |---|---|---|---|
 | `admin` | `admin123` | `ADMIN` | Acceso completo: gestión de eventos, zonas, usuarios y auditoría |
 | `vendor1` | `vendor123` | `VENDOR` | Acceso al punto de venta (POS) |
 
-> ⚠️ **Seguridad:** Cambia ambas contraseñas tras el primer inicio de sesión en cualquier entorno no-desarrollo. El panel de administración permite gestionar usuarios desde la pestaña *Usuarios*.
+> ⚠️ Cambia ambas contraseñas tras el primer inicio de sesión fuera de entornos de desarrollo. Puedes hacerlo desde la pestaña *Usuarios* en el panel de administración.
 
 ---
 
@@ -170,9 +170,9 @@ Hay dos modos de empaquetado:
 | Portable (JARs + launcher) | `package.ps1` | ✅ Requerido (21+) | `dist/lib/` + `.bat` / `.sh` |
 | Imagen nativa (jpackage) | `package.ps1 -exe` | ❌ No requerido | `dist/TicketSync-1.0.zip` |
 
-> ⚠️ **Por qué no se usa jlink:** varias dependencias (jBCrypt, Flyway) son *automatic modules* (JARs sin `module-info.class`) y jlink no puede incluirlos directamente.
+> ⚠️ jlink no está disponible porque varias dependencias (jBCrypt, Flyway) son *automatic modules*, es decir, JARs sin `module-info.class`.
 
-### Opción A — Distribución portable (requiere Java 21 en el destino)
+### Opción A: Distribución portable (requiere Java 21 en el destino)
 
 ```powershell
 # Windows
@@ -182,9 +182,9 @@ Hay dos modos de empaquetado:
 El resultado se generará en `dist/`:
 ```
 dist/
-├── lib/               ← todos los JARs (app + dependencias + JavaFX con libs nativas)
-├── ticketsync.bat     ← launcher Windows
-└── ticketsync.sh      ← launcher Linux / macOS
+├── lib/               # JARs de la app, dependencias y JavaFX con libs nativas
+├── ticketsync.bat     # launcher Windows
+└── ticketsync.sh      # launcher Linux / macOS
 ```
 
 Para ejecutar:
@@ -192,9 +192,9 @@ Para ejecutar:
 .\dist\ticketsync.bat
 ```
 
-### Opción B — Imagen nativa autosuficiente con jpackage (recomendada)
+### Opción B: Imagen nativa autosuficiente con jpackage (recomendada)
 
-Incorpora un JRE completo: **el usuario final no necesita Java instalado**.
+Incorpora un JRE completo, así que el usuario final no necesita Java instalado.
 
 ```powershell
 .\scripts\package.ps1 -exe
@@ -203,8 +203,8 @@ Incorpora un JRE completo: **el usuario final no necesita Java instalado**.
 Genera:
 ```
 dist/
-├── app-image/TicketSync/   ← imagen nativa con JRE embebido (no versionar)
-└── TicketSync-1.0.zip      ← ZIP listo para entregar ✅
+├── app-image/TicketSync/   # imagen nativa con JRE embebido (no versionar)
+└── TicketSync-1.0.zip      # ZIP listo para entregar
 ```
 
 Para ejecutar tras descomprimir el ZIP:
@@ -214,14 +214,12 @@ Para ejecutar tras descomprimir el ZIP:
 
 ### Pasos completos para distribuir
 
+```powershell
+docker compose up -d          # arrancar PostgreSQL
+.\scripts\package.ps1 -exe    # compilar y generar el ZIP
 ```
-1. docker compose up -d                          ← Arrancar PostgreSQL (solo build)
-2. .\scripts\package.ps1 -exe              ← Compilar + generar ZIP
-3. Entregar dist\TicketSync-1.0.zip al usuario final
-   → Descomprimir
-   → Ejecutar TicketSync\TicketSync.exe
-   → La app aplica las migraciones automáticamente en el primer arranque
-```
+
+Luego entrega `dist\TicketSync-1.0.zip` al usuario. Que descomprima y ejecute `TicketSync\TicketSync.exe`; la app aplica las migraciones en el primer arranque.
 
 ---
 
@@ -287,7 +285,7 @@ docker compose up -d   # si no está corriendo
 psql -U postgres -h localhost -c "SELECT 1;"
 ```
 
-Si usas una configuración de red diferente, crea el fichero `~/.ticketsync/config/jdbc.properties` con los valores correctos (sobreescribe los valores del classpath):
+Si usas una configuración de red diferente, crea `~/.ticketsync/config/jdbc.properties` con tus valores (tiene prioridad sobre la configuración incluida en la app):
 
 ```properties
 jdbc.url=jdbc:postgresql://mi-servidor:5432/ticketsync
@@ -299,7 +297,7 @@ jdbc.password=mi-contraseña
 
 ### ¿Cómo cambio la contraseña de un usuario?
 
-Desde el panel de administración → pestaña **Usuarios** → selecciona el usuario → **Editar usuario**. La nueva contraseña se hashea con BCrypt (coste 12) automáticamente.
+Desde el panel de administración → pestaña **Usuarios** → selecciona el usuario → **Editar usuario**. La nueva contraseña queda hasheada con BCrypt (coste 12).
 
 También puedes hacerlo directamente en SQL si necesitas restablecer la contraseña del `admin`:
 
@@ -331,13 +329,13 @@ mvn flyway:validate   # Verifica que todo esté correcto
 
 ### ¿La aplicación funciona sin conexión a internet?
 
-Sí. TicketSync está diseñado para operar en red local sin necesidad de internet. Solo requiere conectividad con el servidor PostgreSQL en la red local (o `localhost`).
+Sí. TicketSync funciona en red local sin internet. Solo necesita acceso al servidor PostgreSQL, ya sea en la red local o en el propio equipo.
 
 ---
 
 ### ¿Cuántas taquillas puede gestionar simultáneamente?
 
-Hasta 10 taquillas simultáneas (pool de 5 conexiones por instancia, ~50 conexiones totales). El sistema garantiza cero sobreventas mediante transacciones `SERIALIZABLE` en PostgreSQL y notificaciones en tiempo real por `LISTEN/NOTIFY`.
+Hasta 10 taquillas simultáneas (5 conexiones por instancia, ~50 en total). Los conflictos de venta se evitan con transacciones `SERIALIZABLE` en PostgreSQL y notificaciones en tiempo real vía `LISTEN/NOTIFY`.
 
 ---
 
