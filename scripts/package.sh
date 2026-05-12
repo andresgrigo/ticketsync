@@ -80,7 +80,12 @@ exec java --module-path "$DIR/lib" --add-modules ALL-MODULE-PATH \
 LAUNCHER
 chmod +x "$OUT_DIR/ticketsync.sh"
 
+# Comprimir distribucion en .zip
+ZIP_PATH="$OUT_DIR/TicketSync-java.zip"
+(cd "$OUT_DIR" && zip -r "$ZIP_PATH" . --exclude "TicketSync-java.zip")
+
 echo -e "\nDistribucion lista en: $OUT_DIR"
+echo "ZIP distribuible: $ZIP_PATH"
 echo "Para ejecutar:"
 echo "  1. export TICKETSYNC_MASTER_KEY=tu-clave"
 echo "  2. $OUT_DIR/ticketsync.sh"
@@ -108,7 +113,11 @@ if [ "$INSTALLER" = true ]; then
         --dest "$INS_DIR" \
         --description "Sistema de gestion de tickets"
 
+    # Comprimir en .zip para distribucion
+    ZIP_INS_PATH="$OUT_DIR/TicketSync-installer.zip"
+    (cd "$INS_DIR" && zip -r "$ZIP_INS_PATH" .)
     echo -e "\nInstalador: $INS_DIR"
+    echo "ZIP distribuible: $ZIP_INS_PATH"
 fi
 
 echo -e "\n=== Empaquetado completado ==="

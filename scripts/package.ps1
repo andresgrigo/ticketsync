@@ -3,9 +3,9 @@
 #
 # USO:
 #   .\scripts\package.ps1              # dist/ con JARs + launcher
-#   .\scripts\package.ps1 -Installer   # dist/ + instalador .exe
+#   .\scripts\package.ps1 -exe         # dist/ + instalador .exe
 
-param([switch]$Installer)
+param([switch]$exe)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -58,7 +58,14 @@ $shContent = "#!/usr/bin/env bash`nset -euo pipefail`n" +
 [System.IO.File]::WriteAllText((Resolve-Path $OutDir).Path + "\ticketsync.sh", $shContent, [System.Text.Encoding]::ASCII)
 
 $total = (Get-ChildItem $LibDir -Filter "*.jar").Count
+
+# Comprimir distribucion en .zip
+$ZipPath = "dist\TicketSync-java.zip"
+if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
+Compress-Archive -Path "$OutDir\*" -DestinationPath $ZipPath
+
 Write-Host "`nDistribucion lista en: $((Resolve-Path $OutDir).Path) ($total JARs en lib/)" -ForegroundColor Green
+Write-Host "ZIP distribuible: $((Resolve-Path $ZipPath).Path)" -ForegroundColor Green
 Write-Host ""
 Write-Host "Para ejecutar en Windows:"
 Write-Host "  dist\ticketsync.bat"
@@ -66,7 +73,7 @@ Write-Host ""
 Write-Host "NOTA: El sistema destino necesita Java 21+ instalado con JAVA_HOME configurado."
 
 # 3. Imagen nativa autosuficiente (opcional, no requiere WiX ni Java en el destino)
-if ($Installer) {
+if ($exe) {
     Write-Host "`n[3/3] Generando imagen nativa con jpackage (app-image)..." -ForegroundColor Yellow
     $InsDir = "dist\app-image"
     if (Test-Path $InsDir) { Remove-Item $InsDir -Recurse -Force }
@@ -85,7 +92,7 @@ if ($Installer) {
     if ($LASTEXITCODE -ne 0) { throw "jpackage fallo" }
 
     # Comprimir en .zip para distribucion
-    $ZipPath = "dist\TicketSync-1.0.zip"
+    $ZipPath = "dist\TicketSync-exe.zip"
     if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
     Compress-Archive -Path "$InsDir\TicketSync" -DestinationPath $ZipPath
     Write-Host "`nImagen nativa: $((Resolve-Path $InsDir).Path)\TicketSync\" -ForegroundColor Green

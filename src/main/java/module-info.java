@@ -13,6 +13,7 @@ module com.ticketsync {
     requires com.zaxxer.hikari;
     requires org.postgresql.jdbc;
     requires flyway.core;
+    requires com.fasterxml.jackson.databind;
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
     requires jbcrypt;
