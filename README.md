@@ -168,7 +168,7 @@ Hay dos modos de empaquetado:
 | Modo | Comando | Java en destino | Resultado |
 |---|---|---|---|
 | Portable (JARs + launcher) | `package.ps1` | ✅ Requerido (21+) | `dist/lib/` + `.bat` / `.sh` |
-| Imagen nativa (jpackage) | `package.ps1 -Installer` | ❌ No requerido | `dist/TicketSync-1.0.zip` |
+| Imagen nativa (jpackage) | `package.ps1 -exe` | ❌ No requerido | `dist/TicketSync-1.0.zip` |
 
 > ⚠️ **Por qué no se usa jlink:** varias dependencias (jBCrypt, Flyway) son *automatic modules* (JARs sin `module-info.class`) y jlink no puede incluirlos directamente.
 
@@ -197,7 +197,7 @@ Para ejecutar:
 Incorpora un JRE completo: **el usuario final no necesita Java instalado**.
 
 ```powershell
-.\scripts\package.ps1 -Installer
+.\scripts\package.ps1 -exe
 ```
 
 Genera:
@@ -216,7 +216,7 @@ Para ejecutar tras descomprimir el ZIP:
 
 ```
 1. docker compose up -d                          ← Arrancar PostgreSQL (solo build)
-2. .\scripts\package.ps1 -Installer              ← Compilar + generar ZIP
+2. .\scripts\package.ps1 -exe              ← Compilar + generar ZIP
 3. Entregar dist\TicketSync-1.0.zip al usuario final
    → Descomprimir
    → Ejecutar TicketSync\TicketSync.exe
