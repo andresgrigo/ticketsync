@@ -7,6 +7,7 @@
 module com.ticketsync {
     requires transitive javafx.controls;
     requires javafx.fxml;
+    requires java.desktop;
     requires transitive javafx.base;
     requires transitive javafx.graphics;
     requires transitive java.sql;

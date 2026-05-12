@@ -16,3 +16,4 @@ dist/ticketsync.sh
 logs/*.log
 logs/*.log.gz
 logs/*.log.*
+tickets/

@@ -43,6 +43,8 @@ import javafx.util.StringConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.Desktop;
+import java.io.File;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -666,11 +668,20 @@ public class PosController {
         if (disposed) {
             return;
         }
-        showPrintInfo(
-                "Ticket Folder",
-                "Saved tickets folder",
-                filesystemTicketSaver.getTicketsRootDirectory().toString()
-        );
+        File folder = filesystemTicketSaver.getTicketsRootDirectory().toFile();
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+            try {
+                if (!folder.exists()) {
+                    folder.mkdirs();
+                }
+                Desktop.getDesktop().open(folder);
+            } catch (IOException e) {
+                LOGGER.warn("Could not open tickets directory in file manager: {}", folder, e);
+                showPrintInfo("Ticket Folder", "Saved tickets folder", folder.toString());
+            }
+        } else {
+            showPrintInfo("Ticket Folder", "Saved tickets folder", folder.toString());
+        }
     }
 
     private void showPrintInfo(String title, String headerText, String contentText) {
