@@ -1,10 +1,9 @@
 ﻿# TicketSync — Script de empaquetado para Windows
 # Genera una distribucion portable en dist/ (requiere Java 21 en el sistema destino).
-# Con -Installer genera ademas un instalador .exe nativo (requiere WiX 4).
 #
 # USO:
 #   .\scripts\package.ps1              # dist/ con JARs + launcher
-#   .\scripts\package.ps1 -Installer   # dist/ + instalador .exe (requiere WiX 4)
+#   .\scripts\package.ps1 -Installer   # dist/ + instalador .exe
 
 param([switch]$Installer)
 
