@@ -4,6 +4,7 @@ import com.ticketsync.model.Seat;
 import com.ticketsync.model.SeatStatus;
 import com.ticketsync.model.Zone;
 import com.ticketsync.service.SeatService;
+import com.ticketsync.service.SessionContext;
 import com.ticketsync.service.ZoneService;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -20,9 +21,13 @@ import javafx.collections.ObservableSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
@@ -54,6 +59,23 @@ public class SeatMapViewModel {
     private final SeatLoader seatLoader;
     private final ZoneLoader zoneLoader;
     private final Consumer<Runnable> uiRunner;
+
+    /** IDs de asientos reservados en BD por este vendor en la sesión actual (accedido solo en hilo UI). */
+    private final Set<Integer> reservedByMeSeatIds = new HashSet<>();
+
+    /** Acción para reservar asientos en BD; no-op si no está configurada. */
+    private SeatReserveAction reserveAction;
+
+    /** Acción para liberar reservas en BD; no-op si no está configurada. */
+    private SeatReleaseAction releaseAction;
+
+    /** Ejecutor para las llamadas BD de reserva/liberación en segundo plano. */
+    private final ExecutorService reservationExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "SeatReservation-Worker");
+        t.setDaemon(true);
+        return t;
+    });
+
     private Integer recoveryFilterZoneId;
 
     /**
@@ -73,7 +95,13 @@ public class SeatMapViewModel {
                     }
                 }
         );
+        SeatService seatService = new SeatService();
+        this.reserveAction = (seatIds, vendorId) -> seatService.reserveSeatsAs(seatIds, RESERVATION_TTL_SECONDS, vendorId);
+        this.releaseAction = seatService::releaseSeatsAs;
     }
+
+    /** TTL en segundos para reservas de asientos en BD; coincide con el countdown del panel de selección. */
+    private static final int RESERVATION_TTL_SECONDS = 120;
 
     /**
      * Crea un view-model con colaboradores inyectados explícitamente (principalmente para pruebas).
@@ -201,7 +229,11 @@ public class SeatMapViewModel {
     }
 
     /**
-     * Alterna el estado de selección local para un asiento DISPONIBLE.
+     * Alterna el estado de selección local para un asiento DISPONIBLE o reservado por este vendor.
+     *
+     * <p>La selección es optimista: la UI se actualiza inmediatamente y la reserva se persiste en
+     * BD en segundo plano. Si la reserva falla (asiento tomado por otro vendor), el asiento es
+     * eliminado de la selección.
      *
      * @param seatId el ID del asiento a alternar
      * @return {@code true} si el asiento está seleccionado después de la operación,
@@ -212,20 +244,62 @@ public class SeatMapViewModel {
             return false;
         }
 
-        boolean selectedAfterToggle = !selectedSeatIds.contains(seatId);
+        boolean adding = !selectedSeatIds.contains(seatId);
         uiRunner.accept(() -> {
             if (recoveryFilterZoneId != null) {
                 recoveryFilterZoneId = null;
                 refreshRenderedSeats();
             }
-            if (selectedSeatIds.contains(seatId)) {
-                selectedSeatIds.remove(seatId);
-            } else {
+            if (adding) {
                 selectedSeatIds.add(seatId);
+                reservedByMeSeatIds.add(seatId); // reserva optimista: evita poda prematura
+                // Capturar vendorId en hilo FX (donde SessionContext sí está disponible)
+                final String vendorId = SessionContext.getCurrentUser()
+                        .map(u -> String.valueOf(u.getUserId()))
+                        .orElse(null);
+                // Persistir reserva en BD en segundo plano
+                if (reserveAction != null && vendorId != null) {
+                    reservationExecutor.submit(() -> {
+                        try {
+                            List<Integer> reserved = reserveAction.reserve(List.of(seatId), vendorId);
+                            if (!reserved.contains(seatId)) {
+                                // El asiento fue tomado por otro vendor; deshacer selección
+                                uiRunner.accept(() -> {
+                                    selectedSeatIds.remove(seatId);
+                                    reservedByMeSeatIds.remove(seatId);
+                                });
+                            }
+                        } catch (SQLException e) {
+                            // Error de BD: deshacer selección sin bloquear UI
+                            uiRunner.accept(() -> {
+                                selectedSeatIds.remove(seatId);
+                                reservedByMeSeatIds.remove(seatId);
+                            });
+                        }
+                    });
+                }
+            } else {
+                selectedSeatIds.remove(seatId);
+                reservedByMeSeatIds.remove(seatId);
+                // Capturar vendorId en hilo FX antes de pasar al hilo de fondo
+                final String vendorId = SessionContext.getCurrentUser()
+                        .map(u -> String.valueOf(u.getUserId()))
+                        .orElse(null);
+                // Liberar reserva en BD en segundo plano
+                if (releaseAction != null && vendorId != null) {
+                    List<Integer> toRelease = List.of(seatId);
+                    reservationExecutor.submit(() -> {
+                        try {
+                            releaseAction.release(toRelease, vendorId);
+                        } catch (SQLException ignored) {
+                            // La reserva expirará sola; ignorar error de liberación
+                        }
+                    });
+                }
             }
             updateFocus(seatId);
         });
-        return selectedAfterToggle;
+        return adding;
     }
 
     /**
@@ -282,9 +356,25 @@ public class SeatMapViewModel {
         return replaceSeat(replacement);
     }
 
-    /** Limpia todos los IDs de asientos seleccionados localmente y actualiza el lienzo. */
+    /** Limpia todos los IDs de asientos seleccionados localmente, libera sus reservas en BD y actualiza el lienzo. */
     public void clearSelection() {
-        uiRunner.accept(selectedSeatIds::clear);
+        uiRunner.accept(() -> {
+            List<Integer> toRelease = new ArrayList<>(reservedByMeSeatIds);
+            selectedSeatIds.clear();
+            reservedByMeSeatIds.clear();
+            final String vendorId = SessionContext.getCurrentUser()
+                    .map(u -> String.valueOf(u.getUserId()))
+                    .orElse(null);
+            if (releaseAction != null && vendorId != null && !toRelease.isEmpty()) {
+                reservationExecutor.submit(() -> {
+                    try {
+                        releaseAction.release(toRelease, vendorId);
+                    } catch (SQLException ignored) {
+                        // La reserva expirará sola; ignorar error de liberación
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -373,16 +463,24 @@ public class SeatMapViewModel {
 
     private boolean isSelectableSeat(int seatId) {
         int index = indexOfSeat(seatId);
-        return index >= 0 && seats.get(index).getStatus() == SeatStatus.AVAILABLE;
+        if (index < 0) return false;
+        SeatStatus status = seats.get(index).getStatus();
+        // Un asiento es seleccionable si está disponible, o si ya está reservado por este vendor
+        return status == SeatStatus.AVAILABLE || reservedByMeSeatIds.contains(seatId);
     }
 
     private void pruneSelectionForUnavailableSeats() {
         selectedSeatIds.removeIf(this::isNoLongerAvailable);
+        reservedByMeSeatIds.removeIf(seatId -> !selectedSeatIds.contains(seatId));
     }
 
     private boolean isNoLongerAvailable(Integer seatId) {
         int index = indexOfSeat(seatId);
-        return index < 0 || seats.get(index).getStatus() != SeatStatus.AVAILABLE;
+        if (index < 0) return true;
+        SeatStatus status = seats.get(index).getStatus();
+        // Asientos RESERVED que este vendor reservó siguen siendo válidos para la selección
+        if (status == SeatStatus.RESERVED && reservedByMeSeatIds.contains(seatId)) return false;
+        return status != SeatStatus.AVAILABLE;
     }
 
     private void reconcileFocus() {
@@ -437,7 +535,7 @@ public class SeatMapViewModel {
     }
 
     private static Seat copySeat(Seat seat) {
-        return new Seat(
+        Seat copy = new Seat(
                 seat.getSeatId(),
                 seat.getZoneId(),
                 seat.getRowNumber(),
@@ -445,6 +543,8 @@ public class SeatMapViewModel {
                 seat.getStatus(),
                 seat.getSaleId()
         );
+        copy.setReservedBy(seat.getReservedBy());
+        return copy;
     }
 
     private static Zone copyZone(Zone zone) {
@@ -496,5 +596,36 @@ public class SeatMapViewModel {
          * @throws java.sql.SQLException if a database error occurs
          */
         List<Zone> load(int eventId) throws SQLException;
+    }
+
+    /**
+     * Estrategia para reservar asientos en la capa de persistencia.
+     */
+    @FunctionalInterface
+    public interface SeatReserveAction {
+        /**
+         * Reserva los asientos dados para el vendor identificado por {@code vendorId}.
+         *
+         * @param seatIds  IDs de asientos a reservar
+         * @param vendorId identificador del vendor (capturado en el hilo FX)
+         * @return lista de IDs que fueron efectivamente reservados
+         * @throws SQLException si ocurre un error de base de datos
+         */
+        List<Integer> reserve(List<Integer> seatIds, String vendorId) throws SQLException;
+    }
+
+    /**
+     * Estrategia para liberar reservas de asientos en la capa de persistencia.
+     */
+    @FunctionalInterface
+    public interface SeatReleaseAction {
+        /**
+         * Libera las reservas de los asientos dados para el vendor identificado por {@code vendorId}.
+         *
+         * @param seatIds  IDs de asientos cuya reserva liberar
+         * @param vendorId identificador del vendor (capturado en el hilo FX)
+         * @throws SQLException si ocurre un error de base de datos
+         */
+        void release(List<Integer> seatIds, String vendorId) throws SQLException;
     }
 }

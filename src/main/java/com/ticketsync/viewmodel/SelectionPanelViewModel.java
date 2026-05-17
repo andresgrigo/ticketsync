@@ -405,7 +405,7 @@ public class SelectionPanelViewModel implements AutoCloseable {
             if (!seatMapViewModel.selectedSeatIdsProperty().contains(seat.getSeatId())) {
                 continue;
             }
-            if (seat.getStatus() != SeatStatus.AVAILABLE) {
+            if (seat.getStatus() != SeatStatus.AVAILABLE && seat.getStatus() != SeatStatus.RESERVED) {
                 continue;
             }
 

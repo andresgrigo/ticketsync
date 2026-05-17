@@ -137,4 +137,40 @@ public interface SeatDAO {
      * @throws SQLException si ocurre un error de acceso a la base de datos o violación de restricción
      */
     void delete(Connection conn, int seatId) throws SQLException;
+
+    /**
+     * Reserva atómicamente los asientos especificados para el vendor dado.
+     *
+     * <p>Solo los asientos con estado {@code AVAILABLE}, o con estado {@code RESERVED} cuya
+     * {@code reserved_until} haya expirado, son elegibles. Los asientos ya reservados por otro
+     * vendor son omitidos silenciosamente. Los asientos reservados se establecen al estado
+     * {@code RESERVED} con {@code reserved_by = reservedBy} y
+     * {@code reserved_until = NOW() + ttlSeconds segundos}.
+     *
+     * @param conn        conexión activa; autoCommit puede ser true o false
+     * @param seatIds     IDs de asientos a reservar; no debe ser {@code null} ni vacía
+     * @param reservedBy  identificador del vendor (p.ej., userId como texto); no debe ser {@code null}
+     * @param ttlSeconds  segundos hasta que la reserva expire; debe ser positivo
+     * @return lista de IDs de asientos que fueron efectivamente reservados
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
+     * @throws IllegalArgumentException si {@code seatIds} es null/vacía, {@code reservedBy} es null,
+     *                                  o {@code ttlSeconds} no es positivo
+     */
+    List<Integer> reserveSeats(Connection conn, List<Integer> seatIds, String reservedBy, int ttlSeconds)
+            throws SQLException;
+
+    /**
+     * Libera las reservas activas que coincidan con {@code reservedBy} para los asientos dados.
+     *
+     * <p>Solo los asientos con estado {@code RESERVED} cuyo {@code reserved_by} sea igual a
+     * {@code reservedBy} son afectados. Devuelve el estado a {@code AVAILABLE} y borra las
+     * columnas de reserva. Asientos no encontrados o propiedad de otro vendor son ignorados.
+     *
+     * @param conn       conexión activa
+     * @param seatIds    IDs de asientos a liberar; no debe ser {@code null} ni vacía
+     * @param reservedBy identificador del vendor que posee la reserva; no debe ser {@code null}
+     * @throws SQLException             si ocurre un error de acceso a la base de datos
+     * @throws IllegalArgumentException si {@code seatIds} es null/vacía o {@code reservedBy} es null
+     */
+    void releaseReservation(Connection conn, List<Integer> seatIds, String reservedBy) throws SQLException;
 }

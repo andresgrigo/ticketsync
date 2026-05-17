@@ -312,6 +312,17 @@ class TicketGeneratorTest {
         public void delete(Connection conn, int seatId) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public List<Integer> reserveSeats(Connection conn, List<Integer> seatIds, String reservedBy, int ttlSeconds)
+                throws java.sql.SQLException {
+            return List.of();
+        }
+
+        @Override
+        public void releaseReservation(Connection conn, List<Integer> seatIds, String reservedBy)
+                throws java.sql.SQLException {
+        }
     }
 
     private static final class StubZoneDAO implements ZoneDAO {

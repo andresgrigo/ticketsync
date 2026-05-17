@@ -468,6 +468,17 @@ class SeatServiceTest {
             lastUpdateStatusIds = new ArrayList<>(seatIds);
             lastUpdateStatusStatus = status;
         }
+
+        @Override
+        public List<Integer> reserveSeats(Connection conn, List<Integer> seatIds, String reservedBy, int ttlSeconds)
+                throws SQLException {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void releaseReservation(Connection conn, List<Integer> seatIds, String reservedBy)
+                throws SQLException {
+        }
     }
 
     final class CapturingAuditService extends AuditService {

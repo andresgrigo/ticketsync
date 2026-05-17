@@ -145,9 +145,10 @@ public class TransactionService {
                 throw new SeatUnavailableException("Seat(s) not found: " + notFound, notFound);
             }
 
-            // Paso 2: Validar disponibilidad
+            // Paso 2: Validar disponibilidad (AVAILABLE o RESERVED por este vendor)
+            String reservedBy = String.valueOf(vendorId);
             List<Integer> unavailable = lockedSeats.stream()
-                    .filter(s -> s.getStatus() != SeatStatus.AVAILABLE)
+                    .filter(s -> !isSeatPurchasable(s, reservedBy))
                     .map(Seat::getSeatId)
                     .collect(Collectors.toList());
             if (!unavailable.isEmpty()) {
@@ -239,5 +240,14 @@ public class TransactionService {
             return null;
         }
         return boothId.strip();
+    }
+
+    /**
+     * Un asiento es comprable si está DISPONIBLE, o si está RESERVADO por el vendor que realiza la compra.
+     */
+    private static boolean isSeatPurchasable(Seat seat, String reservedBy) {
+        return seat.getStatus() == SeatStatus.AVAILABLE
+                || (seat.getStatus() == SeatStatus.RESERVED
+                    && reservedBy.equals(seat.getReservedBy()));
     }
 }

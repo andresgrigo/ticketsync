@@ -39,7 +39,10 @@ public class Seat {
     
     /** Clave foránea a sales.sale_id (null si no está vendido). */
     private Integer saleId;
-    
+
+    /** ID (como texto) del vendor que mantiene la reserva; null si no está reservado. */
+    private String reservedBy;
+
     /**
      * Constructor por defecto para mapeo JDBC.
      */
@@ -187,7 +190,26 @@ public class Seat {
     public void setSaleId(Integer saleId) {
         this.saleId = saleId;
     }
-    
+
+    /**
+     * Devuelve el identificador del vendor que tiene reservado este asiento,
+     * o {@code null} si el asiento no está actualmente reservado por nadie.
+     *
+     * @return el ID del vendor reservante; puede ser {@code null}
+     */
+    public String getReservedBy() {
+        return reservedBy;
+    }
+
+    /**
+     * Establece el identificador del vendor que reserva este asiento.
+     *
+     * @param reservedBy el ID del vendor; puede ser {@code null} para borrar la reserva
+     */
+    public void setReservedBy(String reservedBy) {
+        this.reservedBy = reservedBy;
+    }
+
     // Métodos de Utilidad
     
     /**

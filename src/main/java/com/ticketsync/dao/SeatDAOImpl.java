@@ -12,6 +12,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Implementación JDBC de {@link SeatDAO} para la tabla {@code seats}.
@@ -41,23 +42,37 @@ public class SeatDAOImpl implements SeatDAO {
     // -------------------------------------------------------------------------
 
     private static final String SQL_FIND_BY_ID =
-            "SELECT seat_id, zone_id, row_number, seat_number, status, sale_id FROM seats WHERE seat_id = ?";
+            "SELECT seat_id, zone_id, row_number, seat_number, status, sale_id, reserved_by"
+            + " FROM seats WHERE seat_id = ?";
 
     private static final String SQL_FIND_BY_ZONE_ID =
-            "SELECT seat_id, zone_id, row_number, seat_number, status, sale_id "
+            "SELECT seat_id, zone_id, row_number, seat_number, status, sale_id, reserved_by "
             + "FROM seats WHERE zone_id = ? ORDER BY row_number ASC, seat_number ASC";
 
     private static final String SQL_FIND_BY_EVENT_ID =
-            "SELECT s.seat_id, s.zone_id, s.row_number, s.seat_number, s.status, s.sale_id "
-            + "FROM seats s JOIN zones z ON s.zone_id = z.zone_id "
-            + "WHERE z.event_id = ? ORDER BY s.zone_id ASC, s.row_number ASC, s.seat_number ASC";
+            "SELECT s.seat_id, s.zone_id, s.row_number, s.seat_number,"
+            + " CASE WHEN s.status = 'RESERVED' AND s.reserved_until IS NOT NULL AND s.reserved_until < NOW()"
+            + "      THEN 'AVAILABLE' ELSE s.status END AS status,"
+            + " s.sale_id, s.reserved_by"
+            + " FROM seats s JOIN zones z ON s.zone_id = z.zone_id"
+            + " WHERE z.event_id = ? ORDER BY s.zone_id ASC, s.row_number ASC, s.seat_number ASC";
 
     private static final String SQL_SELECT_FOR_UPDATE =
-            "SELECT seat_id, zone_id, row_number, seat_number, status, sale_id "
+            "SELECT seat_id, zone_id, row_number, seat_number, status, sale_id, reserved_by "
             + "FROM seats WHERE seat_id = ANY(?) FOR UPDATE";
 
     private static final String SQL_UPDATE_STATUS =
             "UPDATE seats SET status = ?, sale_id = ? WHERE seat_id = ANY(?)";
+
+    private static final String SQL_RESERVE_SEATS =
+            "UPDATE seats SET status = 'RESERVED', reserved_by = ?, reserved_until = NOW() + (? * INTERVAL '1 second')"
+            + " WHERE seat_id = ANY(?)"
+            + " AND (status = 'AVAILABLE' OR (status = 'RESERVED' AND reserved_until < NOW()))"
+            + " RETURNING seat_id";
+
+    private static final String SQL_RELEASE_RESERVATION =
+            "UPDATE seats SET status = 'AVAILABLE', reserved_by = NULL, reserved_until = NULL"
+            + " WHERE seat_id = ANY(?) AND reserved_by = ? AND status = 'RESERVED'";
 
     private static final String SQL_INSERT =
             "INSERT INTO seats (zone_id, row_number, seat_number, status) VALUES (?, ?, ?, ?)";
@@ -251,6 +266,54 @@ public class SeatDAOImpl implements SeatDAO {
     // Ayudantes privados
     // -------------------------------------------------------------------------
 
+    @Override
+    public List<Integer> reserveSeats(Connection conn, List<Integer> seatIds, String reservedBy, int ttlSeconds)
+            throws SQLException {
+        if (seatIds == null || seatIds.isEmpty()) {
+            throw new IllegalArgumentException("seatIds must not be null or empty");
+        }
+        if (reservedBy == null) {
+            throw new IllegalArgumentException("reservedBy must not be null");
+        }
+        if (ttlSeconds <= 0) {
+            throw new IllegalArgumentException("ttlSeconds must be positive");
+        }
+        Array seatArray = conn.createArrayOf("INTEGER", seatIds.toArray(new Integer[0]));
+        List<Integer> reserved = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(SQL_RESERVE_SEATS)) {
+            ps.setString(1, reservedBy);
+            ps.setInt(2, ttlSeconds);
+            ps.setArray(3, seatArray);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    reserved.add(rs.getInt(1));
+                }
+            }
+        } finally {
+            seatArray.free();
+        }
+        return reserved;
+    }
+
+    @Override
+    public void releaseReservation(Connection conn, List<Integer> seatIds, String reservedBy)
+            throws SQLException {
+        if (seatIds == null || seatIds.isEmpty()) {
+            throw new IllegalArgumentException("seatIds must not be null or empty");
+        }
+        if (reservedBy == null) {
+            throw new IllegalArgumentException("reservedBy must not be null");
+        }
+        Array seatArray = conn.createArrayOf("INTEGER", seatIds.toArray(new Integer[0]));
+        try (PreparedStatement ps = conn.prepareStatement(SQL_RELEASE_RESERVATION)) {
+            ps.setArray(1, seatArray);
+            ps.setString(2, reservedBy);
+            ps.executeUpdate();
+        } finally {
+            seatArray.free();
+        }
+    }
+
     /**
      * Mapea la fila actual de un {@link ResultSet} a un objeto {@link Seat}.
      *
@@ -270,6 +333,7 @@ public class SeatDAOImpl implements SeatDAO {
         seat.setStatus(SeatStatus.valueOf(rs.getString("status")));
         int saleIdVal = rs.getInt("sale_id");
         seat.setSaleId(rs.wasNull() ? null : saleIdVal);
+        seat.setReservedBy(rs.getString("reserved_by"));
         return seat;
     }
 }

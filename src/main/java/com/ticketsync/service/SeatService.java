@@ -243,4 +243,86 @@ public class SeatService {
             }
         }
     }
+
+    /**
+     * Reserva atómicamente los asientos especificados para el vendor actualmente autenticado.
+     *
+     * <p>Solo los asientos {@code AVAILABLE} (o con reserva expirada) son elegibles.
+     * Los asientos ya reservados por otro vendor son omitidos. La reserva expira en
+     * {@code ttlSeconds} segundos.
+     *
+     * @param seatIds    IDs de asientos a reservar; no debe ser {@code null} ni vacía
+     * @param ttlSeconds segundos hasta la expiración de la reserva; debe ser positivo
+     * @return lista de IDs de asientos que fueron efectivamente reservados
+     * @throws IllegalStateException si no hay usuario autenticado
+     * @throws SQLException          si ocurre un error de base de datos
+     */
+    public List<Integer> reserveSeats(List<Integer> seatIds, int ttlSeconds) throws SQLException {
+        if (seatIds == null || seatIds.isEmpty()) return List.of();
+        String reservedBy = SessionContext.getCurrentUser()
+                .map(u -> String.valueOf(u.getUserId()))
+                .orElseThrow(() -> new IllegalStateException("No user logged in — cannot reserve seats"));
+        return reserveSeatsAs(seatIds, ttlSeconds, reservedBy);
+    }
+
+    /**
+     * Reserva atómicamente los asientos especificados para el vendor identificado por {@code reservedBy}.
+     *
+     * <p>Equivalente a {@link #reserveSeats} pero acepta el ID del vendor explícitamente,
+     * permitiendo la llamada desde hilos que no tienen {@link SessionContext} configurado.
+     *
+     * @param seatIds    IDs de asientos a reservar; no debe ser {@code null} ni vacía
+     * @param ttlSeconds segundos hasta la expiración de la reserva; debe ser positivo
+     * @param reservedBy identificador del vendor; no debe ser {@code null}
+     * @return lista de IDs de asientos que fueron efectivamente reservados
+     * @throws SQLException si ocurre un error de base de datos
+     */
+    public List<Integer> reserveSeatsAs(List<Integer> seatIds, int ttlSeconds, String reservedBy)
+            throws SQLException {
+        if (seatIds == null || seatIds.isEmpty()) return List.of();
+        try (Connection conn = connFactory.get()) {
+            List<Integer> reserved = seatDAO.reserveSeats(conn, seatIds, reservedBy, ttlSeconds);
+            if (!reserved.isEmpty()) {
+                LOGGER.debug("User {} reserved {} seat(s)", reservedBy, reserved.size());
+            }
+            return reserved;
+        }
+    }
+
+    /**
+     * Libera las reservas activas que pertenezcan al vendor actualmente autenticado
+     * para los asientos dados.
+     *
+     * <p>Asientos no reservados o reservados por otro vendor son ignorados silenciosamente.
+     * Si no hay usuario en sesión no se realiza ninguna acción.
+     *
+     * @param seatIds IDs de asientos a liberar; si es {@code null} o vacía no hace nada
+     * @throws SQLException si ocurre un error de base de datos
+     */
+    public void releaseSeats(List<Integer> seatIds) throws SQLException {
+        if (seatIds == null || seatIds.isEmpty()) return;
+        String reservedBy = SessionContext.getCurrentUser()
+                .map(u -> String.valueOf(u.getUserId()))
+                .orElse(null);
+        if (reservedBy == null) return;
+        releaseSeatsAs(seatIds, reservedBy);
+    }
+
+    /**
+     * Libera las reservas activas identificadas por {@code reservedBy} para los asientos dados.
+     *
+     * <p>Equivalente a {@link #releaseSeats} pero acepta el ID del vendor explícitamente,
+     * permitiendo la llamada desde hilos sin {@link SessionContext} configurado.
+     *
+     * @param seatIds    IDs de asientos a liberar; si es {@code null} o vacía no hace nada
+     * @param reservedBy identificador del vendor que posee las reservas; no debe ser {@code null}
+     * @throws SQLException si ocurre un error de base de datos
+     */
+    public void releaseSeatsAs(List<Integer> seatIds, String reservedBy) throws SQLException {
+        if (seatIds == null || seatIds.isEmpty()) return;
+        try (Connection conn = connFactory.get()) {
+            seatDAO.releaseReservation(conn, seatIds, reservedBy);
+            LOGGER.debug("User {} released {} seat reservation(s)", reservedBy, seatIds.size());
+        }
+    }
 }
